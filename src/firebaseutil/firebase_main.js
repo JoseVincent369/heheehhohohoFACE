@@ -4,6 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { initializeApp } from "firebase/app";
 
+
 // Import the functions you need from the SDKs you need
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -31,7 +32,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 export const FIREBASE_APP = initializeApp(firebaseConfig);
-
+export const firebaseApp = initializeApp(firebaseConfig); 
 export const FIREBASE_AUTH = getAuth(FIREBASE_APP);
 export const STORAGE = getStorage(FIREBASE_APP);
 export const REALDB = getDatabase(FIREBASE_APP);
