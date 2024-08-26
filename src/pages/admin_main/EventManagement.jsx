@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
-
+import './generalstyles.css';
 const EventManagement = () => {
   const [eventData, setEventData] = useState({
     name: "",

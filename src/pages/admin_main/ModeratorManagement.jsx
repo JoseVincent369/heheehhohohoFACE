@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import './generalstyles.css';
 
 const ModeratorManagement = () => {
     const [moderatorData, setModeratorData] = useState({
@@ -13,6 +14,7 @@ const ModeratorManagement = () => {
     });
 
     const [organizationsList, setOrganizationsList] = useState([]);
+    const [moderators, setModerators] = useState([]);
 
     useEffect(() => {
         // Fetch organizations from Firestore
@@ -22,7 +24,17 @@ const ModeratorManagement = () => {
             setOrganizationsList(orgs);
         };
 
+        // Fetch moderators from Firestore
+        const fetchModerators = async () => {
+            const moderatorsSnapshot = await getDocs(collection(FIRESTORE_DB, 'users'));
+            const mods = moderatorsSnapshot.docs
+                .filter(doc => doc.data().role === 'moderator') // Filter only moderators
+                .map(doc => ({ id: doc.id, ...doc.data() }));
+            setModerators(mods);
+        };
+
         fetchOrganizations();
+        fetchModerators();
     }, []);
 
     const handleChange = (e) => {
@@ -58,12 +70,17 @@ const ModeratorManagement = () => {
             });
     
             alert('Moderator account created successfully!');
+            // Refresh the list of moderators
+            const updatedModsSnapshot = await getDocs(collection(FIRESTORE_DB, 'users'));
+            const updatedMods = updatedModsSnapshot.docs
+                .filter(doc => doc.data().role === 'moderator')
+                .map(doc => ({ id: doc.id, ...doc.data() }));
+            setModerators(updatedMods);
         } catch (error) {
             console.error('Error creating moderator:', error);
             alert(`Failed to create moderator account: ${error.message}`);
         }
     };
-    
 
     return (
         <div className="moderator-management">
@@ -85,6 +102,28 @@ const ModeratorManagement = () => {
                 
                 <button type="submit">Create Moderator</button>
             </form>
+
+            <h2>Existing Moderators</h2>
+            <table className="moderator-table">
+                <thead>
+                    <tr>
+                        <th>ID Number</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Organization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {moderators.map(moderator => (
+                        <tr key={moderator.id}>
+                            <td>{moderator.idNumber}</td>
+                            <td>{moderator.fullName}</td>
+                            <td>{moderator.email}</td>
+                            <td>{moderator.organization}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 };

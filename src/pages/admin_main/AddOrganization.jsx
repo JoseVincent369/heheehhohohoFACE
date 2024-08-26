@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-
+import './generalstyles.css';
 const AddOrganization = () => {
   const [organizations, setOrganizations] = useState([]);
   const [currentOrg, setCurrentOrg] = useState({ name: "", id: null });

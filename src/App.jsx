@@ -7,6 +7,8 @@ import AdminDashboard from '../src/pages/admin_main/AdminDashboard'
 import EventManagement from '../src/pages/admin_main/EventManagement';
 import ModeratorManagement from '../src/pages/admin_main/ModeratorManagement';
 import AddOrganization from './pages/admin_main/AddOrganization';
+import StudentManage from './pages/admin_main/StudentManage';
+
 function App() {
   return (
     <Router>
@@ -19,6 +21,7 @@ function App() {
         <Route path="/admin/events" element={<EventManagement />} />
         <Route path="/admin/moderators" element={<ModeratorManagement />} />
         <Route path="/admin/addOrg" element={<AddOrganization />} />
+        <Route path="/admin/StudentManage" element={<StudentManage />} />
         </Routes>
       </div>
     </Router>

@@ -3,7 +3,7 @@ import { Button, Form, Alert } from 'react-bootstrap';
 import { FIREBASE_AUTH } from '../../firebaseutil/firebase_main';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-
+import './generalstyles.css';
 const LoginMain = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
