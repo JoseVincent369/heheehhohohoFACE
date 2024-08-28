@@ -9,8 +9,8 @@ const AdminDashboard = () => {
     const [user, setUser] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [studentsCount, setStudentsCount] = useState(0);
-    const [moderatorsCount, setModeratorsCount] = useState(0);
-    const [selectedEvent, setSelectedEvent] = useState(null); // State to track selected event
+    const [adminsCount, setAdminsCount] = useState(0);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     const auth = getAuth(firebaseApp);
     const db = getFirestore(firebaseApp);
@@ -39,22 +39,27 @@ const AdminDashboard = () => {
     }, [auth]);
 
     useEffect(() => {
-        // Fetch Students Count
-        const studentsQuery = query(collection(db, 'users'), where('role', '==', 'user'));
-        const unsubscribeStudents = onSnapshot(studentsQuery, (querySnapshot) => {
-            setStudentsCount(querySnapshot.size);
-        });
+        // Real-Time Count for Students and Admins
+        const fetchCounts = () => {
+            // Query for Students
+            const studentsQuery = query(collection(db, 'users'), where('role', '==', 'user'));
+            const unsubscribeStudents = onSnapshot(studentsQuery, (querySnapshot) => {
+                setStudentsCount(querySnapshot.size);
+            });
 
-        // Fetch Moderators Count
-        const moderatorsQuery = query(collection(db, 'users'), where('role', '==', 'moderator'));
-        const unsubscribeModerators = onSnapshot(moderatorsQuery, (querySnapshot) => {
-            setModeratorsCount(querySnapshot.size);
-        });
+            // Query for Admins
+            const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
+            const unsubscribeAdmins = onSnapshot(adminsQuery, (querySnapshot) => {
+                setAdminsCount(querySnapshot.size);
+            });
 
-        return () => {
-            unsubscribeStudents();
-            unsubscribeModerators();
+            return () => {
+                unsubscribeStudents();
+                unsubscribeAdmins();
+            };
         };
+
+        fetchCounts();
     }, [db]);
 
     const handleLogout = () => {
@@ -75,6 +80,29 @@ const AdminDashboard = () => {
         setSelectedEvent(null);
     };
 
+    // Filter Events
+    const now = new Date();
+    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+    const todayEnd = new Date(now.setHours(23, 59, 59, 999));
+
+    const ongoingEvents = events.filter(
+        (event) =>
+            new Date(event.startDate) <= now && new Date(event.endDate) >= now
+    );
+
+    const todaysEvents = events.filter(
+        (event) =>
+            new Date(event.startDate) >= todayStart && new Date(event.startDate) <= todayEnd
+    );
+
+    const futureEvents = events.filter(
+        (event) => new Date(event.startDate) > now
+    );
+
+    const currentEvents = events.filter(
+        (event) => new Date(event.startDate) <= now && new Date(event.endDate) >= now
+    );
+
     return (
         <div className="admin-dashboard">
             <header className="navbar">
@@ -90,61 +118,129 @@ const AdminDashboard = () => {
                     <ul>
                         <li><a href="/Admin">Dashboard</a></li>
                         <li><a href="/admin/events">Event Registration</a></li>
-                        <li><a href="/admin/moderators">Moderator Management</a></li>
+                        <li><a href="/admin/admins">Admin Management</a></li>
                         <li><a href="/signup">Student Registration</a></li>
                         <li><a href="/admin/StudentManage">Student Manage</a></li>
-                        <li><a href="/">Settings</a></li>
+                        <li><a href="/admin/addOrg">Organization Register</a></li>
                     </ul>
                 </nav>
 
                 <div className="content">
                     <div className="event-stats">
                         <div className="stat ongoing-events">
-                            <span>Ongoing Events</span>
+                            <span>Events</span>
                             <div className="badge">{events.length}</div>
                         </div>
                         <div className="stat students-attended">
-                            <span>Students Attended</span>
+                            <span>Students Registered</span>
                             <div className="badge">{studentsCount}</div>
                         </div>
-                        <div className="stat moderators">
-                            <span>Moderators</span>
-                            <div className="badge">{moderatorsCount}</div>
+                        <div className="stat admins">
+                            <span>Admins</span>
+                            <div className="badge">{adminsCount}</div>
                         </div>
                     </div>
 
                     <div className="events-section">
-                        <h2>Overview</h2>
-                        <ul className="event-list">
-                            {events.map((event) => (
-                                <li 
-                                    className="event-item" 
-                                    key={event.id} 
-                                    onClick={() => handleEventClick(event)}
-                                >
-                                    {event.name}
-                                </li>
-                            ))}
-                        </ul>
+                        <h4>Activities Overview</h4>
+                        <div className="event-categories">
+                            <div className="event-category">
+                                <h5>Ongoing Events</h5>
+                                <ul className="event-list">
+                                    {ongoingEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="event-category">
+                                <h5>Today's Events</h5>
+                                <ul className="event-list">
+                                    {todaysEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="event-category">
+                                <h5>Future Events</h5>
+                                <ul className="event-list">
+                                    {futureEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="event-category">
+                                <h5>All Current Events</h5>
+                                <ul className="event-list">
+                                    {currentEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     {selectedEvent && (
                         <div className="event-modal">
                             <div className="modal-content">
-                                <span className="close" onClick={handleCloseModal}>&times;</span>
+                                <span className="close" onClick={handleCloseModal}>
+                                    &times;
+                                </span>
                                 <h2>{selectedEvent.name}</h2>
-                                <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
-                                <p><strong>Start Date:</strong> {selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleString() : 'N/A'}</p>
-                                <p><strong>End Date:</strong> {selectedEvent.endDate ? new Date(selectedEvent.endDate).toLocaleString() : 'N/A'}</p>
-                                <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
+                                <p>
+                                    <strong>Description:</strong>{' '}
+                                    {selectedEvent.description || 'N/A'}
+                                </p>
+                                <p>
+                                    <strong>Start Date:</strong>{' '}
+                                    {selectedEvent.startDate
+                                        ? new Date(selectedEvent.startDate).toLocaleString()
+                                        : 'N/A'}
+                                </p>
+                                <p>
+                                    <strong>End Date:</strong>{' '}
+                                    {selectedEvent.endDate
+                                        ? new Date(selectedEvent.endDate).toLocaleString()
+                                        : 'N/A'}
+                                </p>
+                                <p>
+                                    <strong>Venue:</strong>{' '}
+                                    {selectedEvent.venue || 'N/A'}
+                                </p>
                                 <p><strong>Organizations:</strong></p>
                                 <ul>
-                                    {(selectedEvent.organizations && selectedEvent.organizations.length > 0)
+                                    {selectedEvent.organizations &&
+                                        selectedEvent.organizations.length > 0
                                         ? selectedEvent.organizations.map((org, index) => (
-                                            <li key={index}>{org}</li>
+                                              <li key={index}>{org}</li>
                                           ))
-                                        : <li>N/A</li>
-                                    }
+                                        : 'N/A'}
                                 </ul>
                             </div>
                         </div>

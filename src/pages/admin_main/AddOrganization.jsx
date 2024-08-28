@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import './generalstyles.css';
+
 const AddOrganization = () => {
   const [organizations, setOrganizations] = useState([]);
+  const [filteredOrganizations, setFilteredOrganizations] = useState([]);
   const [currentOrg, setCurrentOrg] = useState({ name: "", id: null });
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(""); // New state for search term
 
   // Fetch the organizations list from Firestore on component mount
   useEffect(() => {
@@ -14,10 +17,19 @@ const AddOrganization = () => {
       const orgsSnapshot = await getDocs(orgsCollection);
       const orgsList = orgsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setOrganizations(orgsList);
+      setFilteredOrganizations(orgsList);
     };
 
     fetchOrganizations();
   }, []);
+
+  // Update the filtered list based on the search term
+  useEffect(() => {
+    const filtered = organizations.filter(org =>
+      org.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredOrganizations(filtered);
+  }, [searchTerm, organizations]);
 
   // Handle input change for the form
   const handleInputChange = (e) => {
@@ -28,14 +40,17 @@ const AddOrganization = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (isEditing && currentOrg.id) {
+      if (currentOrg.id) {
         // Update the existing organization
         await updateDoc(doc(FIRESTORE_DB, "organizations", currentOrg.id), { name: currentOrg.name });
         setOrganizations(organizations.map(org => (org.id === currentOrg.id ? currentOrg : org)));
+        setFilteredOrganizations(filteredOrganizations.map(org => (org.id === currentOrg.id ? currentOrg : org)));
       } else {
         // Add a new organization
         const docRef = await addDoc(collection(FIRESTORE_DB, "organizations"), { name: currentOrg.name });
-        setOrganizations([...organizations, { id: docRef.id, name: currentOrg.name }]);
+        const newOrg = { id: docRef.id, name: currentOrg.name };
+        setOrganizations([...organizations, newOrg]);
+        setFilteredOrganizations([...filteredOrganizations, newOrg]);
       }
       resetForm();
       alert('Organization saved successfully!');
@@ -45,10 +60,10 @@ const AddOrganization = () => {
     }
   };
 
-  // Handle editing an organization
+  // Handle starting the edit mode
   const handleEdit = (org) => {
     setCurrentOrg(org);
-    setIsEditing(true);
+    setEditingOrgId(org.id);
   };
 
   // Handle deleting an organization
@@ -57,6 +72,7 @@ const AddOrganization = () => {
       try {
         await deleteDoc(doc(FIRESTORE_DB, "organizations", id));
         setOrganizations(organizations.filter(org => org.id !== id));
+        setFilteredOrganizations(filteredOrganizations.filter(org => org.id !== id));
         alert('Organization deleted successfully!');
       } catch (error) {
         console.error('Error deleting organization:', error);
@@ -68,12 +84,12 @@ const AddOrganization = () => {
   // Reset the form after submission or canceling an edit
   const resetForm = () => {
     setCurrentOrg({ name: "", id: null });
-    setIsEditing(false);
+    setEditingOrgId(null);
   };
 
   return (
     <div className="admin-panel">
-      <h2>{isEditing ? "Edit Organization" : "Add Organization"}</h2>
+      <h2>{editingOrgId ? "Edit Organization" : "Add Organization"}</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -83,20 +99,45 @@ const AddOrganization = () => {
           placeholder="Organization Name"
           required
         />
-        <button type="submit">{isEditing ? "Update Organization" : "Add Organization"}</button>
-        {isEditing && <button type="button" onClick={resetForm}>Cancel</button>}
+        <button type="submit">{editingOrgId ? "Update Organization" : "Add Organization"}</button>
+        {editingOrgId && <button type="button" onClick={resetForm}>Cancel</button>}
       </form>
 
+      <div className="search-container">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search Organizations"
+        />
+      </div>
+
       <h3>Existing Organizations</h3>
-      <ul>
-        {organizations.map(org => (
-          <li key={org.id}>
-            {org.name}
-            <button onClick={() => handleEdit(org)}>Edit</button>
-            <button onClick={() => handleDelete(org.id)}>Delete</button>
-          </li>
+      <div className="organization-list">
+        {filteredOrganizations.map(org => (
+          <div className="organization-item" key={org.id}>
+            {editingOrgId === org.id ? (
+              <div className="edit-form">
+                <input
+                  type="text"
+                  value={currentOrg.name}
+                  onChange={handleInputChange}
+                />
+                <button onClick={handleSubmit}>Update</button>
+                <button onClick={resetForm}>Cancel</button>
+              </div>
+            ) : (
+              <>
+                <span>{org.name}</span>
+                <div>
+                  <button onClick={() => handleEdit(org)}>Edit</button>
+                  <button onClick={() => handleDelete(org.id)}>Delete</button>
+                </div>
+              </>
+            )}
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };

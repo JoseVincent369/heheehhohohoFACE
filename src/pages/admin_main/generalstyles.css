@@ -7,6 +7,7 @@ body {
     color: #333;
     margin: 0;
     padding: 0;
+    
 }
 
 .container {
@@ -160,6 +161,8 @@ button.delete:hover {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100vw;
+    height: 100vh;
 }
 
 .event-management input,
@@ -172,17 +175,89 @@ button.delete:hover {
     width: 100%;
 }
 
+/* Year and Organization Checkbox Styling */
+.checkbox-group {
+    margin-bottom: 20px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    padding: 8px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.checkbox-item:hover {
+    background-color: #e6f7ff;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.checkbox-item label {
+    margin: 0;
+    cursor: pointer; /* Ensure text is clickable */
+}
+
+.checkbox-item input[type="checkbox"]:checked + label {
+    font-weight: bold; /* Optional: Highlight selected items */
+}
+
+
 /* Organization Management */
 .admin-panel {
     padding: 20px;
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100vw;
+    height: 100vh;
 }
 
 .admin-panel h2 {
     font-size: 22px;
     margin-bottom: 20px;
+}
+
+.admin-panel form {
+    margin-bottom: 20px;
+}
+
+.admin-panel input[type="text"],
+.admin-panel input[type="email"],
+.admin-panel input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.admin-panel button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.admin-panel button:hover {
+    background-color: #0056b3;
+}
+
+.admin-panel button.cancel {
+    background-color: #6c757d;
+}
+
+.admin-panel button.cancel:hover {
+    background-color: #5a6268;
 }
 
 .organization-list {
@@ -192,11 +267,118 @@ button.delete:hover {
 .organization-item {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 10px 0;
     border-bottom: 1px solid #ddd;
 }
 
-.organization-item button {
+.organization-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.organization-item span {
+    font-size: 16px;
+    color: #333;
+}
+
+.organization-actions button {
     padding: 5px 10px;
     font-size: 14px;
 }
+
+
+/* Organization Management */
+.admin-panel {
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: auto; /* Add scrolling if content overflows */
+}
+
+.admin-panel h2 {
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.admin-panel form {
+    margin-bottom: 20px;
+}
+
+.admin-panel input {
+    padding: 10px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.admin-panel button {
+    padding: 10px 15px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+}
+
+.admin-panel button:hover {
+    background-color: #0056b3;
+}
+
+.admin-panel .organization-list {
+    margin-top: 20px;
+    max-height: calc(100vh - 150px); /* Adjust based on header and form height */
+    overflow-y: auto; /* Allow vertical scrolling */
+}
+
+.admin-panel .organization-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.admin-panel .organization-item span {
+    font-size: 16px;
+}
+
+.admin-panel .organization-item button {
+    padding: 5px 10px;
+    font-size: 14px;
+    background-color: #dc3545;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.admin-panel .organization-item button:hover {
+    background-color: #c82333;
+}
+
+.admin-panel .organization-item button:nth-of-type(1) {
+    background-color: #28a745;
+}
+
+.admin-panel .organization-item button:nth-of-type(1):hover {
+    background-color: #218838;
+}
+/* Search Container */
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-container input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 300px;
+}
+

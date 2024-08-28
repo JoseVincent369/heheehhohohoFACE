@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
 import './generalstyles.css';
+
 const EventManagement = () => {
   const [eventData, setEventData] = useState({
     name: "",
@@ -9,17 +10,19 @@ const EventManagement = () => {
     startDate: "",
     endDate: "",
     venue: "",
-    organizations: [], 
+    organizations: [],
+    year: []
   });
 
-  const [organizationsList, setOrganizationsList] = useState([]); // State to hold organizations fetched from Firebase
+  const [organizationsList, setOrganizationsList] = useState([]);
+  const [yearLevels, setYearLevels] = useState(["Year 1", "Year 2", "Year 3", "Year 4"]);
 
   // Fetch organizations from Firestore on component mount
   useEffect(() => {
     const fetchOrganizations = async () => {
       try {
         const querySnapshot = await getDocs(collection(FIRESTORE_DB, "organizations"));
-        const orgs = querySnapshot.docs.map(doc => doc.data().name); // Assuming each document has a 'name' field
+        const orgs = querySnapshot.docs.map(doc => doc.data().name);
         setOrganizationsList(orgs);
       } catch (error) {
         console.error("Error fetching organizations:", error);
@@ -30,26 +33,58 @@ const EventManagement = () => {
   }, []);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setEventData({
       ...eventData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
-  const handleOrganizationChange = (e) => { 
+  const handleOrganizationChange = (e) => {
     const { value, checked } = e.target;
-    const { organizations } = eventData; 
+    const { organizations } = eventData;
 
-    if (checked) {
+    if (value === "selectAll") {
       setEventData({
         ...eventData,
-        organizations: [...organizations, value],
+        organizations: checked ? organizationsList : [],
       });
     } else {
+      if (checked) {
+        setEventData({
+          ...eventData,
+          organizations: [...organizations, value],
+        });
+      } else {
+        setEventData({
+          ...eventData,
+          organizations: organizations.filter((organization) => organization !== value),
+        });
+      }
+    }
+  };
+
+  const handleYearChange = (e) => {
+    const { value, checked } = e.target;
+    const { year } = eventData;
+
+    if (value === "selectAllYears") {
       setEventData({
         ...eventData,
-        organizations: organizations.filter((organization) => organization !== value),
+        year: checked ? yearLevels : [],
       });
+    } else {
+      if (checked) {
+        setEventData({
+          ...eventData,
+          year: [...year, value],
+        });
+      } else {
+        setEventData({
+          ...eventData,
+          year: year.filter((yr) => yr !== value),
+        });
+      }
     }
   };
 
@@ -101,11 +136,48 @@ const EventManagement = () => {
           required
         />
 
+        {/* Year Level Selection as Checkboxes */}
+        <div className="checkbox-group">
+          <label>Select Year Levels:</label>
+          <div className="checkbox-item">
+            <input
+              type="checkbox"
+              id="selectAllYears"
+              value="selectAllYears"
+              onChange={handleYearChange}
+              checked={eventData.year.length === yearLevels.length}
+            />
+            <label htmlFor="selectAllYears">Select All</label>
+          </div>
+          {yearLevels.map((year, index) => (
+            <div className="checkbox-item" key={index}>
+              <input
+                type="checkbox"
+                id={`year-${index}`}
+                value={year}
+                onChange={handleYearChange}
+                checked={eventData.year.includes(year)}
+              />
+              <label htmlFor={`year-${index}`}>{year}</label>
+            </div>
+          ))}
+        </div>
+
         {/* Organization Selection as Checkboxes */}
-        <div>
+        <div className="checkbox-group">
           <label>Select Organizations:</label>
+          <div className="checkbox-item">
+            <input
+              type="checkbox"
+              id="selectAllOrgs"
+              value="selectAll"
+              onChange={handleOrganizationChange}
+              checked={eventData.organizations.length === organizationsList.length}
+            />
+            <label htmlFor="selectAllOrgs">Select All</label>
+          </div>
           {organizationsList.map((organization, index) => (
-            <div key={index}>
+            <div className="checkbox-item" key={index}>
               <input
                 type="checkbox"
                 id={`organization-${index}`}
