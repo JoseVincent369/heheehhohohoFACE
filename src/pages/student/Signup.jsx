@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import './generalstyles.css'; // Ensure this file contains the CSS for the back button
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -93,7 +94,7 @@ const SignUp = () => {
       });
 
       setSuccess("User registered successfully!");
-      navigate("/login"); // Redirect to login page after successful registration
+      navigate("/"); // Redirect to login page after successful registration
     } catch (error) {
       console.error("Sign-up failed:", error);
       setError("Failed to create an account. Please try again.");
@@ -102,6 +103,11 @@ const SignUp = () => {
 
   return (
     <div className="signup-container">
+      {/* Back Button */}
+      <button className="back-button" onClick={() => navigate('/superadmin')}>
+        &lt; Back
+      </button>
+
       <h2>Sign Up</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
@@ -240,7 +246,7 @@ const SignUp = () => {
           <Form.Control
             type="file"
             accept="image/*"
-            name="front.jpg"
+            name="front"
             onChange={handlePhotoChange}
             required
           />
@@ -252,7 +258,7 @@ const SignUp = () => {
           <Form.Control
             type="file"
             accept="image/*"
-            name="left.jpg"
+            name="left"
             onChange={handlePhotoChange}
             required
           />
@@ -264,7 +270,7 @@ const SignUp = () => {
           <Form.Control
             type="file"
             accept="image/*"
-            name="right.jpg"
+            name="right"
             onChange={handlePhotoChange}
             required
           />

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getStorage, ref, getDownloadURL } from "firebase/storage"; // Import Firebase Storage functions
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { collection, getDocs } from "firebase/firestore";
-import { FIRESTORE_DB, STORAGE } from "../../firebaseutil/firebase_main";
+import { FIRESTORE_DB } from "../../firebaseutil/firebase_main";
+import './homestyles.css';
 
 function Home_main() {
   const videoRef = useRef(null);
@@ -12,8 +13,8 @@ function Home_main() {
   const tempAttendace = useRef([]);
 
   useEffect(() => {
-    // Load face-api models and start video
     const loadModelsAndStartVideo = async () => {
+      // Load face-api models
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
@@ -24,7 +25,6 @@ function Home_main() {
       startVideo();
     };
 
-    // Start video stream
     const startVideo = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
@@ -36,7 +36,6 @@ function Home_main() {
       }
     };
 
-    // Handle video playback
     const handleVideoPlay = async () => {
       const labeledFaceDescriptors = await loadLabeledImages();
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
@@ -77,13 +76,9 @@ function Home_main() {
       }, 100);
     };
 
-    // Load models and start video when component mounts
     loadModelsAndStartVideo();
-
-    // Set up event listener for video play
     videoRef.current?.addEventListener('play', handleVideoPlay);
 
-    // Cleanup function to stop video stream and remove event listener
     return () => {
       if (videoRef.current) {
         const stream = videoRef.current.srcObject;
@@ -96,50 +91,84 @@ function Home_main() {
     };
   }, []);
 
-  // Load labeled images for face recognition
   const loadLabeledImages = async () => {
     const usersCollection = collection(FIRESTORE_DB, 'users');
     const userSnapshots = await getDocs(usersCollection);
     const storage = getStorage(FIREBASE_APP);
-  
-    // Iterate over each user document in Firestore
+
     const labeledDescriptorsPromises = userSnapshots.docs.map(async (doc) => {
       const userData = doc.data();
-      const label = userData.fname; // Using first name as label, you can adjust this
-  
-      // Paths to the images in Firebase Storage
-      const frontRef = ref(storage, `users/${doc.id}/front`);
-      const leftRef = ref(storage, `users/${doc.id}/left`);
-      const rightRef = ref(storage, `users/${doc.id}/right`);
-  
-      // Fetch the download URLs for each image
-      const frontUrl = await getDownloadURL(frontRef);
-      const leftUrl = await getDownloadURL(leftRef);
-      const rightUrl = await getDownloadURL(rightRef);
-  
+      const label = userData.lname || "unknown";
+
+      const fetchImage = async (userId, imageType) => {
+        try {
+            // Fetch the user document from Firestore
+            const userDoc = await getDoc(doc(FIRESTORE_DB, `users/${userId}`));
+    
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const imageUrl = userData.photos?.[imageType]; // Assuming photos field has links stored
+    
+                // Check if the image URL exists
+                if (imageUrl) {
+                    return imageUrl;
+                } else {
+                    console.warn(`Image ${imageType}.jpg not found in Firestore for user ${userId}`);
+                    // Provide a fallback image URL if the image is not found in Firestore
+                    return 'path/to/default-image.jpg';
+                }
+            } else {
+                console.error(`User document with ID ${userId} does not exist.`);
+                return 'path/to/default-image.jpg';
+            }
+        } catch (error) {
+            console.error(`Error fetching image ${imageType} for user ${userId}:`, error);
+            // Return a fallback image URL in case of error
+            return 'path/to/default-image.jpg';
+        }
+    };
+    
+    
+
       const descriptions = [];
-  
-      // Process each image URL
-      for (let imgUrl of [frontUrl, leftUrl, rightUrl]) {
-        const img = await faceapi.fetchImage(imgUrl);
-        const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-        descriptions.push(detection.descriptor);
+
+      try {
+        for (let key in imageRefs) {
+          try {
+            const imgUrl = await getDownloadURL(imageRefs[key]);
+            const img = await faceapi.fetchImage(imgUrl);
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+
+            if (detection) {
+              descriptions.push(detection.descriptor);
+            }
+          } catch (error) {
+            if (error.code === 'storage/object-not-found') {
+              console.warn(`Image ${key}.jpg not found for user ${label}:`, error);
+            } else {
+              console.error(`Error fetching image ${key}.jpg for user ${label}:`, error);
+            }
+          }
+        }
+
+        if (descriptions.length === 0) {
+          return new faceapi.LabeledFaceDescriptors('unknown', []);
+        }
+      } catch (error) {
+        console.error(`Error processing images for user ${label}:`, error);
+        return new faceapi.LabeledFaceDescriptors('unknown', []);
       }
-  
-      // Return the labeled face descriptors
+
       return new faceapi.LabeledFaceDescriptors(label, descriptions);
     });
-  
-    // Wait for all promises to resolve
+
     return Promise.all(labeledDescriptorsPromises);
   };
-  
-  // Filter out duplicate attendances
+
   const filter = (label) => {
     return tempAttendace.current.filter((res) => res === label).length <= 0;
   };
-  
-  // Manage attendance logs
+
   const attendance = (label) => {
     if (filter(label) && label !== 'unknown') {
       tempAttendace.current.push(label);
@@ -161,23 +190,36 @@ function Home_main() {
           ))}
         </ul>
       </div>
-      <div style={{ flex: '2', position: 'relative', backgroundColor: '#444', padding: '20px', borderRadius: '8px' }}>
+      <div
+        style={{
+          flex: '2',
+          position: 'relative',
+          backgroundColor: '#444',
+          padding: '20px',
+          borderRadius: '8px',
+        }}
+      >
         <video
           ref={videoRef}
           width={640}
           height={480}
           autoPlay
           muted
-          style={{ display: 'block', borderRadius: '8px' }}
+          style={{
+            display: 'block',
+            borderRadius: '8px',
+            transform: 'scaleX(-1)', // Flips the video to correct the inversion for the front camera
+          }}
         />
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
-            top: '20px',
-            left: '20px',
+            top: '0px',
+            left: '0px',
             borderRadius: '8px',
             zIndex: 1,
+            transform: 'scaleX(-1)', // Match the canvas flip to ensure drawings align correctly
           }}
         />
       </div>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import './generalstyles.css';
+
 
 const AdminManagement = () => {
     const [adminData, setAdminData] = useState({
@@ -15,6 +17,8 @@ const AdminManagement = () => {
 
     const [organizationsList, setOrganizationsList] = useState([]);
     const [admins, setAdmins] = useState([]);
+
+    const navigate = useNavigate(); // Initialize navigate for navigation
 
     useEffect(() => {
         // Fetch organizations from Firestore
@@ -47,13 +51,7 @@ const AdminManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Check if idNumber is unique
-            const idNumberDoc = await getDoc(doc(FIRESTORE_DB, "users", adminData.idNumber));
-            if (idNumberDoc.exists()) {
-                alert('ID number already exists. Please use a unique ID number.');
-                return;
-            }
-
+            // Create user with email and password
             const userCredential = await createUserWithEmailAndPassword(
                 FIREBASE_AUTH,
                 adminData.email,
@@ -61,7 +59,9 @@ const AdminManagement = () => {
             );
 
             const userId = userCredential.user.uid;
-            await setDoc(doc(FIRESTORE_DB, "users", adminData.idNumber), {
+
+            // Set the document in Firestore with the UID as the document ID
+            await setDoc(doc(FIRESTORE_DB, "users", userId), {
                 idNumber: adminData.idNumber,
                 fullName: adminData.fullName,
                 email: adminData.email,
@@ -70,6 +70,7 @@ const AdminManagement = () => {
             });
 
             alert('Admin account created successfully!');
+
             // Refresh the list of admins
             const updatedAdminsSnapshot = await getDocs(collection(FIRESTORE_DB, 'users'));
             const updatedAdmins = updatedAdminsSnapshot.docs
@@ -84,6 +85,11 @@ const AdminManagement = () => {
 
     return (
         <div className="admin-management">
+            {/* Back Button */}
+            <button className="back-button" onClick={() => navigate('/superadmin')}>
+                &lt; Back
+            </button>
+
             <h2>Create Admin</h2>
             <form onSubmit={handleSubmit}>
                 <input type="text" name="idNumber" placeholder="ID Number" onChange={handleChange} required />

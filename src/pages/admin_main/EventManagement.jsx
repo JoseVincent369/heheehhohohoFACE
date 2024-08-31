@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
 import './generalstyles.css';
@@ -16,6 +17,8 @@ const EventManagement = () => {
 
   const [organizationsList, setOrganizationsList] = useState([]);
   const [yearLevels, setYearLevels] = useState(["Year 1", "Year 2", "Year 3", "Year 4"]);
+  
+  const navigate = useNavigate(); // Initialize navigate for navigation
 
   // Fetch organizations from Firestore on component mount
   useEffect(() => {
@@ -101,6 +104,11 @@ const EventManagement = () => {
 
   return (
     <div className="event-management">
+      {/* Back Button */}
+      <button className="back-button" onClick={() => navigate('/superadmin')}>
+        &lt; Back
+      </button>
+
       <h2>Create Event</h2>
       <form onSubmit={handleSubmit}>
         <input

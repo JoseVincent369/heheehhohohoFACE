@@ -11,7 +11,11 @@ import StudentManage from './pages/admin_main/StudentManage';
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
 import AttendanceTracking from './pages/Moderator/AttendanceTracking'
 import EventManage from './pages/Moderator/EventManage';
-
+import LocalAdmin from './pages/Admin/LocalAdmin'
+import EventCreation from './pages/Admin/EventCreation'
+import OrganizationManagement from './pages/Admin/OrganizationManagement'
+import Logout from './pages/Admin/Logout';
+import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin'
 
 
 function App() {
@@ -22,7 +26,7 @@ function App() {
           <Route path="/" element={<Login_main />} />
           <Route path="/home" element={<Home_main />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/superadmin" element={<AdminDashboard />} />
         <Route path="/admin/events" element={<EventManagement />} />
         <Route path="/admin/admins" element={<AdminManagement />} />
         <Route path="/admin/addOrg" element={<AddOrganization />} />
@@ -30,7 +34,13 @@ function App() {
         <Route path="/Moderator" element={<ModeratorDashboard />} />
         <Route path="/moderator/attendance" element={<AttendanceTracking />} />
         <Route path="/moderator/events" element={<EventManage />} />
-        </Routes>
+        <Route path="/localadmin" element={<LocalAdmin />} />
+        <Route path="/local/create" element={<EventCreation />} />
+        <Route path="/local/Org" element={<OrganizationManagement />} />
+        <Route path="/logout" element={<Logout />} />
+        <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
+      
+        </Routes> 
       </div>
     </Router>
   );

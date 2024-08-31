@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, onSnapshot, where, addDoc, setDoc, doc } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { firebaseApp } from '../../firebaseutil/firebase_main';
-import './styles.css';
+import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
+import './ModeratorStyles.css';
 
 const ModeratorDashboard = () => {
     const [user, setUser] = useState(null);
@@ -17,8 +17,8 @@ const ModeratorDashboard = () => {
     const [eventEndDate, setEventEndDate] = useState('');
     const [cameraEnabled, setCameraEnabled] = useState(false);
 
-    const auth = getAuth(firebaseApp);
-    const db = getFirestore(firebaseApp);
+    const auth = getAuth(FIREBASE_APP);
+    const db = getFirestore(FIREBASE_APP);
 
     useEffect(() => {
         // Fetch User Details

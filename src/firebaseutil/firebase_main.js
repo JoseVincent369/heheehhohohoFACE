@@ -28,12 +28,16 @@ const firebaseConfig = {
   messagingSenderId: VITE_REACT_MESSAGING_SENDER_ID,
   appId: VITE_REACT_APP_ID,
     measurementId: VITE_REACT_MEASUREMENT_ID,
+    databaseURL: "https://face-bdf67-default-rtdb.asia-southeast1.firebasedatabase.app",
 };
+
 
 // Initialize Firebase
 export const FIREBASE_APP = initializeApp(firebaseConfig);
-export const firebaseApp = initializeApp(firebaseConfig); 
+
 export const FIREBASE_AUTH = getAuth(FIREBASE_APP);
 export const STORAGE = getStorage(FIREBASE_APP);
 export const REALDB = getDatabase(FIREBASE_APP);
 export const FIRESTORE_DB = getFirestore(FIREBASE_APP);
+// Change this line if needed
+export const FIREBASE_DB = getFirestore(FIREBASE_APP);

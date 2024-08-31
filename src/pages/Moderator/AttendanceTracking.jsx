@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { firebaseApp } from '../../firebaseutil/firebase_main';
-import './styles.css';
+import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
+import './ModeratorStyles.css';
 
 const AttendanceTracking = () => {
     const [events, setEvents] = useState([]);
@@ -10,8 +10,8 @@ const AttendanceTracking = () => {
     const [cameraEnabled, setCameraEnabled] = useState(false);
     const [user, setUser] = useState(null);
 
-    const auth = getAuth(firebaseApp);
-    const db = getFirestore(firebaseApp);
+    const auth = getAuth(FIREBASE_APP);
+    const db = getFirestore(FIREBASE_APP);
 
     useEffect(() => {
         // Fetch User Details

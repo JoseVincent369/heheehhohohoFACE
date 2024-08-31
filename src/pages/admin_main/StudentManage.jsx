@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { getFirestore, collection, query, onSnapshot, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
 import './generalstyles.css';
 
@@ -7,6 +8,7 @@ const StudentManage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingStudent, setEditingStudent] = useState(null);
     const db = getFirestore();
+    const navigate = useNavigate(); // Initialize navigate for navigation
 
     useEffect(() => {
         // Fetch only users (exclude moderators)
@@ -64,6 +66,11 @@ const StudentManage = () => {
 
     return (
         <div className="student-manage">
+            {/* Back Button */}
+            <button className="back-button" onClick={() => navigate('/superadmin')}>
+                &lt; Back
+            </button>
+
             <h2>Manage Students</h2>
             <input
                 type="text"

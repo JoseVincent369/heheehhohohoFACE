@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import './generalstyles.css';
@@ -9,6 +10,8 @@ const AddOrganization = () => {
   const [currentOrg, setCurrentOrg] = useState({ name: "", id: null });
   const [editingOrgId, setEditingOrgId] = useState(null);
   const [searchTerm, setSearchTerm] = useState(""); // New state for search term
+
+  const navigate = useNavigate(); // Initialize navigate for navigation
 
   // Fetch the organizations list from Firestore on component mount
   useEffect(() => {
@@ -89,6 +92,11 @@ const AddOrganization = () => {
 
   return (
     <div className="admin-panel">
+      {/* Back Button */}
+      <button className="back-button" onClick={() => navigate('/superadmin')}>
+        &lt; Back
+      </button>
+
       <h2>{editingOrgId ? "Edit Organization" : "Add Organization"}</h2>
       <form onSubmit={handleSubmit}>
         <input
