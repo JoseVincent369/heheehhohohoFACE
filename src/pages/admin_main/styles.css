@@ -334,7 +334,9 @@ body {
     border-radius: 8px;
     width: 80%;
     max-width: 600px;
+    max-height: 80%;
     position: relative;
+    overflow-y: auto;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -351,6 +353,56 @@ body {
     color: #d32f2f;
 }
 
+/* Modal Header */
+.modal-content h2 {
+    margin: 0;
+    font-size: 28px;
+    color: #333;
+  }
+  
+  /* Modal Body */
+  .modal-content p {
+    margin: 10px 0;
+    font-size: 18px;
+    color: #555;
+  }
+  
+  .modal-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+  }
+  
+  .modal-content ul li {
+    font-size: 16px;
+    color: #555;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+  }
+  
+  .modal-content ul li:hover {
+    background: #f5f5f5;
+  }
+  
+  /* View All Button */
+  .view-all-button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .view-all-button:hover {
+    background-color: #0056b3;
+  }
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .sidebar {
@@ -431,3 +483,16 @@ body {
 .event-category li:hover {
     background-color: #b3e5fc;
 }
+
+
+.close-button {
+    position: absolute;
+    top: 10px; /* Adjust the top position if needed */
+    right: 10px; /* Aligns the button to the right */
+    font-size: 20px;
+    cursor: pointer;
+    color: #333;
+    background: none;
+    border: none;
+    outline: none;
+  }

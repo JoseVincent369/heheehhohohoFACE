@@ -1,251 +1,316 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert } from 'react-bootstrap';
-import { FIREBASE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main';
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main'; // Import FIREBASE_AUTH for authentication
+import {
+  collection,
+  getDocs,
+  addDoc,
+} from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-//import nodemailer from 'nodemailer'; // Assuming you're using nodemailer for sending emails
-import './localstyles.css';
+import { onAuthStateChanged } from 'firebase/auth'; // Import to track authentication state
+import './localstyles.css'; // Import the CSS file
 
-const CreateEvent = () => {
-  const [name, setName] = useState('');
+const EventCreation = () => {
+  const [eventName, setEventName] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [venue, setVenue] = useState('');
   const [organizations, setOrganizations] = useState([]);
+  const [selectedOrganizations, setSelectedOrganizations] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [courses, setCourses] = useState({});
   const [selectedCourses, setSelectedCourses] = useState([]);
+  const [majors, setMajors] = useState({});
   const [selectedMajors, setSelectedMajors] = useState([]);
+  const [yearLevels, setYearLevels] = useState([]);
   const [selectedYearLevels, setSelectedYearLevels] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [majors, setMajors] = useState([]);
-  const [yearLevels] = useState(["Year 1", "Year 2", "Year 3", "Year 4"]);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-    const navigate = useNavigate(); // Initialize useNavigate
+  const [currentUser, setCurrentUser] = useState(null);
+  const navigate = useNavigate();
 
+  // Fetch organizations
   useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const coursesSnapshot = await getDocs(query(collection(FIREBASE_DB, 'users'), where('courses', '!=', null)));
-        const majorsSnapshot = await getDocs(query(collection(FIREBASE_DB, 'users'), where('majors', '!=', null)));
-
-        const courseOptions = coursesSnapshot.docs.map(doc => doc.data().courses).flat();
-        const majorOptions = majorsSnapshot.docs.map(doc => doc.data().majors).flat();
-
-        setCourses([...new Set(courseOptions)]);
-        setMajors([...new Set(majorOptions)]);
-      } catch (error) {
-        console.error('Error fetching options:', error);
-        setError('Failed to load options.');
-      }
+    const fetchOrganizations = async () => {
+      const orgRef = collection(FIRESTORE_DB, 'organizations');
+      const orgSnapshot = await getDocs(orgRef);
+      const orgs = orgSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setOrganizations(orgs);
     };
 
-    fetchOptions();
+    fetchOrganizations();
   }, []);
 
-  const handleCheckboxChange = (setter) => (e) => {
-    const { value, checked } = e.target;
-    setter(prev =>
-      checked ? [...prev, value] : prev.filter(item => item !== value)
-    );
-  };
+  // Fetch departments, courses, and majors
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const deptRef = collection(FIRESTORE_DB, 'departments');
+      const deptSnapshot = await getDocs(deptRef);
+      const depts = deptSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setDepartments(depts);
 
-  const handleYearCheckboxChange = (e) => {
-    const { value, checked } = e.target;
-    if (value === "selectAllYears") {
-      setSelectedYearLevels(checked ? yearLevels : []);
+      const coursesMap = {};
+      const majorsMap = {};
+      for (const dept of deptSnapshot.docs) {
+        const courseRef = collection(dept.ref, 'courses');
+        const courseSnapshot = await getDocs(courseRef);
+        coursesMap[dept.id] = courseSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        for (const course of courseSnapshot.docs) {
+          const majorRef = collection(course.ref, 'majors');
+          const majorSnapshot = await getDocs(majorRef);
+          majorsMap[course.id] = majorSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+        }
+      }
+
+      setCourses(coursesMap);
+      setMajors(majorsMap);
+    };
+
+    fetchDepartments();
+  }, []);
+
+  // Fetch current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (user) {
+        setCurrentUser(user.uid);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleCheckboxChange = (value, setFunction, selectedValues) => {
+    if (selectedValues.includes(value)) {
+      setFunction(selectedValues.filter((item) => item !== value));
     } else {
-      setSelectedYearLevels(prev =>
-        checked ? [...prev, value] : prev.filter(level => level !== value)
-      );
+      setFunction([...selectedValues, value]);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSelectAll = (items, setFunction, isSelected) => {
+    setFunction(isSelected ? [] : items.map((item) => item.id));
+  };
+
+  const handleEventCreation = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
-    const user = FIREBASE_AUTH.currentUser;
-
-    if (!user) {
-      setError('User not authenticated.');
+    // Validate form inputs
+    if (!eventName || !startDate || !endDate || !venue) {
+      alert('Please fill in all required fields.');
       return;
     }
 
+    // Prepare data for Firestore
+    const newEvent = {
+      name: eventName,
+      description,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      venue,
+      organizations: selectedOrganizations,
+      yearLevels: selectedYearLevels,
+      selectedDepartments: selectedDepartments,
+      courses: selectedCourses,
+      majors: selectedMajors,
+      createdBy: currentUser || 'unknown', // Use currentUser if available, else fallback to 'unknown'
+    };
+
     try {
-      const eventRef = collection(FIREBASE_DB, 'events');
-      await addDoc(eventRef, {
-        name,
-        description,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        venue,
-        organizations,
-        courses: selectedCourses,
-        majors: selectedMajors,
-        yearLevels: selectedYearLevels,
-        createdBy: user.uid,
-      });
-
-      await sendEmails(); // Function to send emails
-
-      setSuccess('Event created successfully!');
-      setName('');
-      setDescription('');
-      setStartDate('');
-      setEndDate('');
-      setVenue('');
-      setOrganizations([]);
-      setSelectedCourses([]);
-      setSelectedMajors([]);
-      setSelectedYearLevels([]);
+      await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
+      alert('Event created successfully!');
+      navigate('/localadmin'); // Adjust the path to match your routing structure
     } catch (error) {
       console.error('Error creating event:', error);
-      setError('Failed to create event.');
+      alert('Failed to create event. Please try again.');
     }
   };
 
-  const sendEmails = async () => {
-    // Function to send emails
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-email-password',
-      },
-    });
-
-    const usersSnapshot = await getDocs(query(collection(FIREBASE_DB, 'users'), where('courses', 'in', selectedCourses)));
-    const users = usersSnapshot.docs.map(doc => doc.data());
-
-    const emails = users.map(user => user.email);
-
-    await Promise.all(emails.map(email =>
-      transporter.sendMail({
-        from: 'your-email@gmail.com',
-        to: email,
-        subject: 'New Event Created',
-        text: `A new event "${name}" has been created.`,
-      })
-    ));
-  };
-
   return (
-        <div className="create-event-container">
-          {/* Back Button */}
-          <button className="back-button" onClick={() => navigate('/localadmin')}>
-            &lt; Back
-          </button>
-      <h2>Create Event</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
-      <Form onSubmit={handleSubmit}>
-        <Form.Group controlId="formEventName">
-          <Form.Label>Event Name</Form.Label>
-          <Form.Control
+    <div className="event-creation">
+      <h1>Create Event</h1>
+      <form onSubmit={handleEventCreation} className="event-form">
+        <div className="form-group">
+          <label>Event Name:</label>
+          <input
             type="text"
-            placeholder="Enter event name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+            required
+            className="form-input"
           />
-        </Form.Group>
-        
-        <Form.Group controlId="formEventDescription">
-          <Form.Label>Description</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter event description"
+        </div>
+        <div className="form-group">
+          <label>Description:</label>
+          <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className="form-textarea"
           />
-        </Form.Group>
-        
-        <Form.Group controlId="formStartDate">
-          <Form.Label>Start Date</Form.Label>
-          <Form.Control
+        </div>
+        <div className="form-group">
+          <label>Start Date:</label>
+          <input
             type="datetime-local"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            required
+            className="form-input"
           />
-        </Form.Group>
-
-        <Form.Group controlId="formEndDate">
-          <Form.Label>End Date</Form.Label>
-          <Form.Control
+        </div>
+        <div className="form-group">
+          <label>End Date:</label>
+          <input
             type="datetime-local"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            required
+            className="form-input"
           />
-        </Form.Group>
-
-        <Form.Group controlId="formVenue">
-          <Form.Label>Venue</Form.Label>
-          <Form.Control
+        </div>
+        <div className="form-group">
+          <label>Venue:</label>
+          <input
             type="text"
-            placeholder="Enter venue"
             value={venue}
             onChange={(e) => setVenue(e.target.value)}
+            required
+            className="form-input"
           />
-        </Form.Group>
+        </div>
 
-        <Form.Group controlId="formCourses">
-          <Form.Label>Courses</Form.Label>
-          {courses.map(course => (
-            <Form.Check
-              key={course}
+        {/* Organizations Checkbox */}
+        <div className="form-group">
+          <label>Organizations:</label>
+          <div className="checkbox-group">
+            <input
               type="checkbox"
-              label={course}
-              value={course}
-              checked={selectedCourses.includes(course)}
-              onChange={handleCheckboxChange(setSelectedCourses)}
+              onChange={(e) =>
+                handleSelectAll(organizations, setSelectedOrganizations, selectedOrganizations.length > 0)
+              }
+              checked={selectedOrganizations.length === organizations.length}
             />
+            <span>Select All</span>
+          </div>
+          {organizations.map((org) => (
+            <div key={org.id} className="checkbox-group">
+              <input
+                type="checkbox"
+                value={org.id}
+                onChange={() => handleCheckboxChange(org.id, setSelectedOrganizations, selectedOrganizations)}
+                checked={selectedOrganizations.includes(org.id)}
+              />
+              <span>{org.name}</span>
+            </div>
           ))}
-        </Form.Group>
+        </div>
 
-        <Form.Group controlId="formMajors">
-          <Form.Label>Majors</Form.Label>
-          {majors.map(major => (
-            <Form.Check
-              key={major}
+        {/* Departments, Courses, Majors Checkbox */}
+        <div className="form-group">
+          <label>Departments:</label>
+          {departments.map((dept) => (
+            <div key={dept.id} className="checkbox-group">
+              <input
+                type="checkbox"
+                value={dept.id}
+                onChange={() => handleCheckboxChange(dept.id, setSelectedDepartments, selectedDepartments)}
+                checked={selectedDepartments.includes(dept.id)}
+              />
+              <span>{dept.name}</span>
+
+              {/* Nested Courses */}
+              {courses[dept.id] && selectedDepartments.includes(dept.id) && (
+                <div className="nested-checkbox-group">
+                  <label>Courses:</label>
+                  <div className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      onChange={(e) =>
+                        handleSelectAll(courses[dept.id], setSelectedCourses, selectedCourses.length > 0)
+                      }
+                      checked={selectedCourses.length === courses[dept.id].length}
+                    />
+                    <span>Select All</span>
+                  </div>
+                  {courses[dept.id].map((course) => (
+                    <div key={course.id} className="checkbox-group">
+                      <input
+                        type="checkbox"
+                        value={course.id}
+                        onChange={() => handleCheckboxChange(course.id, setSelectedCourses, selectedCourses)}
+                        checked={selectedCourses.includes(course.id)}
+                      />
+                      <span>{course.name}</span>
+
+                      {/* Nested Majors */}
+                      {majors[course.id] && selectedCourses.includes(course.id) && (
+                        <div className="nested-checkbox-group">
+                          <label>Majors:</label>
+                          {majors[course.id].map((major) => (
+                            <div key={major.id} className="checkbox-group">
+                              <input
+                                type="checkbox"
+                                value={major.id}
+                                onChange={() => handleCheckboxChange(major.id, setSelectedMajors, selectedMajors)}
+                                checked={selectedMajors.includes(major.id)}
+                              />
+                              <span>{major.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Year Levels Checkbox */}
+        <div className="form-group">
+          <label>Year Levels:</label>
+          <div className="checkbox-group">
+            <input
               type="checkbox"
-              label={major}
-              value={major}
-              checked={selectedMajors.includes(major)}
-              onChange={handleCheckboxChange(setSelectedMajors)}
+              onChange={(e) =>
+                handleSelectAll(yearLevels, setSelectedYearLevels, selectedYearLevels.length > 0)
+              }
+              checked={selectedYearLevels.length === yearLevels.length}
             />
+            <span>Select All</span>
+          </div>
+          {yearLevels.map((year) => (
+            <div key={year} className="checkbox-group">
+              <input
+                type="checkbox"
+                value={year}
+                onChange={() => handleCheckboxChange(year, setSelectedYearLevels, selectedYearLevels)}
+                checked={selectedYearLevels.includes(year)}
+              />
+              <span>{year}</span>
+            </div>
           ))}
-        </Form.Group>
+        </div>
 
-        <Form.Group controlId="formYearLevels">
-          <Form.Label>Year Levels</Form.Label>
-          <Form.Check
-            type="checkbox"
-            id="selectAllYears"
-            value="selectAllYears"
-            label="Select All"
-            checked={selectedYearLevels.length === yearLevels.length}
-            onChange={handleYearCheckboxChange}
-          />
-          {yearLevels.map((yearLevel, index) => (
-            <Form.Check
-              key={index}
-              type="checkbox"
-              id={`year-${index}`}
-              value={yearLevel}
-              label={yearLevel}
-              checked={selectedYearLevels.includes(yearLevel)}
-              onChange={handleYearCheckboxChange}
-            />
-          ))}
-        </Form.Group>
-
-        <Button variant="primary" type="submit">
-          Create Event
-        </Button>
-      </Form>
+        <button type="submit" className="submit-button">Create Event</button>
+      </form>
     </div>
   );
 };
 
-export default CreateEvent;
+export default EventCreation;

@@ -19,6 +19,7 @@ const SignUp = () => {
     major: "",
     schoolID: "",
     password: "",
+    organization: "", // Added organization
   });
 
   const [photos, setPhotos] = useState({
@@ -88,6 +89,7 @@ const SignUp = () => {
         age: formData.age,
         course: formData.course,
         major: formData.major,
+        organization: formData.organization, // Added organization
         schoolID: formData.schoolID,
         role: "user", // Default role
         photos: photoURLs, // Store the photo URLs in Firestore
@@ -154,13 +156,18 @@ const SignUp = () => {
         <Form.Group controlId="formYearLevel">
           <Form.Label>Year Level</Form.Label>
           <Form.Control
-            type="text"
-            placeholder="Enter year level"
+            as="select"
             name="yearLevel"
             value={formData.yearLevel}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="">Select year level</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </Form.Control>
         </Form.Group>
 
         {/* Email */}
@@ -210,6 +217,18 @@ const SignUp = () => {
             placeholder="Enter major"
             name="major"
             value={formData.major}
+            onChange={handleChange}
+          />
+        </Form.Group>
+
+        {/* Organization */}
+        <Form.Group controlId="formOrganization">
+          <Form.Label>Clubs</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Enter Clubs (optional)"
+            name="organization"
+            value={formData.organization}
             onChange={handleChange}
           />
         </Form.Group>

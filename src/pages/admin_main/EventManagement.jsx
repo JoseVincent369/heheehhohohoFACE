@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate } from 'react-router-dom'; 
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
-import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import './generalstyles.css';
 
 const EventManagement = () => {
@@ -12,27 +12,50 @@ const EventManagement = () => {
     endDate: "",
     venue: "",
     organizations: [],
-    year: []
+    year: [],
+    selectedDepartments: {}, // Correctly initialized
   });
 
   const [organizationsList, setOrganizationsList] = useState([]);
   const [yearLevels, setYearLevels] = useState(["Year 1", "Year 2", "Year 3", "Year 4"]);
-  
-  const navigate = useNavigate(); // Initialize navigate for navigation
+  const [departments, setDepartments] = useState({}); // Stores department, course, and major names
 
-  // Fetch organizations from Firestore on component mount
+  const navigate = useNavigate(); 
+
+  // Fetch organizations and departments from Firestore on component mount
   useEffect(() => {
-    const fetchOrganizations = async () => {
+    const fetchData = async () => {
       try {
-        const querySnapshot = await getDocs(collection(FIRESTORE_DB, "organizations"));
-        const orgs = querySnapshot.docs.map(doc => doc.data().name);
+        // Fetch organizations
+        const orgQuerySnapshot = await getDocs(collection(FIRESTORE_DB, "organizations"));
+        const orgs = orgQuerySnapshot.docs.map(doc => doc.data().name);
         setOrganizationsList(orgs);
+
+        // Fetch departments, courses, and majors
+        const deptQuerySnapshot = await getDocs(collection(FIRESTORE_DB, "departments"));
+        const departmentsData = {};
+
+        for (const doc of deptQuerySnapshot.docs) {
+          const deptName = doc.data().name;
+          const coursesQuerySnapshot = await getDocs(collection(doc.ref, "courses"));
+          const coursesData = {};
+
+          for (const courseDoc of coursesQuerySnapshot.docs) {
+            const courseName = courseDoc.data().name;
+            const majorsQuerySnapshot = await getDocs(collection(courseDoc.ref, "majors"));
+            const majors = majorsQuerySnapshot.docs.map(majorDoc => majorDoc.data().name);
+            coursesData[courseName] = majors;
+          }
+          departmentsData[deptName] = coursesData;
+        }
+
+        setDepartments(departmentsData);
       } catch (error) {
-        console.error("Error fetching organizations:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchOrganizations();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -91,11 +114,100 @@ const EventManagement = () => {
     }
   };
 
+  const handleDepartmentChange = (e) => {
+    const { value, checked } = e.target;
+    const [department] = value.split("|");
+    const { selectedDepartments } = eventData;
+
+    if (checked) {
+      setEventData({
+        ...eventData,
+        selectedDepartments: {
+          ...selectedDepartments,
+          [department]: {
+            ...(selectedDepartments[department] || {}),
+          },
+        },
+      });
+    } else {
+      const { [department]: removedDepartment, ...restDepartments } = selectedDepartments;
+      setEventData({
+        ...eventData,
+        selectedDepartments: restDepartments,
+      });
+    }
+  };
+
+  const handleCourseChange = (e) => {
+    const { value, checked } = e.target;
+    const [department, course] = value.split("|");
+    const { selectedDepartments } = eventData;
+
+    if (checked) {
+      setEventData({
+        ...eventData,
+        selectedDepartments: {
+          ...selectedDepartments,
+          [department]: {
+            ...(selectedDepartments[department] || {}),
+            [course]: selectedDepartments[department]?.[course] || [],
+          },
+        },
+      });
+    } else {
+      setEventData({
+        ...eventData,
+        selectedDepartments: {
+          ...selectedDepartments,
+          [department]: {
+            ...selectedDepartments[department],
+            [course]: [],
+          },
+        },
+      });
+    }
+  };
+
+  const handleMajorChange = (e) => {
+    const { value, checked } = e.target;
+    const [department, course, major] = value.split("|");
+    const { selectedDepartments } = eventData;
+
+    if (checked) {
+      setEventData({
+        ...eventData,
+        selectedDepartments: {
+          ...selectedDepartments,
+          [department]: {
+            ...selectedDepartments[department],
+            [course]: [
+              ...(selectedDepartments[department]?.[course] || []),
+              major,
+            ],
+          },
+        },
+      });
+    } else {
+      setEventData({
+        ...eventData,
+        selectedDepartments: {
+          ...selectedDepartments,
+          [department]: {
+            ...selectedDepartments[department],
+            [course]: (selectedDepartments[department]?.[course] || []).filter(m => m !== major),
+          },
+        },
+      });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await setDoc(doc(FIRESTORE_DB, "events", eventData.name), eventData);
+      // Use addDoc to automatically generate a document ID
+      await addDoc(collection(FIRESTORE_DB, "events"), eventData);
       alert('Event added successfully!');
+      navigate('/superadmin'); // Redirect to superadmin page after successful submission
     } catch (error) {
       console.error('Error adding event:', error);
       alert('Failed to add event. Please try again.');
@@ -198,7 +310,54 @@ const EventManagement = () => {
           ))}
         </div>
 
-        <button type="submit">Create Event</button>
+        {/* Department, Course, and Major Selection as Checkboxes */}
+        <div className="checkbox-group">
+          <label>Select Departments:</label>
+          {Object.keys(departments).map((department, deptIndex) => (
+            <div key={deptIndex}>
+              <div className="checkbox-item">
+                <input
+                  type="checkbox"
+                  id={`department-${deptIndex}`}
+                  value={department}
+                  onChange={handleDepartmentChange}
+                  checked={eventData.selectedDepartments[department] !== undefined}
+                />
+                <label htmlFor={`department-${deptIndex}`}>{department}</label>
+              </div>
+              {eventData.selectedDepartments[department] && Object.keys(departments[department]).map((course, courseIndex) => (
+                <div key={courseIndex} style={{ marginLeft: '20px' }}>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id={`course-${deptIndex}-${courseIndex}`}
+                      value={`${department}|${course}`}
+                      onChange={handleCourseChange}
+                      checked={eventData.selectedDepartments[department][course] !== undefined}
+                    />
+                    <label htmlFor={`course-${deptIndex}-${courseIndex}`}>{course}</label>
+                  </div>
+                  {eventData.selectedDepartments[department][course] && departments[department][course].map((major, majorIndex) => (
+                    <div key={majorIndex} style={{ marginLeft: '40px' }}>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id={`major-${deptIndex}-${courseIndex}-${majorIndex}`}
+                          value={`${department}|${course}|${major}`}
+                          onChange={handleMajorChange}
+                          checked={eventData.selectedDepartments[department][course].includes(major)}
+                        />
+                        <label htmlFor={`major-${deptIndex}-${courseIndex}-${majorIndex}`}>{major}</label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <button type="submit">Add Event</button>
       </form>
     </div>
   );

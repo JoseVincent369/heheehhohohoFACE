@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, onSnapshot, where } from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import Logout from '../Admin/Logout'; // Import Logout component
 import './styles.css'; // Ensure your styles are correctly set up
@@ -12,6 +12,10 @@ const AdminDashboard = () => {
   const [studentsCount, setStudentsCount] = useState(0);
   const [adminsCount, setAdminsCount] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showAllOngoing, setShowAllOngoing] = useState(false);
+  const [showAllToday, setShowAllToday] = useState(false);
+  const [showAllFuture, setShowAllFuture] = useState(false);
+  const [showAllEvents, setShowAllEvents] = useState(false);
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -68,32 +72,55 @@ const AdminDashboard = () => {
   };
 
   const handleEventClick = (event) => {
+    console.log('Selected Event:', event); // Check event structure
     setSelectedEvent(event);
   };
 
   const handleCloseModal = () => {
     setSelectedEvent(null);
+    setShowAllOngoing(false);
+    setShowAllToday(false);
+    setShowAllFuture(false);
+    setShowAllEvents(false);
   };
 
-  // Filter Events
-  const now = new Date();
-  const todayStart = new Date(now.setHours(0, 0, 0, 0));
-  const todayEnd = new Date(now.setHours(23, 59, 59, 999));
+  const showAllOngoingEvents = () => {
+    setShowAllOngoing(true);
+  };
 
+  const showAllTodayEvents = () => {
+    setShowAllToday(true);
+  };
+
+  const showAllFutureEvents = () => {
+    setShowAllFuture(true);
+  };
+
+  const showAllEventsModal = () => {
+    setShowAllEvents(true);
+  };
+
+  // Time-based filtering
+  const now = new Date();
+
+  // Filter Ongoing Events
   const ongoingEvents = events.filter(
     (event) => new Date(event.startDate) <= now && new Date(event.endDate) >= now
-  );
+  ).slice(0, 2); // Limit the number of displayed ongoing events
 
+  // Filter Today's Events
+  const todayStart = new Date(now.setHours(0, 0, 0, 0));
+  const todayEnd = new Date(now.setHours(23, 59, 59, 999));
   const todaysEvents = events.filter(
     (event) =>
       new Date(event.startDate) >= todayStart && new Date(event.startDate) <= todayEnd
-  );
+  ).slice(0, 2); // Limit the number of displayed today's events
 
-  const futureEvents = events.filter((event) => new Date(event.startDate) > now);
+  // Filter Future Events
+  const futureEvents = events.filter((event) => new Date(event.startDate) > now).slice(0, 2); // Limit the number of displayed future events
 
-  const currentEvents = events.filter(
-    (event) => new Date(event.startDate) <= now && new Date(event.endDate) >= now
-  );
+  // All Current Events
+  const currentEvents = events; // Fetch all current events without filtering based on time.
 
   return (
     <div className="admin-dashboard">
@@ -120,22 +147,35 @@ const AdminDashboard = () => {
             <li><a href="/admin/events">Event Registration</a></li>
             <li><a href="/admin/admins">Admin Management</a></li>
             <li><a href="/signup">Student Registration</a></li>
-            <li><a href="/admin/StudentManage">Student Manage</a></li>
             <li><a href="/admin/addOrg">Organization Register</a></li>
+            <li><a href="admin/department">Department</a></li>
+            <li><a href="/admin/StudentManage">Student Manage</a></li>
           </ul>
         </nav>
 
         <div className="content">
           <div className="event-stats">
-            <div className="stat ongoing-events">
-              <span>Events</span>
+            <div className="stat">
+              <span>Total Events</span>
               <div className="badge">{events.length}</div>
             </div>
-            <div className="stat students-attended">
+            <div className="stat">
+              <span>Ongoing Events</span>
+              <div className="badge">{ongoingEvents.length}</div>
+            </div>
+            <div className="stat">
+              <span>Today's Events</span>
+              <div className="badge">{todaysEvents.length}</div>
+            </div>
+            <div className="stat">
+              <span>Future Events</span>
+              <div className="badge">{futureEvents.length}</div>
+            </div>
+            <div className="stat">
               <span>Students Registered</span>
               <div className="badge">{studentsCount}</div>
             </div>
-            <div className="stat admins">
+            <div className="stat">
               <span>Admins</span>
               <div className="badge">{adminsCount}</div>
             </div>
@@ -152,6 +192,9 @@ const AdminDashboard = () => {
                       {event.name}
                     </li>
                   ))}
+                  {ongoingEvents.length > 2 && (
+                    <button onClick={showAllOngoingEvents}>View All</button>
+                  )}
                 </ul>
               </div>
               <div className="event-category">
@@ -162,6 +205,9 @@ const AdminDashboard = () => {
                       {event.name}
                     </li>
                   ))}
+                  {todaysEvents.length > 2 && (
+                    <button onClick={showAllTodayEvents}>View All</button>
+                  )}
                 </ul>
               </div>
               <div className="event-category">
@@ -172,10 +218,86 @@ const AdminDashboard = () => {
                       {event.name}
                     </li>
                   ))}
+                  {futureEvents.length > 2 && (
+                    <button onClick={showAllFutureEvents}>View All</button>
+                  )}
                 </ul>
               </div>
               <div className="event-category">
                 <h5>All Current Events</h5>
+                <ul>
+                  {currentEvents.slice(0, 2).map(event => (
+                    <li key={event.id} onClick={() => handleEventClick(event)}>
+                      {event.name}
+                    </li>
+                  ))}
+                  {currentEvents.length > 2 && (
+                    <button onClick={showAllEventsModal}>View All</button>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Modals for event details */}
+          {showAllOngoing && (
+            <div className="event-modal">
+              <div className="modal-content">
+                <span className="close-button" onClick={handleCloseModal}>&times;</span>
+                <h4>All Ongoing Events</h4>
+                <ul>
+                  {events.filter(
+                    (event) => new Date(event.startDate) <= now && new Date(event.endDate) >= now
+                  ).map(event => (
+                    <li key={event.id} onClick={() => handleEventClick(event)}>
+                      {event.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {showAllToday && (
+            <div className="event-modal">
+              <div className="modal-content">
+                <span className="close-button" onClick={handleCloseModal}>&times;</span>
+                <h4>All Today's Events</h4>
+                <ul>
+                  {events.filter(
+                    (event) =>
+                      new Date(event.startDate) >= todayStart && new Date(event.startDate) <= todayEnd
+                  ).map(event => (
+                    <li key={event.id} onClick={() => handleEventClick(event)}>
+                      {event.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {showAllFuture && (
+            <div className="event-modal">
+              <div className="modal-content">
+                <span className="close-button" onClick={handleCloseModal}>&times;</span>
+                <h4>All Future Events</h4>
+                <ul>
+                  {events.filter((event) => new Date(event.startDate) > now).map(event => (
+                    <li key={event.id} onClick={() => handleEventClick(event)}>
+                      {event.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {showAllEvents && (
+            <div className="event-modal">
+              <div className="modal-content">
+                <span className="close-button" onClick={handleCloseModal}>&times;</span>
+                <h4>All Current Events</h4>
                 <ul>
                   {currentEvents.map(event => (
                     <li key={event.id} onClick={() => handleEventClick(event)}>
@@ -185,43 +307,21 @@ const AdminDashboard = () => {
                 </ul>
               </div>
             </div>
-          </div>
+          )}
 
           {selectedEvent && (
             <div className="event-modal">
               <div className="modal-content">
-                <span className="close" onClick={handleCloseModal}>
-                  &times;
-                </span>
-                <h2>{selectedEvent.name}</h2>
-                <p>
-                  <strong>Description:</strong> {selectedEvent.description || 'N/A'}
-                </p>
-                <p>
-                  <strong>Start Date:</strong>{' '}
-                  {selectedEvent.startDate
-                    ? new Date(selectedEvent.startDate).toLocaleString()
-                    : 'N/A'}
-                </p>
-                <p>
-                  <strong>End Date:</strong>{' '}
-                  {selectedEvent.endDate
-                    ? new Date(selectedEvent.endDate).toLocaleString()
-                    : 'N/A'}
-                </p>
-                <p>
-                  <strong>Venue:</strong> {selectedEvent.venue || 'N/A'}
-                </p>
-                <p>
-                  <strong>Organizations:</strong>
-                </p>
-                <ul>
-                  {selectedEvent.organizations && selectedEvent.organizations.length > 0
-                    ? selectedEvent.organizations.map((org, index) => (
-                        <li key={index}>{org}</li>
-                      ))
-                    : 'N/A'}
-                </ul>
+                <span className="close-button" onClick={handleCloseModal}>&times;</span>
+                <h4>Event Details</h4>
+                <p><strong>Name:</strong> {selectedEvent.name}</p>
+                <p><strong>Description:</strong> {selectedEvent.description}</p>
+                <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate).toLocaleDateString()}</p>
+                <p><strong>End Date:</strong> {new Date(selectedEvent.endDate).toLocaleDateString()}</p>
+                <p><strong>Venue:</strong> {selectedEvent.venue}</p>
+                <p><strong>Organizations:</strong> {selectedEvent.organizations.join(', ')}</p>
+                <p><strong>Year Levels:</strong> {selectedEvent.year.join(', ')}</p>
+                <p><strong>Departments:</strong> {Object.keys(selectedEvent.selectedDepartments).join(', ')}</p>
               </div>
             </div>
           )}

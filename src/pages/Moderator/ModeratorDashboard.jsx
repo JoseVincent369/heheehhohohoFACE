@@ -1,197 +1,261 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, where, addDoc, setDoc, doc } from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
+import { getFirestore, collection, query, onSnapshot, where } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
-import './ModeratorStyles.css';
+import './moderatorstyles.css';
+import logo from '../../assets/images/nbsc logo.png'; // Ensure correct image path
+import Logout from '../Admin/Logout'; // Import Logout component
+import ProfileEdit from '../components/ProfileEdit';
 
 const ModeratorDashboard = () => {
-    const [user, setUser] = useState(null);
     const [events, setEvents] = useState([]);
-    const [organizations, setOrganizations] = useState([]);
-    const [yearLevels, setYearLevels] = useState([]);
-    const [selectedOrg, setSelectedOrg] = useState('');
-    const [selectedYearLevel, setSelectedYearLevel] = useState('');
-    const [eventName, setEventName] = useState('');
-    const [eventDescription, setEventDescription] = useState('');
-    const [eventStartDate, setEventStartDate] = useState('');
-    const [eventEndDate, setEventEndDate] = useState('');
-    const [cameraEnabled, setCameraEnabled] = useState(false);
+    const [pendingApprovals, setPendingApprovals] = useState([]);
+    const [officers, setOfficers] = useState([]);
+    const [todaysEvents, setTodaysEvents] = useState([]);
+    const [adminAssignedEvents, setAdminAssignedEvents] = useState([]);
+    const [user, setUser] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [showProfileEdit, setShowProfileEdit] = useState(false);
 
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
 
     useEffect(() => {
-        // Fetch User Details
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             setUser(currentUser);
+            setLoading(false);
         });
 
         return () => unsubscribe();
     }, [auth]);
 
     useEffect(() => {
-        // Fetch Organizations and Year Levels
-        const fetchOrganizationsAndYearLevels = async () => {
-            const orgsSnapshot = await getDocs(collection(db, 'organizations'));
-            const orgs = orgsSnapshot.docs.map(doc => doc.data().name);
-            setOrganizations(orgs);
+        if (!user || !user.organization) return;
 
-            const yearLevelsSnapshot = await getDocs(collection(db, 'yearLevels'));
-            const years = yearLevelsSnapshot.docs.map(doc => doc.data().level);
-            setYearLevels(years);
-        };
-
-        fetchOrganizationsAndYearLevels();
-    }, [db]);
-
-    const handleLogout = () => {
-        signOut(auth).catch((error) => {
-            console.error('Error logging out: ', error);
+        const fetchEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization));
+        const unsubscribeEvents = onSnapshot(fetchEvents, (querySnapshot) => {
+            const eventsData = [];
+            querySnapshot.forEach((doc) => {
+                eventsData.push({ id: doc.id, ...doc.data() });
+            });
+            setEvents(eventsData);
+        }, (error) => {
+            console.error('Error fetching events: ', error);
         });
+
+        return () => unsubscribeEvents();
+    }, [db, user]);
+
+    useEffect(() => {
+        if (!user || !user.organization) return;
+
+        const fetchPendingApprovals = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('status', '==', 'pending'));
+        const unsubscribePendingApprovals = onSnapshot(fetchPendingApprovals, (querySnapshot) => {
+            const pendingApprovalsData = [];
+            querySnapshot.forEach((doc) => {
+                pendingApprovalsData.push({ id: doc.id, ...doc.data() });
+            });
+            setPendingApprovals(pendingApprovalsData);
+        }, (error) => {
+            console.error('Error fetching pending approvals: ', error);
+        });
+
+        return () => unsubscribePendingApprovals();
+    }, [db, user]);
+
+    useEffect(() => {
+        if (!user || !user.organization) return;
+
+        const fetchOfficers = query(collection(db, 'users'), where('role', '==', 'officer'), where('organization', '==', user.organization));
+        const unsubscribeOfficers = onSnapshot(fetchOfficers, (querySnapshot) => {
+            const officersData = [];
+            querySnapshot.forEach((doc) => {
+                officersData.push({ id: doc.id, ...doc.data() });
+            });
+            setOfficers(officersData);
+        }, (error) => {
+            console.error('Error fetching officers: ', error);
+        });
+
+        return () => unsubscribeOfficers();
+    }, [db, user]);
+
+    useEffect(() => {
+        if (!user || !user.organization) return;
+
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const fetchTodaysEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('startDate', '<=', today), where('endDate', '>=', today));
+        const unsubscribeTodaysEvents = onSnapshot(fetchTodaysEvents, (querySnapshot) => {
+            const todaysEventsData = [];
+            querySnapshot.forEach((doc) => {
+                todaysEventsData.push({ id: doc.id, ...doc.data() });
+            });
+            setTodaysEvents(todaysEventsData);
+        }, (error) => {
+            console.error('Error fetching today\'s events: ', error);
+        });
+
+        return () => unsubscribeTodaysEvents();
+    }, [db, user]);
+
+    useEffect(() => {
+        if (!user || !user.organization) return;
+
+        // Fetch admin-assigned events based on the organization
+        const fetchAdminAssignedEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('createdByRole', '==', 'admin'));
+        const unsubscribeAdminAssignedEvents = onSnapshot(fetchAdminAssignedEvents, (querySnapshot) => {
+            const adminAssignedEventsData = [];
+            querySnapshot.forEach((doc) => {
+                adminAssignedEventsData.push({ id: doc.id, ...doc.data() });
+            });
+            setAdminAssignedEvents(adminAssignedEventsData);
+        }, (error) => {
+            console.error('Error fetching admin assigned events: ', error);
+        });
+
+        return () => unsubscribeAdminAssignedEvents();
+    }, [db, user]);
+
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
     };
 
-    const handleCreateEvent = async (e) => {
-        e.preventDefault();
-        try {
-            const eventData = {
-                name: eventName,
-                description: eventDescription,
-                startDate: eventStartDate,
-                endDate: eventEndDate,
-                organization: selectedOrg,
-                yearLevel: selectedYearLevel,
-                createdBy: user.uid,
-                attendees: [] // Initialize an empty array for attendees
-            };
-
-            const eventRef = await addDoc(collection(db, 'events'), eventData);
-            console.log('Event created with ID:', eventRef.id);
-
-            // Fetch users for attendance
-            const usersQuery = query(
-                collection(db, 'users'),
-                where('organization', '==', selectedOrg),
-                where('yearLevel', '==', selectedYearLevel)
-            );
-
-            const usersSnapshot = await getDocs(usersQuery);
-            const attendees = usersSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // Store the users for attendance tracking
-            await setDoc(doc(db, 'events', eventRef.id), { attendees }, { merge: true });
-
-            alert('Event created and attendees are set!');
-        } catch (error) {
-            console.error('Error creating event:', error);
-            alert(`Failed to create event: ${error.message}`);
-        }
+    const handleEventClick = (event) => {
+        setSelectedEvent(event);
     };
 
-    const handleStartAttendance = () => {
-        setCameraEnabled(true);
+    const handleCloseModal = () => {
+        setSelectedEvent(null);
     };
 
-    const handleStopAttendance = () => {
-        setCameraEnabled(false);
-        // Add code to process attendance data
+    const handleProfileEdit = () => {
+        setShowProfileEdit(true);
     };
+
+    const handleProfileEditClose = () => {
+        setShowProfileEdit(false);
+    };
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="moderator-dashboard">
             <header className="navbar">
-                <div className="logo">Moderator Dashboard</div>
+                <div className="logo-container">
+                    <img src={logo} alt="Logo" className="header-logo" />
+                    <div className="logo-text">E-Attend Attendance System</div>
+                </div>
                 <div className="user-info">
-                    <div className="user">{user ? user.displayName : 'Moderator'}</div>
-                    <button className="logout-btn" onClick={handleLogout}>Logout</button>
+                    <div className="profile-icon" onClick={handleProfileEdit}>
+                        <img
+                            src={user?.photoURL || 'path/to/default/profile-icon.png'}
+                            alt="Profile"
+                            className="profile-icon-image"
+                        />
+                    </div>
+                    <div className="moderator">{user ? user.displayName : 'Moderator'}</div>
+                    <Logout />
                 </div>
             </header>
 
             <div className="main-content">
-                <nav className={`sidebar`}>
+                <nav className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
                     <ul>
-                        <li><a href="/moderator/dashboard">Dashboard</a></li>
-                        <li><a href="/moderator/events">Event Management</a></li>
-                        <li><a href="/moderator/attendance">Attendance Tracking</a></li>
-                        <li><a href="/">Settings</a></li>
+                        <li><a href="/moderator">Dashboard</a></li>
+                        <li><a href="/moderator/create">Create Event</a></li>
+                        <li><a href="/moderator/track">Track Attendance</a></li>
                     </ul>
                 </nav>
 
                 <div className="content">
-                    <div className="stats">
-                        <div className="stat">
-                            <h4>Total Events</h4>
+                    <div className="event-stats">
+                        <div className="stat upcoming-events">
+                            <span>Upcoming Events</span>
                             <div className="badge">{events.length}</div>
                         </div>
-                        <div className="stat">
-                            <h4>Events Today</h4>
-                            <div className="badge">{events.filter(event => new Date(event.startDate).toDateString() === new Date().toDateString()).length}</div>
+                        <div className="stat pending-approvals">
+                            <span>Pending Approvals</span>
+                            <div className="badge">{pendingApprovals.length}</div>
+                        </div>
+                        <div className="stat active-officers">
+                            <span>Active Officers</span>
+                            <div className="badge">{officers.length}</div>
+                        </div>
+                        <div className="stat todays-events">
+                            <span>Today's Events</span>
+                            <div className="badge">{todaysEvents.length}</div>
                         </div>
                     </div>
 
-                    <div className="event-creation">
-                        <h2>Create Event</h2>
-                        <form onSubmit={handleCreateEvent}>
-                            <input
-                                type="text"
-                                placeholder="Event Name"
-                                value={eventName}
-                                onChange={(e) => setEventName(e.target.value)}
-                                required
-                            />
-                            <textarea
-                                placeholder="Event Description"
-                                value={eventDescription}
-                                onChange={(e) => setEventDescription(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="datetime-local"
-                                value={eventStartDate}
-                                onChange={(e) => setEventStartDate(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="datetime-local"
-                                value={eventEndDate}
-                                onChange={(e) => setEventEndDate(e.target.value)}
-                                required
-                            />
-                            <select value={selectedOrg} onChange={(e) => setSelectedOrg(e.target.value)} required>
-                                <option value="">Select Organization</option>
-                                {organizations.map((org, index) => (
-                                    <option key={index} value={org}>
-                                        {org}
-                                    </option>
-                                ))}
-                            </select>
-                            <select value={selectedYearLevel} onChange={(e) => setSelectedYearLevel(e.target.value)} required>
-                                <option value="">Select Year Level</option>
-                                {yearLevels.map((level, index) => (
-                                    <option key={index} value={level}>
-                                        {level}
-                                    </option>
-                                ))}
-                            </select>
-                            <button type="submit">Create Event</button>
-                        </form>
+                    <div className="events-section">
+                        <h4>Events Overview</h4>
+                        <div className="event-categories">
+                            <div className="event-category">
+                                <h5>Your Events</h5>
+                                <ul className="event-list">
+                                    {events.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="event-category">
+                                <h5>Today's Events</h5>
+                                <ul className="event-list">
+                                    {todaysEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="event-category">
+                                <h5>Admin-Assigned Events</h5>
+                                <ul className="event-list">
+                                    {adminAssignedEvents.map((event) => (
+                                        <li
+                                            className="event-item"
+                                            key={event.id}
+                                            onClick={() => handleEventClick(event)}
+                                        >
+                                            {event.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="attendance-section">
-                        <h2>Attendance</h2>
-                        {cameraEnabled ? (
-                            <div>
-                                <button onClick={handleStopAttendance}>Stop Attendance</button>
-                                {/* Add camera setup and facial recognition components here */}
+                    {selectedEvent && (
+                        <div className="event-modal">
+                            <div className="modal-content">
+                                <span className="close" onClick={handleCloseModal}>&times;</span>
+                                <h2>{selectedEvent.name}</h2>
+                                <p>{selectedEvent.description}</p>
+                                <p><strong>Start Date:</strong> {selectedEvent.startDate}</p>
+                                <p><strong>End Date:</strong> {selectedEvent.endDate}</p>
+                                <p><strong>Venue:</strong> {selectedEvent.venue}</p>
+                                <p><strong>Status:</strong> {selectedEvent.status}</p>
                             </div>
-                        ) : (
-                            <button onClick={handleStartAttendance}>Start Attendance</button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {showProfileEdit && <ProfileEdit onClose={handleProfileEditClose} />}
         </div>
     );
 };

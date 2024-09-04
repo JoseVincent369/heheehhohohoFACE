@@ -40,8 +40,8 @@ const LoginMain = () => {
           console.log('Navigating to /localadmin');
           navigate('/localadmin'); // Redirect to Local Admin Dashboard
         } else if (userRole === 'moderator') {
-          console.log('Navigating to /Moderator');
-          navigate('/Moderator'); // Redirect to Moderator Dashboard
+          console.log('Navigating to /moderator');
+          navigate('/moderator'); // Redirect to Moderator Dashboard
         } else {
           setError('Invalid role. Please contact the administrator.');
         }

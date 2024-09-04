@@ -5,17 +5,18 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import './generalstyles.css';
 
-
 const AdminManagement = () => {
     const [adminData, setAdminData] = useState({
         idNumber: "",
         email: "",
         password: "",
         fullName: "",
-        organization: ""
+        organization: "",
+        department: ""
     });
 
     const [organizationsList, setOrganizationsList] = useState([]);
+    const [departmentsList, setDepartmentsList] = useState([]);
     const [admins, setAdmins] = useState([]);
 
     const navigate = useNavigate(); // Initialize navigate for navigation
@@ -24,20 +25,28 @@ const AdminManagement = () => {
         // Fetch organizations from Firestore
         const fetchOrganizations = async () => {
             const orgsSnapshot = await getDocs(collection(FIRESTORE_DB, 'organizations'));
-            const orgs = orgsSnapshot.docs.map(doc => doc.data().name); // Retrieve the 'name' field from each document
+            const orgs = orgsSnapshot.docs.map(doc => doc.data().name);
             setOrganizationsList(orgs);
+        };
+
+        // Fetch departments from Firestore
+        const fetchDepartments = async () => {
+            const depsSnapshot = await getDocs(collection(FIRESTORE_DB, 'departments'));
+            const deps = depsSnapshot.docs.map(doc => doc.data().name);
+            setDepartmentsList(deps);
         };
 
         // Fetch admins from Firestore
         const fetchAdmins = async () => {
             const adminsSnapshot = await getDocs(collection(FIRESTORE_DB, 'users'));
             const admins = adminsSnapshot.docs
-                .filter(doc => doc.data().role === 'admin') // Filter only admins
+                .filter(doc => doc.data().role === 'admin')
                 .map(doc => ({ id: doc.id, ...doc.data() }));
             setAdmins(admins);
         };
 
         fetchOrganizations();
+        fetchDepartments();
         fetchAdmins();
     }, []);
 
@@ -60,14 +69,23 @@ const AdminManagement = () => {
 
             const userId = userCredential.user.uid;
 
-            // Set the document in Firestore with the UID as the document ID
-            await setDoc(doc(FIRESTORE_DB, "users", userId), {
+            // Prepare the data to be saved in Firestore
+            const adminDoc = {
                 idNumber: adminData.idNumber,
                 fullName: adminData.fullName,
                 email: adminData.email,
-                organization: adminData.organization,
                 role: "admin"
-            });
+            };
+
+            if (adminData.organization) {
+                adminDoc.organization = adminData.organization;
+            }
+            if (adminData.department) {
+                adminDoc.department = adminData.department;
+            }
+
+            // Set the document in Firestore with the UID as the document ID
+            await setDoc(doc(FIRESTORE_DB, "users", userId), adminDoc);
 
             alert('Admin account created successfully!');
 
@@ -97,11 +115,20 @@ const AdminManagement = () => {
                 <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
                 <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
                 
-                <select name="organization" onChange={handleChange} required>
-                    <option value="">Select Organization</option>
+                <select name="organization" onChange={handleChange}>
+                    <option value="">Select Organization (Optional)</option>
                     {organizationsList.map((org, index) => (
                         <option key={index} value={org}>
                             {org}
+                        </option>
+                    ))}
+                </select>
+
+                <select name="department" onChange={handleChange}>
+                    <option value="">Select Department (Optional)</option>
+                    {departmentsList.map((dept, index) => (
+                        <option key={index} value={dept}>
+                            {dept}
                         </option>
                     ))}
                 </select>
@@ -117,6 +144,7 @@ const AdminManagement = () => {
                         <th>Full Name</th>
                         <th>Email</th>
                         <th>Organization</th>
+                        <th>Department</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,7 +153,8 @@ const AdminManagement = () => {
                             <td>{admin.idNumber}</td>
                             <td>{admin.fullName}</td>
                             <td>{admin.email}</td>
-                            <td>{admin.organization}</td>
+                            <td>{admin.organization || 'N/A'}</td>
+                            <td>{admin.department || 'N/A'}</td>
                         </tr>
                     ))}
                 </tbody>

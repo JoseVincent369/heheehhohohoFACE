@@ -1,39 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, where } from 'firebase/firestore';
+import { getFirestore, collection, query, onSnapshot, where, doc, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import './localstyles.css';
-import logo from '../../assets/images/nbsc logo.png'; // Correct image import
+import logo from '../../assets/images/nbsc logo.png'; // Ensure correct image path
 import Logout from '../Admin/Logout'; // Import Logout component
+import ProfileEdit from '../components/ProfileEdit';
 
 const LocalAdminDashboard = () => {
     const [events, setEvents] = useState([]);
     const [students, setStudents] = useState([]);
     const [organizations, setOrganizations] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [courses, setCourses] = useState([]);
+    const [majors, setMajors] = useState([]);
     const [user, setUser] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showProfileEdit, setShowProfileEdit] = useState(false);
 
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
 
     useEffect(() => {
-        // Fetch User Details
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             setUser(currentUser);
-            setLoading(false); // Set loading to false after user is fetched
+            setLoading(false);
         });
 
         return () => unsubscribe();
     }, [auth]);
 
     useEffect(() => {
-        if (!user) return; // Exit if no user is logged in
+        if (!user) return;
 
-        // Fetch Events
-        const q = query(collection(db, 'events'), where('createdBy', '==', user.uid));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const fetchEvents = query(collection(db, 'events'), where('createdBy', '==', user.uid));
+        const unsubscribeEvents = onSnapshot(fetchEvents, (querySnapshot) => {
             const eventsData = [];
             querySnapshot.forEach((doc) => {
                 eventsData.push({ id: doc.id, ...doc.data() });
@@ -43,15 +46,14 @@ const LocalAdminDashboard = () => {
             console.error('Error fetching events: ', error);
         });
 
-        return () => unsubscribe();
+        return () => unsubscribeEvents();
     }, [db, user]);
 
     useEffect(() => {
-        if (!user) return; // Exit if no user is logged in
+        if (!user) return;
 
-        // Fetch Students related to events
-        const q = query(collection(db, 'users'), where('role', '==', 'student'));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const fetchStudents = query(collection(db, 'users'), where('role', '==', 'student'));
+        const unsubscribeStudents = onSnapshot(fetchStudents, (querySnapshot) => {
             const studentsData = [];
             querySnapshot.forEach((doc) => {
                 studentsData.push({ id: doc.id, ...doc.data() });
@@ -61,15 +63,14 @@ const LocalAdminDashboard = () => {
             console.error('Error fetching students: ', error);
         });
 
-        return () => unsubscribe();
+        return () => unsubscribeStudents();
     }, [db, user]);
 
     useEffect(() => {
-        if (!user) return; // Exit if no user is logged in
+        if (!user) return;
 
-        // Fetch Organizations related to events
-        const q = query(collection(db, 'users'), where('organization', '!=', ''));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const fetchOrganizations = query(collection(db, 'users'), where('organization', '!=', ''));
+        const unsubscribeOrganizations = onSnapshot(fetchOrganizations, (querySnapshot) => {
             const organizationsData = new Set();
             querySnapshot.forEach((doc) => {
                 organizationsData.add(doc.data().organization);
@@ -79,8 +80,56 @@ const LocalAdminDashboard = () => {
             console.error('Error fetching organizations: ', error);
         });
 
-        return () => unsubscribe();
+        return () => unsubscribeOrganizations();
     }, [db, user]);
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            const departmentsQuery = collection(db, 'departments');
+            const querySnapshot = await getDocs(departmentsQuery);
+            const departmentsData = [];
+            querySnapshot.forEach((doc) => {
+                departmentsData.push({ id: doc.id, ...doc.data() });
+            });
+            setDepartments(departmentsData);
+        };
+
+        fetchDepartments();
+    }, [db]);
+
+    useEffect(() => {
+        if (!selectedEvent) return;
+
+        const fetchCourses = async () => {
+            const departmentRef = doc(db, 'departments', selectedEvent.departmentId);
+            const coursesQuery = collection(departmentRef, 'courses');
+            const querySnapshot = await getDocs(coursesQuery);
+            const coursesData = [];
+            querySnapshot.forEach((doc) => {
+                coursesData.push({ id: doc.id, ...doc.data() });
+            });
+            setCourses(coursesData);
+        };
+
+        fetchCourses();
+    }, [db, selectedEvent]);
+
+    useEffect(() => {
+        if (!selectedEvent) return;
+
+        const fetchMajors = async () => {
+            const courseRef = doc(db, 'departments', selectedEvent.departmentId, 'courses', selectedEvent.courseId);
+            const majorsQuery = collection(courseRef, 'majors');
+            const querySnapshot = await getDocs(majorsQuery);
+            const majorsData = [];
+            querySnapshot.forEach((doc) => {
+                majorsData.push({ id: doc.id, ...doc.data() });
+            });
+            setMajors(majorsData);
+        };
+
+        fetchMajors();
+    }, [db, selectedEvent]);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -94,7 +143,14 @@ const LocalAdminDashboard = () => {
         setSelectedEvent(null);
     };
 
-    // Display a loading message while user data is being fetched
+    const handleProfileEdit = () => {
+        setShowProfileEdit(true);
+    };
+
+    const handleProfileEditClose = () => {
+        setShowProfileEdit(false);
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -103,16 +159,18 @@ const LocalAdminDashboard = () => {
         <div className="admin-dashboard">
             <header className="navbar">
                 <div className="logo-container">
-                    <img
-                        src={logo} // Use the imported image
-                        alt="Logo"
-                        className="header-logo"
-                    />
+                    <img src={logo} alt="Logo" className="header-logo" />
                     <div className="logo-text">E-Attend Attendance System</div>
                 </div>
                 <div className="user-info">
+                    <div className="profile-icon" onClick={handleProfileEdit}>
+                        <img
+                            src={user?.photoURL || 'path/to/default/profile-icon.png'}
+                            alt="Profile"
+                            className="profile-icon-image"
+                        />
+                    </div>
                     <div className="admin">{user ? user.displayName : 'Admin'}</div>
-                    {/* Use the Logout component */}
                     <Logout />
                 </div>
             </header>
@@ -122,7 +180,7 @@ const LocalAdminDashboard = () => {
                     <ul>
                         <li><a href="/localadmin">Dashboard</a></li>
                         <li><a href="/local/create">Manage Events</a></li>
-                        <li><a href="/local/students">Manage Students</a></li>
+                        <li><a href="/local/createMod">Create Moderator </a></li>
                         <li><a href="/local/organizations">Manage Organizations</a></li>
                     </ul>
                 </nav>
@@ -165,42 +223,51 @@ const LocalAdminDashboard = () => {
 
                     {selectedEvent && (
                         <div className="event-modal">
-                            <div className="modal-content">
-                                <span className="close" onClick={handleCloseModal}>
+                            <div className="event-modal-content">
+                                <span className="event-modal-close" onClick={handleCloseModal}>
                                     &times;
                                 </span>
                                 <h2>{selectedEvent.name}</h2>
-                                <p>
-                                    <strong>Description:</strong>{' '}
-                                    {selectedEvent.description || 'N/A'}
+                                <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
+                                <p><strong>Start Date:</strong> {selectedEvent.startDate
+                                    ? new Date(selectedEvent.startDate.toDate()).toLocaleString()
+                                    : 'N/A'}
                                 </p>
-                                <p>
-                                    <strong>Start Date:</strong>{' '}
-                                    {selectedEvent.startDate
-                                        ? new Date(selectedEvent.startDate.toDate()).toLocaleString()
-                                        : 'N/A'}
+                                <p><strong>End Date:</strong> {selectedEvent.endDate
+                                    ? new Date(selectedEvent.endDate.toDate()).toLocaleString()
+                                    : 'N/A'}
                                 </p>
-                                <p>
-                                    <strong>End Date:</strong>{' '}
-                                    {selectedEvent.endDate
-                                        ? new Date(selectedEvent.endDate.toDate()).toLocaleString()
-                                        : 'N/A'}
-                                </p>
-                                <p>
-                                    <strong>Venue:</strong>{' '}
-                                    {selectedEvent.venue || 'N/A'}
-                                </p>
+                                <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
                                 <p><strong>Organizations:</strong></p>
                                 <ul>
-                                    {selectedEvent.organizations &&
-                                        selectedEvent.organizations.length > 0
+                                    {selectedEvent.organizations && selectedEvent.organizations.length > 0
                                         ? selectedEvent.organizations.map((org, index) => (
-                                              <li key={index}>{org}</li>
-                                          ))
+                                            <li key={index}>{org}</li>
+                                        ))
                                         : 'N/A'}
+                                </ul>
+                                <p><strong>Department:</strong> {departments.find(dep => dep.id === selectedEvent.departmentId)?.name || 'N/A'}</p>
+                                <p><strong>Courses:</strong></p>
+                                <ul>
+                                    {courses.map((course) => (
+                                        <li key={course.id}>{course.name}</li>
+                                    ))}
+                                </ul>
+                                <p><strong>Majors:</strong></p>
+                                <ul>
+                                    {majors.map((major) => (
+                                        <li key={major.id}>{major.name}</li>
+                                    ))}
                                 </ul>
                             </div>
                         </div>
+                    )}
+
+                    {showProfileEdit && (
+                        <ProfileEdit
+                            user={user}
+                            onClose={handleProfileEditClose}
+                        />
                     )}
                 </div>
             </div>

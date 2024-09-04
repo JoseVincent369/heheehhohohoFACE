@@ -16,13 +16,18 @@ import EventCreation from './pages/Admin/EventCreation'
 import OrganizationManagement from './pages/Admin/OrganizationManagement'
 import Logout from './pages/Admin/Logout';
 import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin'
-
+import Department from './pages/admin_main/Department'
+import OfficerDashboard from './pages/Moderator/OfficerDashboard';
+import CreateModerator from './pages/Admin/CreateModerator';
 
 function App() {
   return (
     <Router>
       <div>
         <Routes>
+        <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
+
+
           <Route path="/" element={<Login_main />} />
           <Route path="/home" element={<Home_main />} />
           <Route path="/signup" element={<SignUp />} />
@@ -31,14 +36,18 @@ function App() {
         <Route path="/admin/admins" element={<AdminManagement />} />
         <Route path="/admin/addOrg" element={<AddOrganization />} />
         <Route path="/admin/StudentManage" element={<StudentManage />} />
-        <Route path="/Moderator" element={<ModeratorDashboard />} />
+        <Route path="/admin/department" element={<Department />} />
+        <Route path="/moderator" element={<ModeratorDashboard />} />
         <Route path="/moderator/attendance" element={<AttendanceTracking />} />
         <Route path="/moderator/events" element={<EventManage />} />
+        <Route path="/moderator/officers" element={<OfficerDashboard />} />
         <Route path="/localadmin" element={<LocalAdmin />} />
         <Route path="/local/create" element={<EventCreation />} />
         <Route path="/local/Org" element={<OrganizationManagement />} />
+        <Route path="/local/createMod" element={<CreateModerator />} />
         <Route path="/logout" element={<Logout />} />
-        <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
+
+
       
         </Routes> 
       </div>

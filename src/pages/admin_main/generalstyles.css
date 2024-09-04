@@ -160,10 +160,18 @@ button.delete:hover {
 }
 
 .login-container h2 {
-    color: black;
-    font-size: 2rem;
-    border-bottom: 4px solid rgba(0, 0, 0, 0.5);
-    margin: 50px;
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+    width: 400px;
+ /* border: 1px solid black; */
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    background-color:white;
+    box-shadow: blue;
+    border-radius: 25px;
+    color:black;
 }
 
 .login-container .form-control {
@@ -490,4 +498,88 @@ max-width: 100%;
     border-color: #007bff;
     outline: none;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+
+
+
+/* depmartment  */
+.container {
+    padding: 20px;
+    width: 1000px;
+    height: 600px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+  }
+  
+  .step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .step {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+  
+  .step.active {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .step-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .step-navigation button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .step-navigation button:disabled {
+    background-color: #ccc;
+  }
+  
+  .step-content {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+  }
+  
+
+  /* src/components/Modal.css */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+    width: 300px;
+}
+
+.modal-content button {
+    margin-top: 10px;
 }

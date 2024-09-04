@@ -4,7 +4,7 @@ import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebas
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import './generalstyles.css';
+import './localstyles.css';
 
 const CreateModerator = () => {
   const [moderatorData, setModeratorData] = useState({
@@ -24,11 +24,10 @@ const CreateModerator = () => {
 
   const navigate = useNavigate();
 
-  // Check authentication and set the current admin
   useEffect(() => {
     const checkAuth = onAuthStateChanged(FIREBASE_AUTH, (user) => {
       if (user) {
-        setCurrentAdmin(user); // Set the current admin user
+        setCurrentAdmin(user);
       } else {
         navigate('/');
       }
@@ -37,19 +36,7 @@ const CreateModerator = () => {
     return () => checkAuth();
   }, [navigate]);
 
-  // Fetch organizations, departments, and moderators created by the current admin
   useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        const orgsSnapshot = await getDocs(collection(FIRESTORE_DB, 'organizations'));
-        const orgs = orgsSnapshot.docs.map((doc) => doc.data().name);
-        setOrganizationsList(orgs);
-      } catch (error) {
-        console.error('Error fetching organizations:', error);
-        setError(`Failed to fetch organizations: ${error.message}`);
-      }
-    };
-
     const fetchDepartments = async () => {
       try {
         const depsSnapshot = await getDocs(collection(FIRESTORE_DB, 'departments'));
@@ -64,16 +51,25 @@ const CreateModerator = () => {
     const fetchModerators = async () => {
       if (!currentAdmin) return;
       try {
+        console.log('Fetching moderators for admin UID:', currentAdmin.uid);
+
         const moderatorsQuery = query(
           collection(FIRESTORE_DB, 'users'),
           where('role', '==', 'moderator'),
           where('createdBy', '==', currentAdmin.uid)
         );
+
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
+
+        console.log('Moderators Snapshot:', moderatorsSnapshot.docs);
+
         const moderatorsList = moderatorsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+
+        console.log('Moderators List:', moderatorsList);
+
         setModerators(moderatorsList);
       } catch (error) {
         console.error('Error fetching moderators:', error);
@@ -81,7 +77,6 @@ const CreateModerator = () => {
       }
     };
 
-    fetchOrganizations();
     fetchDepartments();
     fetchModerators();
   }, [currentAdmin]);
@@ -105,6 +100,11 @@ const CreateModerator = () => {
     }
 
     try {
+      if (!currentAdmin) {
+        setError('User not authenticated.');
+        return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(
         FIREBASE_AUTH,
         moderatorData.email,
@@ -124,7 +124,7 @@ const CreateModerator = () => {
         organization: moderatorData.organization,
         department: moderatorData.department,
         photoURL: url,
-        createdBy: FIREBASE_AUTH.currentUser.uid, // Associate with the admin who created the moderator
+        createdBy: currentAdmin.uid,
       };
 
       await setDoc(doc(FIRESTORE_DB, 'users', uid), moderatorDoc);
@@ -141,8 +141,7 @@ const CreateModerator = () => {
       setPhoto(null);
       setError('');
 
-      // Fetch updated list of moderators for the current admin
-      fetchModerators();
+      await fetchModerators(); 
     } catch (error) {
       console.error('Error creating moderator:', error);
       setError(`Failed to create moderator account: ${error.message}`);
