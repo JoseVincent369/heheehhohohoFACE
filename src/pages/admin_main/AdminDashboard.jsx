@@ -75,6 +75,8 @@ const AdminDashboard = () => {
     console.log('Selected Event:', event); // Check event structure
     setSelectedEvent(event);
   };
+  
+  
 
   const handleCloseModal = () => {
     setSelectedEvent(null);
@@ -155,27 +157,15 @@ const AdminDashboard = () => {
 
         <div className="content">
           <div className="event-stats">
-            <div className="stat">
-              <span>Total Events</span>
+            <div className="stat ongoing-events">
+              <span>Events</span>
               <div className="badge">{events.length}</div>
             </div>
-            <div className="stat">
-              <span>Ongoing Events</span>
-              <div className="badge">{ongoingEvents.length}</div>
-            </div>
-            <div className="stat">
-              <span>Today's Events</span>
-              <div className="badge">{todaysEvents.length}</div>
-            </div>
-            <div className="stat">
-              <span>Future Events</span>
-              <div className="badge">{futureEvents.length}</div>
-            </div>
-            <div className="stat">
+            <div className="stat students-attended">
               <span>Students Registered</span>
               <div className="badge">{studentsCount}</div>
             </div>
-            <div className="stat">
+            <div className="stat admins">
               <span>Admins</span>
               <div className="badge">{adminsCount}</div>
             </div>
@@ -239,12 +229,14 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Modals for event details */}
+          {/* Modal to show all ongoing events */}
           {showAllOngoing && (
             <div className="event-modal">
               <div className="modal-content">
-                <span className="close-button" onClick={handleCloseModal}>&times;</span>
-                <h4>All Ongoing Events</h4>
+                <span className="close" onClick={handleCloseModal}>
+                  &times;
+                </span>
+                <h2>All Ongoing Events</h2>
                 <ul>
                   {events.filter(
                     (event) => new Date(event.startDate) <= now && new Date(event.endDate) >= now
@@ -258,11 +250,14 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* Modal to show all today's events */}
           {showAllToday && (
             <div className="event-modal">
               <div className="modal-content">
-                <span className="close-button" onClick={handleCloseModal}>&times;</span>
-                <h4>All Today's Events</h4>
+                <span className="close" onClick={handleCloseModal}>
+                  &times;
+                </span>
+                <h2>All Today's Events</h2>
                 <ul>
                   {events.filter(
                     (event) =>
@@ -277,11 +272,14 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* Modal to show all future events */}
           {showAllFuture && (
             <div className="event-modal">
               <div className="modal-content">
-                <span className="close-button" onClick={handleCloseModal}>&times;</span>
-                <h4>All Future Events</h4>
+                <span className="close" onClick={handleCloseModal}>
+                  &times;
+                </span>
+                <h2>All Future Events</h2>
                 <ul>
                   {events.filter((event) => new Date(event.startDate) > now).map(event => (
                     <li key={event.id} onClick={() => handleEventClick(event)}>
@@ -293,11 +291,14 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* Modal to show all current events */}
           {showAllEvents && (
             <div className="event-modal">
               <div className="modal-content">
-                <span className="close-button" onClick={handleCloseModal}>&times;</span>
-                <h4>All Current Events</h4>
+                <span className="close" onClick={handleCloseModal}>
+                  &times;
+                </span>
+                <h2>All Current Events</h2>
                 <ul>
                   {currentEvents.map(event => (
                     <li key={event.id} onClick={() => handleEventClick(event)}>
@@ -309,22 +310,53 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* Event details modal */}
           {selectedEvent && (
-            <div className="event-modal">
-              <div className="modal-content">
-                <span className="close-button" onClick={handleCloseModal}>&times;</span>
-                <h4>Event Details</h4>
-                <p><strong>Name:</strong> {selectedEvent.name}</p>
-                <p><strong>Description:</strong> {selectedEvent.description}</p>
-                <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate).toLocaleDateString()}</p>
-                <p><strong>End Date:</strong> {new Date(selectedEvent.endDate).toLocaleDateString()}</p>
-                <p><strong>Venue:</strong> {selectedEvent.venue}</p>
-                <p><strong>Organizations:</strong> {selectedEvent.organizations.join(', ')}</p>
-                <p><strong>Year Levels:</strong> {selectedEvent.year.join(', ')}</p>
-                <p><strong>Departments:</strong> {Object.keys(selectedEvent.selectedDepartments).join(', ')}</p>
-              </div>
-            </div>
-          )}
+  <div className="event-modal">
+    <div className="modal-content">
+      <span className="close" onClick={handleCloseModal}>
+        &times;
+      </span>
+      <h2>{selectedEvent.name || 'Event Name Unavailable'}</h2>
+      <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate || '').toLocaleDateString() || 'Date Unavailable'}</p>
+      <p><strong>End Date:</strong> {new Date(selectedEvent.endDate || '').toLocaleDateString() || 'Date Unavailable'}</p>
+      <p><strong>Description:</strong> {selectedEvent.description || 'Description Unavailable'}</p>
+      <p><strong>Venue:</strong> {selectedEvent.venue || 'Venue Unavailable'}</p>
+      <p><strong>Organizations:</strong> {selectedEvent.organizations?.length ? selectedEvent.organizations.join(', ') : 'No Organizations'}</p>
+      <p><strong>Year Levels:</strong> {selectedEvent.year?.length ? selectedEvent.year.join(', ') : 'No Year Levels'}</p>
+      <p><strong>Selected Departments:</strong></p>
+      {Object.keys(selectedEvent.selectedDepartments || {}).length ? (
+        Object.keys(selectedEvent.selectedDepartments).map(department => (
+          <div key={department}>
+            <h4>{department}</h4>
+            {Object.keys(selectedEvent.selectedDepartments[department] || {}).length ? (
+              Object.keys(selectedEvent.selectedDepartments[department]).map(course => (
+                <div key={course}>
+                  <h5>{course}</h5>
+                  {selectedEvent.selectedDepartments[department][course].length ? (
+                    <ul>
+                      {selectedEvent.selectedDepartments[department][course].map(major => (
+                        <li key={major}>{major}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No Majors</p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p>No Courses</p>
+            )}
+          </div>
+        ))
+      ) : (
+        <p>No Departments</p>
+      )}
+    </div>
+  </div>
+)}
+
+
         </div>
       </div>
     </div>

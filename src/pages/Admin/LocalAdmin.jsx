@@ -67,21 +67,18 @@ const LocalAdminDashboard = () => {
     }, [db, user]);
 
     useEffect(() => {
-        if (!user) return;
-
-        const fetchOrganizations = query(collection(db, 'users'), where('organization', '!=', ''));
-        const unsubscribeOrganizations = onSnapshot(fetchOrganizations, (querySnapshot) => {
-            const organizationsData = new Set();
+        const fetchOrganizations = async () => {
+            const organizationsQuery = collection(db, 'organizations');
+            const querySnapshot = await getDocs(organizationsQuery);
+            const organizationsData = [];
             querySnapshot.forEach((doc) => {
-                organizationsData.add(doc.data().organization);
+                organizationsData.push({ id: doc.id, ...doc.data() });
             });
-            setOrganizations(Array.from(organizationsData));
-        }, (error) => {
-            console.error('Error fetching organizations: ', error);
-        });
+            setOrganizations(organizationsData);
+        };
 
-        return () => unsubscribeOrganizations();
-    }, [db, user]);
+        fetchOrganizations();
+    }, [db]);
 
     useEffect(() => {
         const fetchDepartments = async () => {
@@ -89,47 +86,82 @@ const LocalAdminDashboard = () => {
             const querySnapshot = await getDocs(departmentsQuery);
             const departmentsData = [];
             querySnapshot.forEach((doc) => {
-                departmentsData.push({ id: doc.id, ...doc.data() });
+                departmentsData.push({ id: doc.id, name: doc.data().name }); // Fetch the 'name' field
             });
             setDepartments(departmentsData);
         };
-
+    
         fetchDepartments();
     }, [db]);
 
     useEffect(() => {
-        if (!selectedEvent) return;
+        // Ensure that the selected event has departments and fetch courses accordingly
+        if (!selectedEvent || !selectedEvent.selectedDepartments || selectedEvent.selectedDepartments.length === 0) return;
 
         const fetchCourses = async () => {
-            const departmentRef = doc(db, 'departments', selectedEvent.departmentId);
-            const coursesQuery = collection(departmentRef, 'courses');
-            const querySnapshot = await getDocs(coursesQuery);
-            const coursesData = [];
-            querySnapshot.forEach((doc) => {
-                coursesData.push({ id: doc.id, ...doc.data() });
-            });
-            setCourses(coursesData);
+            try {
+                // Fetch courses from the first selected department (for simplicity, you can extend this)
+                const departmentId = selectedEvent.selectedDepartments[0];
+                const departmentRef = doc(db, 'departments', departmentId);
+                const coursesQuery = collection(departmentRef, 'courses');
+                const querySnapshot = await getDocs(coursesQuery);
+                const coursesData = [];
+                querySnapshot.forEach((doc) => {
+                    coursesData.push({ id: doc.id, ...doc.data() });
+                });
+                setCourses(coursesData);
+            } catch (error) {
+                console.error('Error fetching courses: ', error);
+            }
         };
 
         fetchCourses();
     }, [db, selectedEvent]);
 
     useEffect(() => {
-        if (!selectedEvent) return;
-
+        // Ensure that the selected event has selectedDepartments to fetch majors accordingly
+        if (!selectedEvent || !selectedEvent.selectedDepartments || selectedEvent.selectedDepartments.length === 0) {
+            console.log("No departments found in the selected event.");
+            return;
+        }
+    
         const fetchMajors = async () => {
-            const courseRef = doc(db, 'departments', selectedEvent.departmentId, 'courses', selectedEvent.courseId);
-            const majorsQuery = collection(courseRef, 'majors');
-            const querySnapshot = await getDocs(majorsQuery);
-            const majorsData = [];
-            querySnapshot.forEach((doc) => {
-                majorsData.push({ id: doc.id, ...doc.data() });
-            });
-            setMajors(majorsData);
+            try {
+                const majorsData = [];
+    
+                // Iterate over each selected department to fetch majors
+                for (const departmentId of selectedEvent.selectedDepartments) {
+                    const departmentRef = doc(db, 'departments', departmentId);
+                    const coursesQuery = collection(departmentRef, 'courses');
+                    const coursesSnapshot = await getDocs(coursesQuery);
+    
+                    // For each course in the department, fetch majors
+                    for (const courseDoc of coursesSnapshot.docs) {
+                        const courseRef = doc(departmentRef, 'courses', courseDoc.id);
+                        const majorsQuery = collection(courseRef, 'majors');
+                        const majorsSnapshot = await getDocs(majorsQuery);
+    
+                        majorsSnapshot.forEach((doc) => {
+                            majorsData.push({ id: doc.id, name: doc.data().name || 'Unknown Major' });
+                        });
+                    }
+                }
+    
+                if (majorsData.length === 0) {
+                    console.log('No majors found for the selected departments.');
+                }
+    
+                setMajors(majorsData);
+            } catch (error) {
+                console.error('Error fetching majors: ', error);
+            }
         };
-
+    
         fetchMajors();
     }, [db, selectedEvent]);
+    
+    
+
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -137,7 +169,28 @@ const LocalAdminDashboard = () => {
 
     const handleEventClick = (event) => {
         setSelectedEvent(event);
+        if (event.courseId) {
+            // Trigger fetching majors if courseId exists
+            fetchMajorsForEvent(event.courseId);
+        }
     };
+    
+    const fetchMajorsForEvent = async (courseId) => {
+        try {
+            const departmentId = selectedEvent.selectedDepartments[0];
+            const courseRef = doc(db, 'departments', departmentId, 'courses', courseId);
+            const majorsQuery = collection(courseRef, 'majors');
+            const querySnapshot = await getDocs(majorsQuery);
+            const majorsData = [];
+            querySnapshot.forEach((doc) => {
+                majorsData.push({ id: doc.id, name: doc.data().name });
+            });
+            setMajors(majorsData);
+        } catch (error) {
+            console.error('Error fetching majors:', error);
+        }
+    };
+    
 
     const handleCloseModal = () => {
         setSelectedEvent(null);
@@ -180,7 +233,7 @@ const LocalAdminDashboard = () => {
                     <ul>
                         <li><a href="/localadmin">Dashboard</a></li>
                         <li><a href="/local/create">Manage Events</a></li>
-                        <li><a href="/local/createMod">Create Moderator </a></li>
+                        <li><a href="/local/createMod">Create Moderator</a></li>
                         <li><a href="/local/organizations">Manage Organizations</a></li>
                     </ul>
                 </nav>
@@ -239,38 +292,44 @@ const LocalAdminDashboard = () => {
                                 </p>
                                 <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
                                 <p><strong>Organizations:</strong></p>
-                                <ul>
-                                    {selectedEvent.organizations && selectedEvent.organizations.length > 0
-                                        ? selectedEvent.organizations.map((org, index) => (
-                                            <li key={index}>{org}</li>
-                                        ))
-                                        : 'N/A'}
-                                </ul>
-                                <p><strong>Department:</strong> {departments.find(dep => dep.id === selectedEvent.departmentId)?.name || 'N/A'}</p>
-                                <p><strong>Courses:</strong></p>
-                                <ul>
-                                    {courses.map((course) => (
-                                        <li key={course.id}>{course.name}</li>
-                                    ))}
-                                </ul>
-                                <p><strong>Majors:</strong></p>
-                                <ul>
-                                    {majors.map((major) => (
-                                        <li key={major.id}>{major.name}</li>
-                                    ))}
-                                </ul>
+<ul>
+    {selectedEvent.organizations && selectedEvent.organizations.length > 0 ? (
+        selectedEvent.organizations.map((orgId) => {
+            const org = organizations.find(o => o.id === orgId);
+            return <li key={orgId}>{org?.name || 'Unknown Organization'}</li>;
+        })
+    ) : (
+        <li>No Organizations</li>
+    )}
+</ul>
+
+                                
+                                <h4>Selected Department</h4>
+<p>{selectedEvent.selectedDepartments?.map(departmentId => 
+    departments.find(dept => dept.id === departmentId)?.name || 'N/A'
+).join(', ') || 'N/A'}</p>
+
+<h4>Courses</h4>
+<ul>
+    {courses.map((course) => (
+        <li key={course.id}>{course.name}</li>
+    ))}
+</ul>
+
+<h4>Majors</h4>
+<ul>
+    {majors.map((major) => (
+        <li key={major.id}>{major.name}</li>
+    ))}
+</ul>
+
                             </div>
                         </div>
                     )}
-
-                    {showProfileEdit && (
-                        <ProfileEdit
-                            user={user}
-                            onClose={handleProfileEditClose}
-                        />
-                    )}
                 </div>
             </div>
+
+            {showProfileEdit && <ProfileEdit handleClose={handleProfileEditClose} />}
         </div>
     );
 };

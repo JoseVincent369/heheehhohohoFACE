@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, addDoc, doc, setDoc, getDocs } from 'firebase/firestore';
-import Modal from './Modal'; // Import the modal component
+import Modal from '../components/Modal'; // Import the modal component
 import './generalstyles.css';
 
 const DepartmentCourseMajorManager = () => {

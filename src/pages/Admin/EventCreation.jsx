@@ -31,13 +31,17 @@ const EventCreation = () => {
   // Fetch organizations
   useEffect(() => {
     const fetchOrganizations = async () => {
-      const orgRef = collection(FIRESTORE_DB, 'organizations');
-      const orgSnapshot = await getDocs(orgRef);
-      const orgs = orgSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setOrganizations(orgs);
+      try {
+        const orgRef = collection(FIRESTORE_DB, 'organizations');
+        const orgSnapshot = await getDocs(orgRef);
+        const orgs = orgSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setOrganizations(orgs);
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+      }
     };
 
     fetchOrganizations();
@@ -46,36 +50,40 @@ const EventCreation = () => {
   // Fetch departments, courses, and majors
   useEffect(() => {
     const fetchDepartments = async () => {
-      const deptRef = collection(FIRESTORE_DB, 'departments');
-      const deptSnapshot = await getDocs(deptRef);
-      const depts = deptSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setDepartments(depts);
-
-      const coursesMap = {};
-      const majorsMap = {};
-      for (const dept of deptSnapshot.docs) {
-        const courseRef = collection(dept.ref, 'courses');
-        const courseSnapshot = await getDocs(courseRef);
-        coursesMap[dept.id] = courseSnapshot.docs.map((doc) => ({
+      try {
+        const deptRef = collection(FIRESTORE_DB, 'departments');
+        const deptSnapshot = await getDocs(deptRef);
+        const depts = deptSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        setDepartments(depts);
 
-        for (const course of courseSnapshot.docs) {
-          const majorRef = collection(course.ref, 'majors');
-          const majorSnapshot = await getDocs(majorRef);
-          majorsMap[course.id] = majorSnapshot.docs.map((doc) => ({
+        const coursesMap = {};
+        const majorsMap = {};
+        for (const dept of deptSnapshot.docs) {
+          const courseRef = collection(dept.ref, 'courses');
+          const courseSnapshot = await getDocs(courseRef);
+          coursesMap[dept.id] = courseSnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
-        }
-      }
 
-      setCourses(coursesMap);
-      setMajors(majorsMap);
+          for (const course of courseSnapshot.docs) {
+            const majorRef = collection(course.ref, 'majors');
+            const majorSnapshot = await getDocs(majorRef);
+            majorsMap[course.id] = majorSnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+          }
+        }
+
+        setCourses(coursesMap);
+        setMajors(majorsMap);
+      } catch (error) {
+        console.error('Error fetching departments, courses, and majors:', error);
+      }
     };
 
     fetchDepartments();
@@ -288,13 +296,13 @@ const EventCreation = () => {
             <input
               type="checkbox"
               onChange={(e) =>
-                handleSelectAll(yearLevels, setSelectedYearLevels, selectedYearLevels.length > 0)
+                handleSelectAll(['1', '2', '3', '4'], setSelectedYearLevels, selectedYearLevels.length > 0)
               }
-              checked={selectedYearLevels.length === yearLevels.length}
+              checked={selectedYearLevels.length === 4}
             />
             <span>Select All</span>
           </div>
-          {yearLevels.map((year) => (
+          {['1', '2', '3', '4'].map((year) => (
             <div key={year} className="checkbox-group">
               <input
                 type="checkbox"
@@ -302,7 +310,7 @@ const EventCreation = () => {
                 onChange={() => handleCheckboxChange(year, setSelectedYearLevels, selectedYearLevels)}
                 checked={selectedYearLevels.includes(year)}
               />
-              <span>{year}</span>
+              <span>Year {year}</span>
             </div>
           ))}
         </div>

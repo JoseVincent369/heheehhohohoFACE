@@ -27,6 +27,11 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+.event-modal-content {
+    padding: 20px;
+    overflow-y: auto; /* Ensure content is scrollable */
 }
 
 .event-modal-content, .profile-edit-modal-content {
@@ -182,4 +187,20 @@ h1 {
         padding: 10px;
         font-size: 14px;
     }
+}
+
+.close-modal-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    color: #040303; /* Change color as needed */
+}
+
+.close-modal-button:hover {
+    color: red; /* Optional: Change hover color */
 }
