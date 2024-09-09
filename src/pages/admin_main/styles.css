@@ -18,6 +18,7 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    margin: auto;
 }
 
 /* Navbar Styling */

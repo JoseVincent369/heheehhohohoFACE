@@ -39,7 +39,7 @@ function App() {
         <Route path="/admin/department" element={<Department />} />
         <Route path="/moderator" element={<ModeratorDashboard />} />
         <Route path="/moderator/attendance" element={<AttendanceTracking />} />
-        <Route path="/moderator/events" element={<EventManage />} />
+        <Route path="/moderator/create" element={<EventManage />} />
         <Route path="/moderator/officers" element={<OfficerDashboard />} />
         <Route path="/localadmin" element={<LocalAdmin />} />
         <Route path="/local/create" element={<EventCreation />} />

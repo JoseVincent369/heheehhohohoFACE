@@ -180,7 +180,7 @@ const CreateModerator = () => {
           name="organization"
           value={moderatorData.organization}
           onChange={handleChange}
-          required
+          
         >
           <option value="">Select Organization</option>
           {organizationsList.map((org, index) => (
@@ -193,7 +193,7 @@ const CreateModerator = () => {
           name="department"
           value={moderatorData.department}
           onChange={handleChange}
-          required
+          
         >
           <option value="">Select Department</option>
           {departmentsList.map((dept, index) => (

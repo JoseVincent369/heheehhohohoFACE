@@ -27,11 +27,13 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-y: auto;
+    
 }
 .event-modal-content {
     padding: 20px;
-    overflow-y: auto; /* Ensure content is scrollable */
+    overflow-y: auto;
+    margin-top: auto;
 }
 
 .event-modal-content, .profile-edit-modal-content {
