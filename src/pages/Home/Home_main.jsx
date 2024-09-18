@@ -1,20 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
-import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
-import { collection, getDocs } from "firebase/firestore";
-import { FIRESTORE_DB } from "../../firebaseutil/firebase_main";
-import './homestyles.css';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
+import * as faceapi from 'face-api.js';
 
 function Home_main() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const faceapi = window.faceapi;
   const [attendanceMessages, setAttendanceMessages] = useState([]);
-  const tempAttendace = useRef([]);
+  const tempAttendance = useRef(new Set());
+  const faceapi = window.faceapi;
 
   useEffect(() => {
     const loadModelsAndStartVideo = async () => {
-      // Load face-api models
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
@@ -42,38 +39,54 @@ function Home_main() {
 
       alert('Loaded');
 
-      if (canvasRef.current && videoRef.current) {
-        // Set canvas dimensions to match video dimensions
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-      }
+      const canvas = faceapi.createCanvasFromMedia(videoRef.current);
+      document.body.append(canvas);
+      canvasRef.current = canvas;
 
-      const displaySize = { width: videoRef.current.videoWidth, height: videoRef.current.videoHeight };
-      faceapi.matchDimensions(canvasRef.current, displaySize);
+      const displaySize = { width: videoRef.current.width, height: videoRef.current.height };
+      faceapi.matchDimensions(canvas, displaySize);
 
-      setInterval(async () => {
+      const detectFaces = async () => {
         const detections = await faceapi
           .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks()
           .withFaceDescriptors();
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-        const results = resizedDetections.map((d) =>
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
+
+        const results = resizedDetections.map(d =>
           faceMatcher.findBestMatch(d.descriptor)
         );
 
         results.forEach((result, i) => {
-          attendance(result._label);
+          if (result._label !== 'unknown') {
+            attendance(result._label);
+          }
 
           const box = resizedDetections[i].detection.box;
           const drawBox = new faceapi.draw.DrawBox(box, {
             label: result.toString(),
           });
-          drawBox.draw(canvasRef.current);
+          drawBox.draw(canvas);
         });
-      }, 100);
+      };
+
+      // Reduce the frequency of detection to improve performance
+      const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
+
+      // Cleanup function to clear interval
+      return () => {
+        clearInterval(interval);
+        if (videoRef.current) {
+          const stream = videoRef.current.srcObject;
+          if (stream) {
+            const tracks = stream.getTracks();
+            tracks.forEach((track) => track.stop());
+          }
+        }
+      };
     };
 
     loadModelsAndStartVideo();
@@ -81,107 +94,87 @@ function Home_main() {
 
     return () => {
       if (videoRef.current) {
-        const stream = videoRef.current.srcObject;
-        if (stream) {
-          const tracks = stream.getTracks();
-          tracks.forEach((track) => track.stop());
-        }
         videoRef.current.removeEventListener('play', handleVideoPlay);
       }
     };
   }, []);
 
   const loadLabeledImages = async () => {
-    const usersCollection = collection(FIRESTORE_DB, 'users');
-    const userSnapshots = await getDocs(usersCollection);
-    const storage = getStorage(FIREBASE_APP);
+    try {
+      const users = await fetchUsersWithRole('user');
+      const labeledFaceDescriptors = [];
 
-    const labeledDescriptorsPromises = userSnapshots.docs.map(async (doc) => {
-      const userData = doc.data();
-      const label = userData.lname || "unknown";
-
-      const fetchImage = async (userId, imageType) => {
-        try {
-            // Fetch the user document from Firestore
-            const userDoc = await getDoc(doc(FIRESTORE_DB, `users/${userId}`));
-    
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                const imageUrl = userData.photos?.[imageType]; // Assuming photos field has links stored
-    
-                // Check if the image URL exists
-                if (imageUrl) {
-                    return imageUrl;
-                } else {
-                    console.warn(`Image ${imageType}.jpg not found in Firestore for user ${userId}`);
-                    // Provide a fallback image URL if the image is not found in Firestore
-                    return 'path/to/default-image.jpg';
-                }
-            } else {
-                console.error(`User document with ID ${userId} does not exist.`);
-                return 'path/to/default-image.jpg';
-            }
-        } catch (error) {
-            console.error(`Error fetching image ${imageType} for user ${userId}:`, error);
-            // Return a fallback image URL in case of error
-            return 'path/to/default-image.jpg';
-        }
-    };
-    
-    
-
-      const descriptions = [];
-
-      try {
-        for (let key in imageRefs) {
-          try {
-            const imgUrl = await getDownloadURL(imageRefs[key]);
-            const img = await faceapi.fetchImage(imgUrl);
-            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-
-            if (detection) {
-              descriptions.push(detection.descriptor);
-            }
-          } catch (error) {
-            if (error.code === 'storage/object-not-found') {
-              console.warn(`Image ${key}.jpg not found for user ${label}:`, error);
-            } else {
-              console.error(`Error fetching image ${key}.jpg for user ${label}:`, error);
+      for (const user of users) {
+        const descriptors = [];
+        for (const imageType of ['front', 'left', 'right']) {
+          const imageUrl = await fetchImageUrl(user.id, imageType);
+          if (imageUrl) {
+            const img = await faceapi.fetchImage(imageUrl);
+            const detections = await faceapi
+              .detectSingleFace(img)
+              .withFaceLandmarks()
+              .withFaceDescriptor();
+            if (detections) {
+              descriptors.push(detections.descriptor);
             }
           }
         }
-
-        if (descriptions.length === 0) {
-          return new faceapi.LabeledFaceDescriptors('unknown', []);
+        if (descriptors.length > 0) {
+          const faceDescriptor = new faceapi.LabeledFaceDescriptors(user.lname, descriptors);
+          labeledFaceDescriptors.push(faceDescriptor);
         }
-      } catch (error) {
-        console.error(`Error processing images for user ${label}:`, error);
-        return new faceapi.LabeledFaceDescriptors('unknown', []);
       }
 
-      return new faceapi.LabeledFaceDescriptors(label, descriptions);
-    });
-
-    return Promise.all(labeledDescriptorsPromises);
+      return labeledFaceDescriptors;
+    } catch (error) {
+      console.error('Error loading labeled images:', error);
+      return [];
+    }
   };
 
-  const filter = (label) => {
-    return tempAttendace.current.filter((res) => res === label).length <= 0;
+  const fetchUsersWithRole = async (role) => {
+    try {
+      const usersCollection = collection(FIRESTORE_DB, 'users');
+      const q = query(usersCollection, where('role', '==', role));
+      const querySnapshot = await getDocs(q);
+      const users = [];
+      querySnapshot.forEach((doc) => {
+        users.push({ id: doc.id, ...doc.data() });
+      });
+      return users;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  };
+
+  const fetchImageUrl = async (userId, imageType) => {
+    try {
+      const userDoc = doc(FIRESTORE_DB, 'users', userId);
+      const userSnapshot = await getDoc(userDoc);
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.data();
+        return userData.photos[imageType] || null;
+      }
+    } catch (error) {
+      console.error(`Error fetching image URL for ${userId}:`, error);
+    }
+    return null;
   };
 
   const attendance = (label) => {
-    if (filter(label) && label !== 'unknown') {
-      tempAttendace.current.push(label);
-      setAttendanceMessages((prevMessages) => [
+    if (!tempAttendance.current.has(label) && label !== 'unknown') {
+      tempAttendance.current.add(label);
+      setAttendanceMessages(prevMessages => [
         ...prevMessages,
-        `Attendance Added Successfully for ${label}`,
+        `${label} recognized at ${new Date().toLocaleTimeString()}`
       ]);
     }
   };
-  
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: '#333', borderRadius: '8px' }}>
+      {/* Attendance Logs Section */}
       <div style={{ flex: '1', backgroundColor: '#444', padding: '20px', borderRadius: '8px', marginRight: '10px', maxHeight: '400px', overflowY: 'auto' }}>
         <h3 style={{ color: 'white' }}>Attendance Logs</h3>
         <ul style={{ color: 'white' }}>
@@ -190,6 +183,8 @@ function Home_main() {
           ))}
         </ul>
       </div>
+  
+      {/* Video and Canvas Section */}
       <div
         style={{
           flex: '2',
@@ -199,6 +194,7 @@ function Home_main() {
           borderRadius: '8px',
         }}
       >
+        {/* Video Feed */}
         <video
           ref={videoRef}
           width={640}
@@ -211,6 +207,8 @@ function Home_main() {
             transform: 'scaleX(-1)', // Flips the video to correct the inversion for the front camera
           }}
         />
+  
+        {/* Canvas for Face Recognition */}
         <canvas
           ref={canvasRef}
           style={{
@@ -225,6 +223,6 @@ function Home_main() {
       </div>
     </div>
   );
-}
+}  
 
 export default Home_main;

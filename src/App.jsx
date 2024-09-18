@@ -19,6 +19,8 @@ import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin'
 import Department from './pages/admin_main/Department'
 import OfficerDashboard from './pages/Moderator/OfficerDashboard';
 import CreateModerator from './pages/Admin/CreateModerator';
+import UploadImage from './pages/student/UploadImage';
+
 
 function App() {
   return (
@@ -47,7 +49,7 @@ function App() {
         <Route path="/local/createMod" element={<CreateModerator />} />
         <Route path="/logout" element={<Logout />} />
 
-
+        <Route path="/testimage" element={<UploadImage />} />
       
         </Routes> 
       </div>

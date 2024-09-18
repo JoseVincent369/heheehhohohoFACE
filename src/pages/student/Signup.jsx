@@ -65,7 +65,7 @@ const SignUp = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-
+  
     try {
       // Create user with email and password in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
@@ -73,12 +73,12 @@ const SignUp = () => {
         formData.email,
         formData.password
       );
-
+  
       const userId = userCredential.user.uid;
-
+  
       // Upload photos to Firebase Storage
       const photoURLs = await uploadPhotos(userId);
-
+  
       // Save user info in Firestore, including photo URLs
       await setDoc(doc(FIRESTORE_DB, "users", userId), {
         fname: formData.fname,
@@ -94,14 +94,32 @@ const SignUp = () => {
         role: "user", // Default role
         photos: photoURLs, // Store the photo URLs in Firestore
       });
-
+  
       setSuccess("User registered successfully!");
       navigate("/"); // Redirect to login page after successful registration
     } catch (error) {
       console.error("Sign-up failed:", error);
-      setError("Failed to create an account. Please try again.");
+      
+      // Handle specific error codes from Firebase Auth
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          setError("The email address is already in use by another account.");
+          break;
+        case 'auth/invalid-email':
+          setError("The email address is invalid.");
+          break;
+        case 'auth/operation-not-allowed':
+          setError("Email/password accounts are not enabled.");
+          break;
+        case 'auth/weak-password':
+          setError("The password is too weak. Please use a stronger password.");
+          break;
+        default:
+          setError("Failed to create an account. Please try again.");
+      }
     }
   };
+  
 
   return (
     <div className="signup-container">
