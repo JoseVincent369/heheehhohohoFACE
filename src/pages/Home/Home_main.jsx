@@ -173,56 +173,16 @@ function Home_main() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: '#333', borderRadius: '8px' }}>
-      {/* Attendance Logs Section */}
-      <div style={{ flex: '1', backgroundColor: '#444', padding: '20px', borderRadius: '8px', marginRight: '10px', maxHeight: '400px', overflowY: 'auto' }}>
-        <h3 style={{ color: 'white' }}>Attendance Logs</h3>
-        <ul style={{ color: 'white' }}>
-          {attendanceMessages.map((message, index) => (
-            <li key={index}>{message}</li>
-          ))}
-        </ul>
+    <>
+      <video ref={videoRef} width={720} height={560} autoPlay muted />
+      <canvas ref={canvasRef} style={{ position: 'absolute' }} />
+      <div>
+        {attendanceMessages.map((msg, index) => (
+          <p key={index}>{msg}</p>
+        ))}
       </div>
-  
-      {/* Video and Canvas Section */}
-      <div
-        style={{
-          flex: '2',
-          position: 'relative',
-          backgroundColor: '#444',
-          padding: '20px',
-          borderRadius: '8px',
-        }}
-      >
-        {/* Video Feed */}
-        <video
-          ref={videoRef}
-          width={640}
-          height={480}
-          autoPlay
-          muted
-          style={{
-            display: 'block',
-            borderRadius: '8px',
-            transform: 'scaleX(-1)', // Flips the video to correct the inversion for the front camera
-          }}
-        />
-  
-        {/* Canvas for Face Recognition */}
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: '0px',
-            left: '0px',
-            borderRadius: '8px',
-            zIndex: 1,
-            transform: 'scaleX(-1)', // Match the canvas flip to ensure drawings align correctly
-          }}
-        />
-      </div>
-    </div>
+    </>
   );
-}  
+}
 
 export default Home_main;
