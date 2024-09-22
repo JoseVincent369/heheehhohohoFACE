@@ -42,3 +42,26 @@
 }
 
 
+/* src/App.css */
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar, .admin-sidebar, .moderator-sidebar {
+  width: 200px;
+  background-color: #f4f4f4;
+  padding: 15px;
+}
+
+.content {
+  flex: 1;
+  padding: 15px;
+}

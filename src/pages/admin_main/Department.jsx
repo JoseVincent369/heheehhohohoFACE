@@ -151,7 +151,7 @@ const DepartmentCourseMajorManager = () => {
   };
 
   return (
-    <div className="container">
+    <div className="department-container">
       <h2>Manage Departments, Courses, and Majors</h2>
 
       {/* Step Indicator */}

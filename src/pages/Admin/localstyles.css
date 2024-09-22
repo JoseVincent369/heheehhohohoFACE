@@ -68,12 +68,19 @@
 
 /* Event Creation */
 .event-creation {
-    max-width: 900px;
-    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    background: white;
     padding: 20px;
-    background-color: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 1%;
+    box-shadow: blue;
+    width: 73vw;
+    height: 100vh;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    border-radius: 25px;
+    color: black;
 }
 
 h1 {
@@ -206,3 +213,5 @@ h1 {
 .close-modal-button:hover {
     color: red; /* Optional: Change hover color */
 }
+
+

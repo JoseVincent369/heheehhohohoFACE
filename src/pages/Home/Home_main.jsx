@@ -1,15 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, addDoc } from 'firebase/firestore';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
-import * as faceapi from 'face-api.js';
 
 function Home_main() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [attendanceMessages, setAttendanceMessages] = useState([]);
+  const [events, setEvents] = useState([]); // State for events
+  const [selectedEvent, setSelectedEvent] = useState(''); // State for selected event
+  const [eventConfirmed, setEventConfirmed] = useState(false); // State for event confirmation
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false); // State for popup visibility
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
 
+  // Fetch events from Firestore
+  useEffect(() => {
+    const loadEvents = async () => {
+      const eventsCollection = collection(FIRESTORE_DB, 'events');
+      const eventsSnapshot = await getDocs(eventsCollection);
+      const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setEvents(eventsList);
+    };
+
+    loadEvents();
+  }, []);
+
+  // Video and face detection setup
   useEffect(() => {
     const loadModelsAndStartVideo = async () => {
       await Promise.all([
@@ -37,7 +53,7 @@ function Home_main() {
       const labeledFaceDescriptors = await loadLabeledImages();
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
 
-      alert('Loaded');
+      alert('Models Loaded!');
 
       const canvas = faceapi.createCanvasFromMedia(videoRef.current);
       document.body.append(canvas);
@@ -52,31 +68,38 @@ function Home_main() {
           .withFaceLandmarks()
           .withFaceDescriptors();
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
+      
         const context = canvas.getContext('2d');
         context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
-
+      
         const results = resizedDetections.map(d =>
           faceMatcher.findBestMatch(d.descriptor)
         );
-
+      
         results.forEach((result, i) => {
           if (result._label !== 'unknown') {
             attendance(result._label);
           }
-
+      
           const box = resizedDetections[i].detection.box;
-          const drawBox = new faceapi.draw.DrawBox(box, {
+      
+          // Flip the box horizontally
+          const invertedBox = {
+            x: canvas.width - (box.x + box.width), // Invert the x-coordinate
+            y: box.y,
+            width: box.width,
+            height: box.height
+          };
+      
+          const drawBox = new faceapi.draw.DrawBox(invertedBox, {
             label: result.toString(),
           });
           drawBox.draw(canvas);
         });
       };
 
-      // Reduce the frequency of detection to improve performance
       const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
 
-      // Cleanup function to clear interval
       return () => {
         clearInterval(interval);
         if (videoRef.current) {
@@ -89,16 +112,19 @@ function Home_main() {
       };
     };
 
-    loadModelsAndStartVideo();
-    videoRef.current?.addEventListener('play', handleVideoPlay);
+    if (selectedEvent && eventConfirmed) {
+      loadModelsAndStartVideo();
+      videoRef.current?.addEventListener('play', handleVideoPlay);
+    }
 
     return () => {
       if (videoRef.current) {
         videoRef.current.removeEventListener('play', handleVideoPlay);
       }
     };
-  }, []);
+  }, [selectedEvent, eventConfirmed]);
 
+  // Load labeled images for face recognition
   const loadLabeledImages = async () => {
     try {
       const users = await fetchUsersWithRole('user');
@@ -132,6 +158,7 @@ function Home_main() {
     }
   };
 
+  // Fetch users with specific role from Firestore
   const fetchUsersWithRole = async (role) => {
     try {
       const usersCollection = collection(FIRESTORE_DB, 'users');
@@ -148,6 +175,7 @@ function Home_main() {
     }
   };
 
+  // Fetch image URL for a user from Firestore
   const fetchImageUrl = async (userId, imageType) => {
     try {
       const userDoc = doc(FIRESTORE_DB, 'users', userId);
@@ -162,23 +190,76 @@ function Home_main() {
     return null;
   };
 
-  const attendance = (label) => {
+  // Mark attendance and update Firestore
+  const attendance = async (label) => {
     if (!tempAttendance.current.has(label) && label !== 'unknown') {
       tempAttendance.current.add(label);
-      setAttendanceMessages(prevMessages => [
-        ...prevMessages,
-        `${label} recognized at ${new Date().toLocaleTimeString()}`
-      ]);
+
+      try {
+        const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
+
+        await addDoc(attendanceRef, {
+          attendee: label,
+          timestamp: new Date().toISOString(),
+        });
+
+        setAttendanceMessages(prevMessages => [
+          ...prevMessages,
+          `${label} recognized and attendance recorded at ${new Date().toLocaleTimeString()}`
+        ]);
+      } catch (error) {
+        console.error('Error adding attendance record:', error);
+      }
     }
+  };
+
+  // Confirm event selection
+  const handleConfirmEvent = () => {
+    setEventConfirmed(true);
+    setShowConfirmPopup(false);
   };
 
   return (
     <>
-      <video ref={videoRef} width={720} height={560} autoPlay muted />
-      <canvas ref={canvasRef} style={{ position: 'absolute' }} />
+      <h2>Select Event</h2>
+      <select 
+        onChange={(e) => setSelectedEvent(e.target.value)} 
+        value={selectedEvent} 
+        disabled={eventConfirmed} // Disable if confirmed
+      >
+        <option value="">Select an event</option>
+        {events.map(event => (
+          <option key={event.id} value={event.id}>{event.name}</option>
+        ))}
+      </select>
+
+      {!eventConfirmed && (
+        <button
+          onClick={() => setShowConfirmPopup(true)}
+          disabled={!selectedEvent}
+        >
+          Confirm Event
+        </button>
+      )}
+
+      {showConfirmPopup && (
+        <div className="popup">
+          <div className="popup-content">
+            <h3>Confirm Event</h3>
+            <p>Are you sure you want to confirm this event: {events.find(e => e.id === selectedEvent)?.name}?</p>
+            <button onClick={handleConfirmEvent}>Yes</button>
+            <button onClick={() => setShowConfirmPopup(false)}>No</button>
+          </div>
+        </div>
+      )}
+
+      <video ref={videoRef} width={720} height={560} autoPlay muted style={{ transform: 'scaleX(-1)' }} />
+      <canvas ref={canvasRef} style={{ position: 'absolute', left: 0, top: 0 }} />
+
       <div>
-        {attendanceMessages.map((msg, index) => (
-          <p key={index}>{msg}</p>
+        <h3>Attendance Messages</h3>
+        {attendanceMessages.map((message, index) => (
+          <p key={index}>{message}</p>
         ))}
       </div>
     </>

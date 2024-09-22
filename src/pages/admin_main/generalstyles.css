@@ -18,7 +18,19 @@ form {
     box-shadow: none;
 }
 .admin-management{
-    margin-top: 200px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 20px;
+    border-radius: 1%;
+    box-shadow: blue;
+    width: 73vw;
+    height: 100vh;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    border-radius: 25px;
+    color: black;
 }
 
 h2 {
@@ -204,14 +216,13 @@ button.delete:hover {
     padding: 20px;
     border-radius: 1%;
     box-shadow: blue;
-    width: 100vw;
+    width: 73vw;
     height: 100vh;
     align-items: center;
     margin: auto;
     margin-top: 50px;
     border-radius: 25px;
-    color:black;
-
+    color: black;
 }
 
 .event-management input,
@@ -282,12 +293,19 @@ button.delete:hover {
 
 /* Organization Management */
 .admin-panel {
+    display: flex;
+    flex-direction: column;
+    background: white;
     padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: 100vw;
+    border-radius: 1%;
+    box-shadow: blue;
+    width: 73vw;
     height: 100vh;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    border-radius: 25px;
+    color: black;
 }
 
 .admin-panel h2 {
@@ -361,16 +379,6 @@ button.delete:hover {
 
 
 /* Organization Management */
-.admin-panel {
-    padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: 100vw;
-    height: 100vh;
-    box-sizing: border-box;
-    overflow: auto; /* Add scrolling if content overflows */
-}
 
 .admin-panel h2 {
     font-size: 22px;
@@ -456,7 +464,7 @@ button.delete:hover {
 /* General Container for the Signup Form */
 .signup-container {
     width: 400px;
-    margin-top: 500px;
+    margin-top: 800px;
     padding: 90px;
     text-align: center;
     background-color: #f7f7f7;
@@ -466,10 +474,79 @@ button.delete:hover {
 input[type="file" i] {
     margin-top: 12px;
 }
-.student-manage{
-font-size: 12px;
-align-content: center;
-max-width: 100%;
+.student-manage {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 20px;
+    border-radius: 1%;
+    box-shadow: blue;
+    width: 73vw;
+    height: 100vh;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    border-radius: 25px;
+    color: black;
+}
+
+.student-table {
+    table-layout: auto;
+    width: 90%;
+    border-collapse: collapse;
+    margin-left: 60%;
+    transform: scale(0.9); /* Slight zoom-out */
+    transform-origin: top left;
+}
+
+
+
+.student-table th, .student-table td {
+    padding: 8px 10px; /* Adjusted padding */
+    font-size: 14px; /* Font size for readability */
+    text-align: left; /* Align text to the left */
+    overflow: hidden; /* Prevent text overflow */
+    text-overflow: ellipsis; /* Show ellipsis for overflowed text */
+    white-space: nowrap; /* Prevent text wrapping */
+    border: 1px solid #ddd; /* Add border for visibility */
+}
+
+.student-table th {
+    font-size: 15px; /* Slightly larger for headers */
+    background-color: #4CAF50; /* Header background color */
+    color: white; /* Header text color */
+}
+
+.student-table tr:hover {
+    background-color: #f1f1f1; /* Highlight on hover */
+}
+
+/* Specific column widths */
+.student-table th:first-child, .student-table td:first-child {
+    width: 120px; /* Adjust width for First Name */
+}
+
+.student-table th:nth-child(2), .student-table td:nth-child(2) {
+    width: 120px; /* Adjust width for Middle Name */
+}
+
+
+
+input[type="text"] {
+    width: 100%; /* Full width for input fields */
+    box-sizing: border-box; /* Include padding in width */
+}
+
+input[type="file"] {
+    width: auto; /* Keep file input width manageable */
+}
+
+
+/* Make the table responsive on smaller screens */
+@media (max-width: 768px) {
+    .student-table th, .student-table td {
+        font-size: 12px; /* Reduce font size for smaller screens */
+    }
 }
 
 /* Add this to your localstyles.css or equivalent stylesheet */
@@ -506,7 +583,7 @@ max-width: 100%;
 /* depmartment  */
 .container {
     padding: 20px;
-    width: 1000px;
+    width: 950px;
     height: 600px;
     margin: 0 auto;
     border: 1px solid #ccc;
@@ -583,3 +660,31 @@ max-width: 100%;
 .modal-content button {
     margin-top: 10px;
 }
+
+
+.department-container {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 20px;
+    border-radius: 1%;
+    box-shadow: blue;
+    width: 73vw;
+    height: 100vh;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    border-radius: 25px;
+    color: black;
+}
+
+.file-input-container {
+    display: flex;
+    align-items: center; /* Align items vertically */
+}
+
+.file-input-container input {
+    margin-right: 10px; /* Space between input and file name */
+}
+
+

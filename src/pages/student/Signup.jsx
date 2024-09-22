@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Alert } from 'react-bootstrap';
 import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import './generalstyles.css'; // Ensure this file contains the CSS for the back button
+import LoadingScreen from '../components/LoadingScreen'; 
+import './generalstyles.css';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +20,8 @@ const SignUp = () => {
     major: "",
     schoolID: "",
     password: "",
-    organization: "", // Added organization
+    organization: "",
+    department: "", // Added department
   });
 
   const [photos, setPhotos] = useState({
@@ -30,13 +32,58 @@ const SignUp = () => {
 
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [majors, setMajors] = useState([]);
+
   const navigate = useNavigate();
+
+  // Fetch organizations from Firestore
+  const fetchOrganizations = async () => {
+    const orgSnapshot = await getDocs(collection(FIRESTORE_DB, 'organizations'));
+    setOrganizations(orgSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  // Fetch departments from Firestore
+  const fetchDepartments = async () => {
+    const deptSnapshot = await getDocs(collection(FIRESTORE_DB, 'departments'));
+    setDepartments(deptSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  // Fetch courses based on selected department
+  const fetchCourses = async (departmentId) => {
+    const courseSnapshot = await getDocs(collection(FIRESTORE_DB, `departments/${departmentId}/courses`));
+    setCourses(courseSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  // Fetch majors based on selected course
+  const fetchMajors = async (departmentId, courseId) => {
+    const majorSnapshot = await getDocs(collection(FIRESTORE_DB, `departments/${departmentId}/courses/${courseId}/majors`));
+    setMajors(majorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  useEffect(() => {
+    fetchOrganizations();
+    fetchDepartments();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    // If department is changed, fetch corresponding courses
+    if (e.target.name === 'department') {
+      fetchCourses(e.target.value); // Fetch courses for the selected department
+    }
+
+    // If course is changed, fetch corresponding majors
+    if (e.target.name === 'course') {
+      fetchMajors(formData.department, e.target.value); // Fetch majors for the selected course and department
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -65,21 +112,18 @@ const SignUp = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-  
+    setLoading(true); 
+
     try {
-      // Create user with email and password in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         FIREBASE_AUTH,
         formData.email,
         formData.password
       );
-  
+
       const userId = userCredential.user.uid;
-  
-      // Upload photos to Firebase Storage
       const photoURLs = await uploadPhotos(userId);
   
-      // Save user info in Firestore, including photo URLs
       await setDoc(doc(FIRESTORE_DB, "users", userId), {
         fname: formData.fname,
         lname: formData.lname,
@@ -89,18 +133,18 @@ const SignUp = () => {
         age: formData.age,
         course: formData.course,
         major: formData.major,
-        organization: formData.organization, // Added organization
+        organization: formData.organization,
+        department: formData.department, // Save selected department
         schoolID: formData.schoolID,
-        role: "user", // Default role
-        photos: photoURLs, // Store the photo URLs in Firestore
+        role: "user",
+        photos: photoURLs,
       });
   
       setSuccess("User registered successfully!");
-      navigate("/"); // Redirect to login page after successful registration
+      navigate("/");
+
     } catch (error) {
       console.error("Sign-up failed:", error);
-      
-      // Handle specific error codes from Firebase Auth
       switch (error.code) {
         case 'auth/email-already-in-use':
           setError("The email address is already in use by another account.");
@@ -117,206 +161,126 @@ const SignUp = () => {
         default:
           setError("Failed to create an account. Please try again.");
       }
+    } finally {
+      setLoading(false); // Set loading to false when submission ends
     }
   };
-  
 
   return (
     <div className="signup-container">
-      {/* Back Button */}
-      <button className="back-button" onClick={() => navigate('/superadmin')}>
-        &lt; Back
-      </button>
-
       <h2>Sign Up</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
-      <Form onSubmit={handleSubmit}>
-        {/* First Name */}
-        <Form.Group controlId="formFirstName">
-          <Form.Label>First Name</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter first name"
-            name="fname"
-            value={formData.fname}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+      {loading ? (
+        <LoadingScreen />
+      ) : (
+        <Form onSubmit={handleSubmit}>
+          <Form.Group controlId="formFname">
+            <Form.Label>First Name</Form.Label>
+            <Form.Control type="text" name="fname" value={formData.fname} onChange={handleChange} required />
+          </Form.Group>
+          <Form.Group controlId="formLname">
+            <Form.Label>Last Name</Form.Label>
+            <Form.Control type="text" name="lname" value={formData.lname} onChange={handleChange} required />
+          </Form.Group>
+          <Form.Group controlId="formMname">
+            <Form.Label>Middle Name</Form.Label>
+            <Form.Control type="text" name="mname" value={formData.mname} onChange={handleChange} />
+          </Form.Group>
+          <Form.Group controlId="formYearLevel">
+            <Form.Label>Year Level</Form.Label>
+            <Form.Control
+              as="select"
+              name="yearLevel"
+              value={formData.yearLevel}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Year Level</option>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formEmail">
+            <Form.Label>Email</Form.Label>
+            <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} required />
+          </Form.Group>
+          <Form.Group controlId="formAge">
+            <Form.Label>Age</Form.Label>
+            <Form.Control type="number" name="age" value={formData.age} onChange={handleChange} required />
+          </Form.Group>
+          
+          {/* Organization Dropdown */}
+          <Form.Group controlId="formOrganization">
+            <Form.Label>Organization</Form.Label>
+            <Form.Control as="select" name="organization" value={formData.organization} onChange={handleChange} >
+              <option value="">Select Organization</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
 
-        {/* Last Name */}
-        <Form.Group controlId="formLastName">
-          <Form.Label>Last Name</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter last name"
-            name="lname"
-            value={formData.lname}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          {/* Department Dropdown */}
+          <Form.Group controlId="formDepartment">
+            <Form.Label>Department</Form.Label>
+            <Form.Control as="select" name="department" value={formData.department} onChange={handleChange} required>
+              <option value="">Select Department</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
 
-        {/* Middle Name */}
-        <Form.Group controlId="formMiddleName">
-          <Form.Label>Middle Name</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter middle name"
-            name="mname"
-            value={formData.mname}
-            onChange={handleChange}
-          />
-        </Form.Group>
+          {/* Course Dropdown */}
+          <Form.Group controlId="formCourse">
+            <Form.Label>Course</Form.Label>
+            <Form.Control as="select" name="course" value={formData.course} onChange={handleChange} required>
+              <option value="">Select Course</option>
+              {courses.map(course => (
+                <option key={course.id} value={course.id}>{course.name}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
 
-        {/* Year Level */}
-        <Form.Group controlId="formYearLevel">
-          <Form.Label>Year Level</Form.Label>
-          <Form.Control
-            as="select"
-            name="yearLevel"
-            value={formData.yearLevel}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select year level</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </Form.Control>
-        </Form.Group>
+          {/* Major Dropdown */}
+          <Form.Group controlId="formMajor">
+            <Form.Label>Major</Form.Label>
+            <Form.Control as="select" name="major" value={formData.major} onChange={handleChange}>
+              <option value="">Select Major</option>
+              {majors.map(major => (
+                <option key={major.id} value={major.id}>{major.name}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
 
-        {/* Email */}
-        <Form.Group controlId="formEmail">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
-            type="email"
-            placeholder="Enter email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          <Form.Group controlId="formSchoolID">
+            <Form.Label>School ID</Form.Label>
+            <Form.Control type="text" name="schoolID" value={formData.schoolID} onChange={handleChange} required />
+          </Form.Group>
+          <Form.Group controlId="formPassword">
+            <Form.Label>Password</Form.Label>
+            <Form.Control type="password" name="password" value={formData.password} onChange={handleChange} required />
+          </Form.Group>
 
-        {/* Age */}
-        <Form.Group controlId="formAge">
-          <Form.Label>Age</Form.Label>
-          <Form.Control
-            type="number"
-            placeholder="Enter age"
-            name="age"
-            value={formData.age}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          <Form.Group controlId="formFrontPhoto">
+            <Form.Label>Front Photo</Form.Label>
+            <Form.Control type="file" name="front" onChange={handlePhotoChange} />
+          </Form.Group>
+          <Form.Group controlId="formLeftPhoto">
+            <Form.Label>Left Photo</Form.Label>
+            <Form.Control type="file" name="left" onChange={handlePhotoChange} />
+          </Form.Group>
+          <Form.Group controlId="formRightPhoto">
+            <Form.Label>Right Photo</Form.Label>
+            <Form.Control type="file" name="right" onChange={handlePhotoChange} />
+          </Form.Group>
 
-        {/* Course */}
-        <Form.Group controlId="formCourse">
-          <Form.Label>Course</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter course"
-            name="course"
-            value={formData.course}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        {/* Major */}
-        <Form.Group controlId="formMajor">
-          <Form.Label>Major</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter major"
-            name="major"
-            value={formData.major}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        {/* Organization */}
-        <Form.Group controlId="formOrganization">
-          <Form.Label>Clubs</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter Clubs (optional)"
-            name="organization"
-            value={formData.organization}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        {/* School ID */}
-        <Form.Group controlId="formSchoolID">
-          <Form.Label>School ID</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter school ID"
-            name="schoolID"
-            value={formData.schoolID}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        {/* Password */}
-        <Form.Group controlId="formPassword">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Enter password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        {/* Front Photo */}
-        <Form.Group controlId="formFrontPhoto">
-          <Form.Label>Front Photo</Form.Label>
-          <Form.Control
-            type="file"
-            accept="image/*"
-            name="front"
-            onChange={handlePhotoChange}
-            required
-          />
-        </Form.Group>
-
-        {/* Left Photo */}
-        <Form.Group controlId="formLeftPhoto">
-          <Form.Label>Left Photo</Form.Label>
-          <Form.Control
-            type="file"
-            accept="image/*"
-            name="left"
-            onChange={handlePhotoChange}
-            required
-          />
-        </Form.Group>
-
-        {/* Right Photo */}
-        <Form.Group controlId="formRightPhoto">
-          <Form.Label>Right Photo</Form.Label>
-          <Form.Control
-            type="file"
-            accept="image/*"
-            name="right"
-            onChange={handlePhotoChange}
-            required
-          />
-        </Form.Group>
-
-        <Button variant="primary" type="submit">
-          Sign Up
-        </Button>
-      </Form>
+          <Button variant="primary" type="submit">Sign Up</Button>
+        </Form>
+      )}
     </div>
   );
 };

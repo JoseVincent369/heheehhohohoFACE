@@ -1,59 +1,99 @@
+// src/App.jsx
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// Loading
+import { LoadingProvider, useLoading } from './pages/components/LoadingContext';  // Import the Loading Context
+import LoadingScreen from './pages/components/LoadingScreen'; // Import the Loading Screen
+
+// Pages and Layouts
 import Login_main from './pages/admin_main/login_main';
 import Home_main from './pages/Home/Home_main';
 import SignUp from './pages/student/Signup';
-import AdminDashboard from '../src/pages/admin_main/AdminDashboard';
-import EventManagement from '../src/pages/admin_main/EventManagement';
+import NotFound from './pages/components/NotFount';
+import Layout from './pages/components/Layout';
+import AdminLayout from './pages/components/LayoutAdmin';
+
+
+// Super Admin, Admin, Moderator Pages
+import AdminDashboard from './pages/admin_main/AdminDashboard';
+import EventManagement from './pages/admin_main/EventManagement';
 import AdminManagement from './pages/admin_main/AdminManagement';
 import AddOrganization from './pages/admin_main/AddOrganization';
 import StudentManage from './pages/admin_main/StudentManage';
-import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
-import AttendanceTracking from './pages/Moderator/AttendanceTracking'
-import EventManage from './pages/Moderator/EventManage';
-import LocalAdmin from './pages/Admin/LocalAdmin'
-import EventCreation from './pages/Admin/EventCreation'
-import OrganizationManagement from './pages/Admin/OrganizationManagement'
-import Logout from './pages/Admin/Logout';
-import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin'
-import Department from './pages/admin_main/Department'
-import OfficerDashboard from './pages/Moderator/OfficerDashboard';
+import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin';
+import Department from './pages/admin_main/Department';
+import LocalAdmin from './pages/Admin/LocalAdmin';
+import EventCreation from './pages/Admin/EventCreation';
+import OrganizationManagement from './pages/Admin/OrganizationManagement';
 import CreateModerator from './pages/Admin/CreateModerator';
-import UploadImage from './pages/student/UploadImage';
 
+// Moderator Pages
+import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
+import AttendanceTracking from './pages/Moderator/AttendanceTracking';
+import EventManage from './pages/Moderator/EventManage';
+import OfficerDashboard from './pages/Moderator/OfficerDashboard';
+
+// Other
+import Logout from './pages/Admin/Logout';
 
 function App() {
   return (
-    <Router>
-      <div>
+    <LoadingProvider>
+      <MainApp />
+    </LoadingProvider>
+
+  );
+}
+
+function MainApp() {
+  const { isLoading } = useLoading(); // Destructure loading state from useLoading
+
+  return (
+    <>
+      {isLoading && <LoadingScreen />}
+
+      <Router>
         <Routes>
-        <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
-
-
+          {/* Public Routes */}
           <Route path="/" element={<Login_main />} />
-          <Route path="/home" element={<Home_main />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/superadmin" element={<AdminDashboard />} />
-        <Route path="/admin/events" element={<EventManagement />} />
-        <Route path="/admin/admins" element={<AdminManagement />} />
-        <Route path="/admin/addOrg" element={<AddOrganization />} />
-        <Route path="/admin/StudentManage" element={<StudentManage />} />
-        <Route path="/admin/department" element={<Department />} />
-        <Route path="/moderator" element={<ModeratorDashboard />} />
-        <Route path="/moderator/attendance" element={<AttendanceTracking />} />
-        <Route path="/moderator/create" element={<EventManage />} />
-        <Route path="/moderator/officers" element={<OfficerDashboard />} />
-        <Route path="/localadmin" element={<LocalAdmin />} />
-        <Route path="/local/create" element={<EventCreation />} />
-        <Route path="/local/Org" element={<OrganizationManagement />} />
-        <Route path="/local/createMod" element={<CreateModerator />} />
-        <Route path="/logout" element={<Logout />} />
 
-        <Route path="/testimage" element={<UploadImage />} />
-      
-        </Routes> 
-      </div>
-    </Router>
+          <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
+          {/* CAMERA Routes */}
+          <Route path="/home" element={<Home_main />} />
+
+          {/* Super Admin Layout */}
+          <Route element={<Layout />}>
+            <Route path="/superadmin" element={<AdminDashboard />} />
+            <Route path="/admin/events" element={<EventManagement />} />
+            <Route path="/admin/admins" element={<AdminManagement />} />
+            <Route path="/admin/addOrg" element={<AddOrganization />} />
+            <Route path="/admin/StudentManage" element={<StudentManage />} />
+            <Route path="/admin/department" element={<Department />} />
+          </Route>
+
+          {/* Moderator Layout */}
+          <Route element={<Layout />}>
+            <Route path="/moderator" element={<ModeratorDashboard />} />
+            <Route path="/moderator/attendance" element={<AttendanceTracking />} />
+            <Route path="/moderator/create" element={<EventManage />} />
+            <Route path="/moderator/officers" element={<OfficerDashboard />} />
+          </Route>
+
+          {/* Local Admin Layout */}
+          <Route element={<AdminLayout />}>
+            <Route path="/localadmin" element={<LocalAdmin />} />
+            <Route path="/local/create" element={<EventCreation />} />
+            <Route path="/local/Org" element={<OrganizationManagement />} />
+            <Route path="/local/createMod" element={<CreateModerator />} />
+          </Route>
+
+          {/* Other */}
+          <Route path="/logout" element={<Logout />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

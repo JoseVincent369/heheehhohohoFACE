@@ -3,20 +3,23 @@ import { Button, Form, Alert } from 'react-bootstrap';
 import { FIREBASE_AUTH, FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import LoadingScreen from '../components/LoadingScreen';
 import './generalstyles.css';
 
 const LoginMain = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); // Add loading state
   const navigate = useNavigate();
   const FIREBASE_DB = getFirestore(FIREBASE_APP); // Initialize Firestore
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-  
+    setLoading(true); // Set loading to true
+
     try {
       // Sign in the user
       const userCredential = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
@@ -51,9 +54,15 @@ const LoginMain = () => {
     } catch (error) {
       console.error('Login failed:', error);
       setError('Invalid email or password.');
+    } finally {
+      setLoading(false); // Set loading to false
     }
   };
   
+  if (loading) {
+    return <LoadingScreen />; // Show loading screen when loading
+  }
+
   return (
     <div className="login-container">
       <h2>Login</h2>
