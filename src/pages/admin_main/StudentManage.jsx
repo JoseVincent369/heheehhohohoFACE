@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFirestore, collection, query, onSnapshot, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
+import { getFirestore, collection, query, onSnapshot, doc, updateDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import LoadingScreen from '../components/LoadingScreen';
 import Modal from 'react-modal';
@@ -15,18 +15,45 @@ const StudentManage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const q = query(collection(db, 'users'), where('role', '==', 'user'));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const studentsData = [];
-            querySnapshot.forEach((doc) => {
-                studentsData.push({ id: doc.id, ...doc.data() });
+        const fetchStudentsWithCourseAndMajor = async () => {
+            const q = query(collection(db, 'users'), where('role', '==', 'user'));
+            const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+                const studentsData = [];
+    
+                for (const userDoc of querySnapshot.docs) {
+                    const student = { id: userDoc.id, ...userDoc.data() };
+    
+                    // Fetch course name
+                    let courseName = 'N/A';
+                    if (student.course) {
+                        const courseDoc = await getDoc(doc(db, 'departments/departmentId/courses', student.course));
+                        if (courseDoc.exists()) {
+                            courseName = courseDoc.data().name;
+                        }
+                    }
+    
+                    // Fetch major name
+                    let majorName = 'N/A';
+                    if (student.major) {
+                        const majorDoc = await getDoc(doc(db, `departments/departmentId/courses/${student.course}/majors`, student.major));
+                        if (majorDoc.exists()) {
+                            majorName = majorDoc.data().name;
+                        }
+                    }
+    
+                    studentsData.push({ ...student, courseName, majorName });
+                }
+    
+                setStudents(studentsData);
+                setLoading(false);
             });
-            setStudents(studentsData);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+    
+            return () => unsubscribe();
+        };
+    
+        fetchStudentsWithCourseAndMajor();
     }, [db]);
+    
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -87,7 +114,7 @@ const StudentManage = () => {
             alert('Failed to delete student. Please try again.');
         }
     };
-
+ 
     const filteredStudents = students.filter(student => {
         return (
             student.fname.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,28 +160,29 @@ const StudentManage = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredStudents.map(student => (
-                        <tr key={student.id}>
-                            <td>{student.fname}</td>
-                            <td>{student.mname}</td>
-                            <td>{student.lname}</td>
-                            <td>{student.email}</td>
-                            <td>{student.course}</td>
-                            <td>{student.major}</td>
-                            <td>{student.yearLevel}</td>
-                            <td>{student.schoolID}</td>
-                            <td>{student.age}</td>
-                            <td>{student.role}</td>
-                            <td><a href={student.photos.front} target="_blank" rel="noopener noreferrer">Front</a></td>
-                            <td><a href={student.photos.left} target="_blank" rel="noopener noreferrer">Left</a></td>
-                            <td><a href={student.photos.right} target="_blank" rel="noopener noreferrer">Right</a></td>
-                            <td>
-                                <button onClick={() => handleEdit(student)}>Edit</button>
-                                <button onClick={() => handleDelete(student.id)}>Delete</button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
+    {filteredStudents.map(student => (
+        <tr key={student.id}>
+            <td>{student.fname}</td>
+            <td>{student.mname}</td>
+            <td>{student.lname}</td>
+            <td>{student.email}</td>
+            <td> {student.major} </td>
+            <td> {student.course} </td>
+            <td>{student.yearLevel}</td>
+            <td>{student.schoolID}</td>
+            <td>{student.age}</td>
+            <td>{student.role}</td>
+            <td><a href={student.photos.front} target="_blank" rel="noopener noreferrer">Front</a></td>
+            <td><a href={student.photos.left} target="_blank" rel="noopener noreferrer">Left</a></td>
+            <td><a href={student.photos.right} target="_blank" rel="noopener noreferrer">Right</a></td>
+            <td>
+                <button onClick={() => handleEdit(student)}>Edit</button>
+                <button onClick={() => handleDelete(student.id)}>Delete</button>
+            </td>
+        </tr>
+    ))}
+</tbody>
+
             </table>
 
             {editingStudent && (

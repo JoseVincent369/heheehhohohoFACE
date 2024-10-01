@@ -12,9 +12,9 @@ const Navbar = ({ user }) => {
         <div className="logo-text">E-Attend Attendance System</div>
       </div>
       <div className="user-info">
-        <div className="superadmin">
+        <div className="Moderator">
           
-          {user ? user.displayName : 'SuperAdmin'}
+          {user ? user.displayName : 'Moderator'}
         </div>
         <Logout /> {/* Logout button */}
       </div>

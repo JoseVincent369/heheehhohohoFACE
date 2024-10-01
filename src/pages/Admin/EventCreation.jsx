@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main'; // Import FIREBASE_AUTH for authentication
-import {
-  collection,
-  getDocs,
-  addDoc,
-} from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth'; // Import to track authentication state
+import LoadingScreen from '../components/LoadingScreen'; 
 import './localstyles.css'; // Import the CSS file
 
 const EventCreation = () => {
@@ -23,15 +20,22 @@ const EventCreation = () => {
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [majors, setMajors] = useState({});
   const [selectedMajors, setSelectedMajors] = useState([]);
-  const [yearLevels, setYearLevels] = useState([]);
+  const [selectedYearLevel, setSelectedYearLevel] = useState(''); 
   const [selectedYearLevels, setSelectedYearLevels] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [officers, setOfficers] = useState([]); // Store fetched officers
+  const [selectedOfficers, setSelectedOfficers] = useState([]); // Track selected officers
 
+
+
+  const yearLevels = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
   // Fetch organizations
   useEffect(() => {
     const fetchOrganizations = async () => {
       try {
+        setLoading(true);
         const orgRef = collection(FIRESTORE_DB, 'organizations');
         const orgSnapshot = await getDocs(orgRef);
         const orgs = orgSnapshot.docs.map((doc) => ({
@@ -39,8 +43,10 @@ const EventCreation = () => {
           ...doc.data(),
         }));
         setOrganizations(orgs);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching organizations:', error);
+        setLoading(false);
       }
     };
 
@@ -49,6 +55,7 @@ const EventCreation = () => {
 
   // Fetch departments, courses, and majors
   useEffect(() => {
+    setLoading(true);
     const fetchDepartments = async () => {
       try {
         const deptRef = collection(FIRESTORE_DB, 'departments');
@@ -81,8 +88,10 @@ const EventCreation = () => {
 
         setCourses(coursesMap);
         setMajors(majorsMap);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching departments, courses, and majors:', error);
+        setLoading(false);
       }
     };
 
@@ -94,6 +103,7 @@ const EventCreation = () => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
       if (user) {
         setCurrentUser(user.uid);
+        fetchOfficers(user.uid); 
       } else {
         setCurrentUser(null);
       }
@@ -102,17 +112,57 @@ const EventCreation = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleCheckboxChange = (value, setFunction, selectedValues) => {
-    if (selectedValues.includes(value)) {
-      setFunction(selectedValues.filter((item) => item !== value));
-    } else {
-      setFunction([...selectedValues, value]);
+   // Fetch officers for the current admin
+   const fetchOfficers = async (adminUid) => {
+    if (!adminUid) {
+      console.error('Admin UID is not defined.');
+      return;
+    }
+
+    try {
+      console.log('Fetching officers for admin UID:', adminUid);
+
+      const officersQuery = query(
+        collection(FIRESTORE_DB, 'users'),
+        where('role', '==', 'officer'),
+        where('adminId', '==', adminUid) // Query officers by adminId
+      );
+
+      const officersSnapshot = await getDocs(officersQuery);
+      if (officersSnapshot.empty) {
+        console.log('No officers found for this admin.');
+        setOfficers([]);
+      } else {
+        const fetchedOfficers = officersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log('Officers fetched:', fetchedOfficers);
+        setOfficers(fetchedOfficers);
+      }
+    } catch (error) {
+      console.error('Error fetching officers:', error);
     }
   };
 
-  const handleSelectAll = (items, setFunction, isSelected) => {
-    setFunction(isSelected ? [] : items.map((item) => item.id));
+  const handleCheckboxChange = (value, setter, selected) => {
+    if (selected.includes(value)) {
+      setter(selected.filter((id) => id !== value)); // Remove the selected item
+    } else {
+      setter([...selected, value]); // Add the new item
+    }
   };
+
+  const handleSelectAll = (items, setter, isSelected) => {
+    if (isSelected) {
+      setter([]); // Deselect all if any are selected
+    } else {
+      setter(items); // Select all
+    }
+  };
+
+
+  
 
   const handleEventCreation = async (e) => {
     e.preventDefault();
@@ -135,19 +185,29 @@ const EventCreation = () => {
       selectedDepartments: selectedDepartments,
       courses: selectedCourses,
       majors: selectedMajors,
+      officers: selectedOfficers, 
+      status: 'pending',
       createdBy: currentUser || 'unknown', // Use currentUser if available, else fallback to 'unknown'
     };
 
     try {
+      setLoading(true);
       await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
       alert('Event created successfully!');
       navigate('/localadmin'); // Adjust the path to match your routing structure
     } catch (error) {
       console.error('Error creating event:', error);
       alert('Failed to create event. Please try again.');
+    }  finally {
+      setLoading(false);
     }
+
   };
 
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
   return (
     <div className="event-creation">
       <h1>Create Event</h1>
@@ -202,67 +262,63 @@ const EventCreation = () => {
         </div>
 
         {/* Organizations Checkbox */}
-        <div className="form-group">
-          <label>Organizations:</label>
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              onChange={(e) =>
-                handleSelectAll(organizations, setSelectedOrganizations, selectedOrganizations.length > 0)
-              }
-              checked={selectedOrganizations.length === organizations.length}
-            />
-            <span>Select All</span>
-          </div>
-          {organizations.map((org) => (
-            <div key={org.id} className="checkbox-group">
-              <input
-                type="checkbox"
-                value={org.id}
-                onChange={() => handleCheckboxChange(org.id, setSelectedOrganizations, selectedOrganizations)}
-                checked={selectedOrganizations.includes(org.id)}
-              />
-              <span>{org.name}</span>
-            </div>
-          ))}
-        </div>
+<div className="form-group">
+  <label>Organizations:</label>
+  <div className="checkbox-group">
+    <input
+      type="checkbox"
+      onChange={() => handleSelectAll(organizations.map((org) => org.id), setSelectedOrganizations, selectedOrganizations.length === organizations.length)}
+      checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
+    />
+    <span>Select All</span>
+  </div>
 
-        {/* Departments, Courses, Majors Checkbox */}
+  {organizations.map((org) => (
+    <div key={org.id} className="checkbox-group">
+      <input
+        type="checkbox"
+        value={org.id}
+        onChange={() => handleCheckboxChange(org.id, setSelectedOrganizations, selectedOrganizations)}
+        checked={selectedOrganizations.includes(org.id)}
+      />
+      <span>{org.name}</span>
+    </div>
+  ))}
+</div>
+
+
+        {/* Departments, Courses, Majors Legend */}
         <div className="form-group">
           <label>Departments:</label>
           {departments.map((dept) => (
-            <div key={dept.id} className="checkbox-group">
-              <input
-                type="checkbox"
-                value={dept.id}
-                onChange={() => handleCheckboxChange(dept.id, setSelectedDepartments, selectedDepartments)}
-                checked={selectedDepartments.includes(dept.id)}
-              />
-              <span>{dept.name}</span>
+            <fieldset key={dept.id} className="nested-fieldset">
+              <legend>{dept.name}</legend>
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  value={dept.id}
+                  onChange={() => handleCheckboxChange(dept.id, setSelectedDepartments, selectedDepartments)}
+                  checked={selectedDepartments.includes(dept.id)}
+                />
+                <span>Select Department</span>
+              </div>
 
               {/* Nested Courses */}
               {courses[dept.id] && selectedDepartments.includes(dept.id) && (
                 <div className="nested-checkbox-group">
                   <label>Courses:</label>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      onChange={(e) =>
-                        handleSelectAll(courses[dept.id], setSelectedCourses, selectedCourses.length > 0)
-                      }
-                      checked={selectedCourses.length === courses[dept.id].length}
-                    />
-                    <span>Select All</span>
-                  </div>
                   {courses[dept.id].map((course) => (
-                    <div key={course.id} className="checkbox-group">
-                      <input
-                        type="checkbox"
-                        value={course.id}
-                        onChange={() => handleCheckboxChange(course.id, setSelectedCourses, selectedCourses)}
-                        checked={selectedCourses.includes(course.id)}
-                      />
-                      <span>{course.name}</span>
+                    <fieldset key={course.id} className="nested-fieldset">
+                      <legend>{course.name}</legend>
+                      <div className="checkbox-group">
+                        <input
+                          type="checkbox"
+                          value={course.id}
+                          onChange={() => handleCheckboxChange(course.id, setSelectedCourses, selectedCourses)}
+                          checked={selectedCourses.includes(course.id)}
+                        />
+                        <span>Select Course</span>
+                      </div>
 
                       {/* Nested Majors */}
                       {majors[course.id] && selectedCourses.includes(course.id) && (
@@ -281,36 +337,68 @@ const EventCreation = () => {
                           ))}
                         </div>
                       )}
-                    </div>
+                    </fieldset>
                   ))}
                 </div>
               )}
-            </div>
+            </fieldset>
           ))}
         </div>
+{/* Render the list of officers with checkboxes */}
+<div>
+  <h2>Officers</h2>
+  {officers.length > 0 ? (
+    <div className="checkbox-group">
+      <input
+        type="checkbox"
+        onChange={(e) =>
+          handleSelectAll(officers.map((officer) => officer.id), setSelectedOfficers, selectedOfficers.length > 0)
+        }
+        checked={selectedOfficers.length === officers.length}
+      />
+      <span>Select All</span>
+    </div>
+  ) : (
+    <p>No officers found.</p>
+  )}
 
-        {/* Year Levels Checkbox */}
-        <div className="form-group">
+  {officers.length > 0 &&
+    officers.map((officer) => (
+      <div key={officer.id} className="checkbox-group">
+        <input
+          type="checkbox"
+          value={officer.id}
+          onChange={() => handleCheckboxChange(officer.id, setSelectedOfficers, selectedOfficers)}
+          checked={selectedOfficers.includes(officer.id)}
+        />
+        <span>
+          {officer.fullName} ({officer.email})
+        </span>
+      </div>
+    ))}
+</div>
+
+
+         {/* Year Levels Checkbox */}
+         <div className="form-group">
           <label>Year Levels:</label>
           <div className="checkbox-group">
             <input
               type="checkbox"
-              onChange={(e) =>
-                handleSelectAll(['1', '2', '3', '4'], setSelectedYearLevels, selectedYearLevels.length > 0)
-              }
-              checked={selectedYearLevels.length === 4}
+              onChange={(e) => handleSelectAll(yearLevels, setSelectedYearLevels, selectedYearLevels.length > 0)}
+              checked={selectedYearLevels.length === yearLevels.length}
             />
             <span>Select All</span>
           </div>
-          {['1', '2', '3', '4'].map((year) => (
-            <div key={year} className="checkbox-group">
+          {yearLevels.map((yearLevel) => (
+            <div key={yearLevel} className="checkbox-group">
               <input
                 type="checkbox"
-                value={year}
-                onChange={() => handleCheckboxChange(year, setSelectedYearLevels, selectedYearLevels)}
-                checked={selectedYearLevels.includes(year)}
+                value={yearLevel}
+                onChange={() => handleCheckboxChange(yearLevel, setSelectedYearLevels, selectedYearLevels)}
+                checked={selectedYearLevels.includes(yearLevel)}
               />
-              <span>Year {year}</span>
+              <span>{yearLevel}</span>
             </div>
           ))}
         </div>

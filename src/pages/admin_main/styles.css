@@ -14,18 +14,17 @@ body {
 .admin-dashboard {
     display: flex;
     flex-direction: column;
-    background: white;
     padding: 20px;
     border-radius: 1%;
     box-shadow: blue;
-    width: 73vw;
     height: 100vh;
     align-items: center;
     margin: auto;
     margin-top: 50px;
     border-radius: 25px;
     color: black;
-
+    font-family: Arial, sans-serif;
+    
 }
 
 /* Navbar Styling */
@@ -131,6 +130,16 @@ body {
     transition: margin-left 0.3s ease; /* Smooth transition */
 }
 
+.main-content {
+
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+
+
 .main-content.shifted {
     margin-left: 60px; /* Adjust when sidebar is closed */
 }
@@ -159,7 +168,8 @@ body {
 }
   
   .menu-button {
-    margin: 10px;
+    display: flex;
+    justify-content: center;
     cursor: pointer; /* Change cursor to pointer */
   }
   

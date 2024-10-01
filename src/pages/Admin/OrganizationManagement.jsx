@@ -81,13 +81,6 @@ const OrganizationManagement = () => {
 
     return (
         <div className="organization-management">
-            <header className="navbar">
-                <div className="logo">Admin Panel</div>
-                <div className="user-info">
-                    <div className="admin">{user ? user.displayName : 'Admin'}</div>
-                    <button className="logout-btn" onClick={handleLogout}>Logout</button>
-                </div>
-            </header>
 
             <div className="main-content">
                 <div className="create-organization-form">

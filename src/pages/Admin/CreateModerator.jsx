@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
-import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
+import CreateModeratorModal from './CreateModeratorModal';
 import './localstyles.css';
 
-const CreateModerator = () => {
-  const [moderatorData, setModeratorData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    organization: '',
-    department: '',
-  });
-
-  const [organizationsList, setOrganizationsList] = useState([]);
-  const [departmentsList, setDepartmentsList] = useState([]);
+const ManageModerators = () => {
   const [moderators, setModerators] = useState([]);
-  const [photo, setPhoto] = useState(null);
   const [error, setError] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
-
+  const [showModal, setShowModal] = useState(false);
+  const [editModerator, setEditModerator] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
       if (user) {
         setCurrentAdmin(user);
       } else {
@@ -33,26 +23,13 @@ const CreateModerator = () => {
       }
     });
 
-    return () => checkAuth();
+    return () => unsubscribe(); // Clean up the listener on unmount
   }, [navigate]);
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const depsSnapshot = await getDocs(collection(FIRESTORE_DB, 'departments'));
-        const deps = depsSnapshot.docs.map((doc) => doc.data().name);
-        setDepartmentsList(deps);
-      } catch (error) {
-        console.error('Error fetching departments:', error);
-        setError(`Failed to fetch departments: ${error.message}`);
-      }
-    };
-
     const fetchModerators = async () => {
-      if (!currentAdmin) return;
+      if (!currentAdmin) return; // Prevent fetching if currentAdmin is null
       try {
-        console.log('Fetching moderators for admin UID:', currentAdmin.uid);
-
         const moderatorsQuery = query(
           collection(FIRESTORE_DB, 'users'),
           where('role', '==', 'moderator'),
@@ -60,15 +37,10 @@ const CreateModerator = () => {
         );
 
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
-
-        console.log('Moderators Snapshot:', moderatorsSnapshot.docs);
-
         const moderatorsList = moderatorsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-
-        console.log('Moderators List:', moderatorsList);
 
         setModerators(moderatorsList);
       } catch (error) {
@@ -77,148 +49,94 @@ const CreateModerator = () => {
       }
     };
 
-    fetchDepartments();
     fetchModerators();
   }, [currentAdmin]);
 
-  const handleChange = (e) => {
-    setModeratorData({
-      ...moderatorData,
-      [e.target.name]: e.target.value,
-    });
+  const handleOpenModal = () => {
+    setEditModerator(null); // Reset editModerator when creating a new moderator
+    setShowModal(true);
   };
 
-  const handleFileChange = (e) => {
-    setPhoto(e.target.files[0]);
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditModerator(null); // Reset when closing the modal
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!photo) {
-      setError('Please upload a photo.');
-      return;
-    }
+  const handleEditModerator = (moderator) => {
+    setEditModerator(moderator); // Set the moderator to be edited
+    setShowModal(true);
+  };
 
+  const handleDeleteModerator = async (id) => {
     try {
-      if (!currentAdmin) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const userCredential = await createUserWithEmailAndPassword(
-        FIREBASE_AUTH,
-        moderatorData.email,
-        moderatorData.password
-      );
-
-      const uid = userCredential.user.uid;
-
-      const photoRef = ref(STORAGE, `moderators/${uid}/${photo.name}`);
-      await uploadBytes(photoRef, photo);
-      const url = await getDownloadURL(photoRef);
-
-      const moderatorDoc = {
-        fullName: moderatorData.fullName,
-        email: moderatorData.email,
-        role: 'moderator',
-        organization: moderatorData.organization,
-        department: moderatorData.department,
-        photoURL: url,
-        createdBy: currentAdmin.uid,
-      };
-
-      await setDoc(doc(FIRESTORE_DB, 'users', uid), moderatorDoc);
-
-      alert('Moderator account created successfully!');
-
-      setModeratorData({
-        fullName: '',
-        email: '',
-        password: '',
-        organization: '',
-        department: '',
-      });
-      setPhoto(null);
-      setError('');
-
-      await fetchModerators(); 
+      await deleteDoc(doc(FIRESTORE_DB, 'users', id));
+      setModerators(moderators.filter((moderator) => moderator.id !== id));
+      alert('Moderator deleted successfully!');
     } catch (error) {
-      console.error('Error creating moderator:', error);
-      setError(`Failed to create moderator account: ${error.message}`);
+      console.error('Error deleting moderator:', error);
+      setError(`Failed to delete moderator: ${error.message}`);
     }
   };
 
   return (
-    <div>
-      <h2>Create Moderator</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="fullName"
-          value={moderatorData.fullName}
-          onChange={handleChange}
-          placeholder="Full Name"
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          value={moderatorData.email}
-          onChange={handleChange}
-          placeholder="Email"
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          value={moderatorData.password}
-          onChange={handleChange}
-          placeholder="Password"
-          required
-        />
-        <select
-          name="organization"
-          value={moderatorData.organization}
-          onChange={handleChange}
-          
-        >
-          <option value="">Select Organization</option>
-          {organizationsList.map((org, index) => (
-            <option key={index} value={org}>
-              {org}
-            </option>
-          ))}
-        </select>
-        <select
-          name="department"
-          value={moderatorData.department}
-          onChange={handleChange}
-          
-        >
-          <option value="">Select Department</option>
-          {departmentsList.map((dept, index) => (
-            <option key={index} value={dept}>
-              {dept}
-            </option>
-          ))}
-        </select>
-        <input type="file" onChange={handleFileChange} accept="image/*" required />
-        <button type="submit">Create Moderator</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
+    <div className="organization-management">
+      <div className="main-content">
+        <h2>Your Moderators</h2>
+        <button onClick={handleOpenModal}>Create Moderator</button>
 
-      <h3>Your Moderators</h3>
-      {moderators.length > 0 ? (
-        <ul>
-          {moderators.map((moderator) => (
-            <li key={moderator.id}>{moderator.fullName} - {moderator.email}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>No moderators created by you.</p>
-      )}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+
+        {moderators.length > 0 ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Organization</th>
+                <th>Photo</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {moderators.map((moderator) => (
+                <tr key={moderator.id}>
+                  <td>{moderator.fullName}</td>
+                  <td>{moderator.email}</td>
+                  <td>{moderator.department}</td>
+                  <td>{moderator.organization}</td>
+                  <td>
+                    <img 
+                      src={moderator.photoURL} 
+                      alt={`${moderator.fullName}'s profile`} 
+                      style={{ width: '50px', height: '50px', borderRadius: '50%' }} 
+                    />
+                  </td>
+                  <td>
+                    <button onClick={() => handleEditModerator(moderator)}>Edit</button>
+                    <button onClick={() => handleDeleteModerator(moderator.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>No moderators created by you.</p>
+        )}
+
+        {currentAdmin && ( // Ensure currentAdmin is defined before rendering modal
+          <CreateModeratorModal
+            showModal={showModal}
+            handleClose={handleCloseModal}
+            currentAdmin={currentAdmin}
+            fetchModerators={() => setModerators(moderators)} // Refresh the list of moderators
+            editModerator={editModerator} // Pass the moderator to be edited
+            setEditModerator={setEditModerator} // To update state when modal is closed
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-export default CreateModerator;
+export default ManageModerators;

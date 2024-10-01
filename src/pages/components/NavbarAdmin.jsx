@@ -1,6 +1,6 @@
 import React from 'react';
 import './component.css';
-import Logout from '../Admin/Logout';
+import Logout from './Logout';
 import logo from '../../assets/images/nbsc logo.png'; // Ensure this is correctly imported
 
 const Navbar = ({ user }) => {

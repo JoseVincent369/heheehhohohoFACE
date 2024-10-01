@@ -1,0 +1,142 @@
+/* General styles for the dashboard */
+.moderator-dashboard {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+
+h5 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    color: #555;
+}
+
+tbody tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+
+
+p {
+    color: #555;
+}
+
+/* Error message styling */
+.error-message {
+    color: red;
+    font-weight: bold;
+}
+
+/* Modal styles */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+    text-align: left;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.modal-content p {
+    margin: 10px 0;
+    color: #555;
+}
+
+.modal-content button {
+    margin-top: 10px;
+    background-color: #e74c3c;
+    padding: 8px 16px;
+}
+
+.modal-content button:hover {
+    background-color: #c0392b;
+}
+
+.admin-layout {
+    display: flex;
+    flex-direction: row;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 250px; /* Adjusted for open sidebar */
+    margin-top: 60px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    transition: margin-left 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.moderator-layout.sidebar-closed .main-content {
+    margin-left: 60px; /* Adjusted for closed sidebar */
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 60px;  /* Small sidebar on smaller screens */
+    }
+
+    .main-content {
+        margin-left: 60px; /* Shift content accordingly */
+        padding: 10px;
+    }
+
+    .main-content.shifted {
+        margin-left: 0; /* No margin on smaller screens */
+    }
+}
+
+.main-content {
+
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+
+
+.main-content.shifted {
+    margin-left: 60px; /* Adjust when sidebar is closed */
+}

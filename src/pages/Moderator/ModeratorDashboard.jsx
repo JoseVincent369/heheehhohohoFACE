@@ -2,260 +2,218 @@ import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, onSnapshot, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
-import './moderatorstyles.css';
-import logo from '../../assets/images/nbsc logo.png'; // Ensure correct image path
-import Logout from '../Admin/Logout'; // Import Logout component
-import ProfileEdit from '../components/ProfileEdit';
+import { browserSessionPersistence, setPersistence } from "firebase/auth";
+import LoadingScreen from '../components/LoadingScreen';
+import './moderatorStyles.css';
 
 const ModeratorDashboard = () => {
-    const [events, setEvents] = useState([]);
-    const [pendingApprovals, setPendingApprovals] = useState([]);
-    const [officers, setOfficers] = useState([]);
-    const [todaysEvents, setTodaysEvents] = useState([]);
-    const [adminAssignedEvents, setAdminAssignedEvents] = useState([]);
+    const [approvedEvents, setApprovedEvents] = useState([]);
+    const [rejectedEvents, setRejectedEvents] = useState([]);
+    const [pendingEvents, setPendingEvents] = useState([]);
     const [user, setUser] = useState(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [selectedEvent, setSelectedEvent] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showProfileEdit, setShowProfileEdit] = useState(false);
+    const [eventsLoading, setEventsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
 
+    // Authentication
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-            setUser(currentUser);
+            if (currentUser) {
+                setUser(currentUser);
+                setLoading(false);
+            } else {
+                setUser(null); // Handle logged out state
+            }
             setLoading(false);
         });
-
         return () => unsubscribe();
     }, [auth]);
 
-    useEffect(() => {
-        if (!user || !user.organization) return;
-
-        const fetchEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization));
-        const unsubscribeEvents = onSnapshot(fetchEvents, (querySnapshot) => {
-            const eventsData = [];
-            querySnapshot.forEach((doc) => {
-                eventsData.push({ id: doc.id, ...doc.data() });
-            });
-            setEvents(eventsData);
-        }, (error) => {
-            console.error('Error fetching events: ', error);
+    setPersistence(auth, browserSessionPersistence)
+        .then(() => {
+            // Now any authentication state will persist only for the session
+        })
+        .catch((error) => {
+            console.error("Error setting persistence:", error);
         });
+
+    // Fetch Approved, Rejected, and Pending Events
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchEvents = query(
+            collection(db, 'events'),
+            where('createdBy', '==', user.uid) // Fetch events created by the current moderator
+        );
+
+        const unsubscribeEvents = onSnapshot(
+            fetchEvents,
+            (querySnapshot) => {
+                const eventsData = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+
+                console.log("Fetched Events Data:", eventsData); // Debugging line
+                setApprovedEvents(eventsData.filter((event) => event.status === 'accepted'));
+                setRejectedEvents(eventsData.filter((event) => event.status === 'rejected'));
+                setPendingEvents(eventsData.filter((event) => event.status === 'pending'));
+                setEventsLoading(false);
+            },
+            (error) => {
+                console.error('Error fetching events:', error);
+                setError('Error fetching events.');
+                setEventsLoading(false);
+            }
+        );
 
         return () => unsubscribeEvents();
     }, [db, user]);
 
-    useEffect(() => {
-        if (!user || !user.organization) return;
-
-        const fetchPendingApprovals = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('status', '==', 'pending'));
-        const unsubscribePendingApprovals = onSnapshot(fetchPendingApprovals, (querySnapshot) => {
-            const pendingApprovalsData = [];
-            querySnapshot.forEach((doc) => {
-                pendingApprovalsData.push({ id: doc.id, ...doc.data() });
-            });
-            setPendingApprovals(pendingApprovalsData);
-        }, (error) => {
-            console.error('Error fetching pending approvals: ', error);
-        });
-
-        return () => unsubscribePendingApprovals();
-    }, [db, user]);
-
-    useEffect(() => {
-        if (!user || !user.organization) return;
-
-        const fetchOfficers = query(collection(db, 'users'), where('role', '==', 'officer'), where('organization', '==', user.organization));
-        const unsubscribeOfficers = onSnapshot(fetchOfficers, (querySnapshot) => {
-            const officersData = [];
-            querySnapshot.forEach((doc) => {
-                officersData.push({ id: doc.id, ...doc.data() });
-            });
-            setOfficers(officersData);
-        }, (error) => {
-            console.error('Error fetching officers: ', error);
-        });
-
-        return () => unsubscribeOfficers();
-    }, [db, user]);
-
-    useEffect(() => {
-        if (!user || !user.organization) return;
-
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        const fetchTodaysEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('startDate', '<=', today), where('endDate', '>=', today));
-        const unsubscribeTodaysEvents = onSnapshot(fetchTodaysEvents, (querySnapshot) => {
-            const todaysEventsData = [];
-            querySnapshot.forEach((doc) => {
-                todaysEventsData.push({ id: doc.id, ...doc.data() });
-            });
-            setTodaysEvents(todaysEventsData);
-        }, (error) => {
-            console.error('Error fetching today\'s events: ', error);
-        });
-
-        return () => unsubscribeTodaysEvents();
-    }, [db, user]);
-
-    useEffect(() => {
-        if (!user || !user.organization) return;
-
-        // Fetch admin-assigned events based on the organization
-        const fetchAdminAssignedEvents = query(collection(db, 'events'), where('organizations', 'array-contains', user.organization), where('createdByRole', '==', 'admin'));
-        const unsubscribeAdminAssignedEvents = onSnapshot(fetchAdminAssignedEvents, (querySnapshot) => {
-            const adminAssignedEventsData = [];
-            querySnapshot.forEach((doc) => {
-                adminAssignedEventsData.push({ id: doc.id, ...doc.data() });
-            });
-            setAdminAssignedEvents(adminAssignedEventsData);
-        }, (error) => {
-            console.error('Error fetching admin assigned events: ', error);
-        });
-
-        return () => unsubscribeAdminAssignedEvents();
-    }, [db, user]);
-
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
-    };
-
     const handleEventClick = (event) => {
         setSelectedEvent(event);
+        setIsModalOpen(true);
     };
 
-    const handleCloseModal = () => {
+    const handleModalClose = () => {
+        setIsModalOpen(false);
         setSelectedEvent(null);
     };
 
-    const handleProfileEdit = () => {
-        setShowProfileEdit(true);
-    };
-
-    const handleProfileEditClose = () => {
-        setShowProfileEdit(false);
-    };
-
     if (loading) {
-        return <div>Loading...</div>;
+        return <LoadingScreen />; // Show loading screen for authentication
+    }
+
+    if (eventsLoading) {
+        return <LoadingScreen />; // Show loading screen for events
     }
 
     return (
         <div className="moderator-dashboard">
-            <header className="navbar">
-                <div className="logo-container">
-                    <img src={logo} alt="Logo" className="header-logo" />
-                    <div className="logo-text">E-Attend Attendance System</div>
-                </div>
-                <div className="user-info">
-                    <div className="profile-icon" onClick={handleProfileEdit}>
-                        <img
-                            src={user?.photoURL || 'path/to/default/profile-icon.png'}
-                            alt="Profile"
-                            className="profile-icon-image"
-                        />
-                    </div>
-                    <div className="moderator">{user ? user.displayName : 'Moderator'}</div>
-                    <Logout />
-                </div>
-            </header>
-
             <div className="main-content">
-                <nav className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
-                    <ul>
-                        <li><a href="/moderator">Dashboard</a></li>
-                        <li><a href="/moderator/create">Create Event</a></li>
-                        <li><a href="/moderator/track">Track Attendance</a></li>
-                    </ul>
-                </nav>
-
                 <div className="content">
-                    <div className="event-stats">
-                        <div className="stat upcoming-events">
-                            <span>Upcoming Events</span>
-                            <div className="badge">{events.length}</div>
-                        </div>
-                        <div className="stat pending-approvals">
-                            <span>Pending Approvals</span>
-                            <div className="badge">{pendingApprovals.length}</div>
-                        </div>
-                        <div className="stat active-officers">
-                            <span>Active Officers</span>
-                            <div className="badge">{officers.length}</div>
-                        </div>
-                        <div className="stat todays-events">
-                            <span>Today's Events</span>
-                            <div className="badge">{todaysEvents.length}</div>
-                        </div>
-                    </div>
+                    {error && <p className="error-message">{error}</p>}
 
-                    <div className="events-section">
-                        <h4>Events Overview</h4>
-                        <div className="event-categories">
-                            <div className="event-category">
-                                <h5>Your Events</h5>
-                                <ul className="event-list">
-                                    {events.map((event) => (
-                                        <li
-                                            className="event-item"
-                                            key={event.id}
-                                            onClick={() => handleEventClick(event)}
-                                        >
-                                            {event.name}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div className="event-category">
-                                <h5>Today's Events</h5>
-                                <ul className="event-list">
-                                    {todaysEvents.map((event) => (
-                                        <li
-                                            className="event-item"
-                                            key={event.id}
-                                            onClick={() => handleEventClick(event)}
-                                        >
-                                            {event.name}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div className="event-category">
-                                <h5>Admin-Assigned Events</h5>
-                                <ul className="event-list">
-                                    {adminAssignedEvents.map((event) => (
-                                        <li
-                                            className="event-item"
-                                            key={event.id}
-                                            onClick={() => handleEventClick(event)}
-                                        >
-                                            {event.name}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Approved Events Table */}
+                    <h5>Approved Events</h5>
+                    {approvedEvents.length === 0 ? (
+                        <p>No approved events at the moment.</p>
+                    ) : (
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Description</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>View Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {approvedEvents.map((event, index) => (
+                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                        <td>{event.name}</td>
+                                        <td>{event.description || 'N/A'}</td>
+                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{event.venue || 'N/A'}</td>
+                                        <td>{event.status || 'N/A'}</td>
+                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
 
-                    {selectedEvent && (
-                        <div className="event-modal">
+                    {/* Rejected Events Table */}
+                    <h5>Rejected Events</h5>
+                    {rejectedEvents.length === 0 ? (
+                        <p>No rejected events at the moment.</p>
+                    ) : (
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Description</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>View Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rejectedEvents.map((event, index) => (
+                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                        <td>{event.name}</td>
+                                        <td>{event.description || 'N/A'}</td>
+                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{event.venue || 'N/A'}</td>
+                                        <td>{event.status || 'N/A'}</td>
+                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+
+                    {/* Pending Events Table */}
+                    <h5>Pending Events</h5>
+                    {pendingEvents.length === 0 ? (
+                        <p>No pending events at the moment.</p>
+                    ) : (
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Description</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>View Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pendingEvents.map((event, index) => (
+                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                        <td>{event.name}</td>
+                                        <td>{event.description || 'N/A'}</td>
+                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                        <td>{event.venue || 'N/A'}</td>
+                                        <td>{event.status || 'N/A'}</td>
+                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+
+                    {/* Modal for Event Details */}
+                    {isModalOpen && selectedEvent && (
+                        <div className="modal">
                             <div className="modal-content">
-                                <span className="close" onClick={handleCloseModal}>&times;</span>
-                                <h2>{selectedEvent.name}</h2>
-                                <p>{selectedEvent.description}</p>
-                                <p><strong>Start Date:</strong> {selectedEvent.startDate}</p>
-                                <p><strong>End Date:</strong> {selectedEvent.endDate}</p>
-                                <p><strong>Venue:</strong> {selectedEvent.venue}</p>
-                                <p><strong>Status:</strong> {selectedEvent.status}</p>
+                                <h3>{selectedEvent.name}</h3>
+                                <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
+                                <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+                                <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+                                <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
+                                <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
+                                <button onClick={handleModalClose}>Close</button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-
-            {showProfileEdit && <ProfileEdit onClose={handleProfileEditClose} />}
         </div>
     );
 };

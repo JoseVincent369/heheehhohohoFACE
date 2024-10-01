@@ -3,7 +3,7 @@ import { Button, Alert } from 'react-bootstrap';
 import { FIREBASE_AUTH } from '../../firebaseutil/firebase_main'; // Adjust the import path as needed
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import './localstyles.css';
+import './component.css';
 
 const Logout = ({ onLogout }) => {
   const navigate = useNavigate();

@@ -16,30 +16,24 @@ const Sidebar = () => {
     <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <button className="menu-button" onClick={toggleSidebar}>
         {isOpen ? '☰' : '✖'}
-        </button>
+      </button>
       <ul>
         <li>
-          <Link to="/localadmin">
+          <Link to="/moderator">
             <FontAwesomeIcon icon={faTachometerAlt} className="sidebar-icon" />
             {isOpen && ' Dashboard'}
           </Link>
         </li>
         <li>
-          <Link to="/local/create">
+          <Link to="/moderator/create">
             <FontAwesomeIcon icon={faClipboardList} className="sidebar-icon" />
             {isOpen && ' Event Creation'}
           </Link>
         </li>
         <li>
-          <Link to="/local/Org">
+          <Link to="/moderator/CreateOfficer">
             <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
-            {isOpen && ' Organization Management'}
-          </Link>
-        </li>
-        <li>
-          <Link to="/local/createMod">
-            <FontAwesomeIcon icon={faBuilding} className="sidebar-icon" />
-            {isOpen && ' Create Moderator'}
+            {isOpen && ' Create Officer'}
           </Link>
         </li>
         {/* Additional links if needed */}

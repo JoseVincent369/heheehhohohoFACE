@@ -7,8 +7,9 @@ import {
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
+import { Timestamp } from 'firebase/firestore';
 import './ModeratorStyles.css';
-import Logout from '../Admin/Logout';
+
 
 const EventManagement = () => {
   const [eventName, setEventName] = useState('');
@@ -21,10 +22,12 @@ const EventManagement = () => {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [selectedMajors, setSelectedMajors] = useState([]);
+  const [selectedOfficer, setSelectedOfficer] = useState(''); 
   const [organizations, setOrganizations] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [majors, setMajors] = useState([]);
+  const [officers, setOfficers] = useState([]); 
   const [yearLevels] = useState(['1', '2', '3', '4']);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +45,6 @@ const EventManagement = () => {
   }, [auth]);
 
   useEffect(() => {
-    // Fetch Organizations and Departments
     const fetchOrganizationsAndDepartments = async () => {
       setLoading(true);
       try {
@@ -50,21 +52,58 @@ const EventManagement = () => {
         const orgsSnapshot = await getDocs(collection(db, 'organizations'));
         const orgs = orgsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setOrganizations(orgs);
-
+  
         // Fetch departments
         const deptsSnapshot = await getDocs(collection(db, 'departments'));
         const depts = deptsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setDepartments(depts);
+  
+        // Fetch officers
+
       } catch (error) {
-        console.error('Error fetching organizations or departments:', error);
-        alert('Failed to fetch organizations or departments.');
+        console.error('Error fetching organizations, departments, or officers:', error);
+        alert('Failed to fetch organizations, departments, or officers.');
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchOrganizationsAndDepartments();
   }, [db]);
+
+  useEffect(() => {
+    const fetchOfficers = async () => {
+      // Ensure user is not null
+      if (!user) {
+        console.log('No user is logged in, skipping officer fetch');
+        return; // Exit early if user is null
+      }
+  
+      setLoading(true);
+      try {
+        // Get the current user's UID
+        const currentUserUID = user.uid;
+  
+        // Fetch all users
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const officersList = usersSnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() })) // Map to get user data
+          .filter(user => user.role === 'officer' && user.createdBy === currentUserUID); // Filter by role and createdBy
+  
+        console.log("Fetched Officers:", officersList); // Log fetched officers for debugging
+        setOfficers(officersList); 
+      } catch (error) {
+        console.error('Error fetching officers:', error);
+        alert('Failed to fetch officers.');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchOfficers();
+  }, [db, user]); // user as a dependency to re-fetch when user changes
+  
+
 
   useEffect(() => {
     // Fetch courses based on selected departments
@@ -125,6 +164,10 @@ const EventManagement = () => {
     });
   };
 
+  const handleOfficerSelection = (e) => {
+    setSelectedOfficer(e.target.value); // Set the selected officer
+  };
+
   const handleLogout = () => {
     signOut(auth).catch((error) => {
       console.error('Error logging out: ', error);
@@ -137,23 +180,28 @@ const EventManagement = () => {
       alert('Please log in to create an event.');
       return;
     }
-
+  
     setLoading(true);
     try {
+      // Convert start and end dates to Firestore Timestamp
+      const startDateTimestamp = Timestamp.fromDate(new Date(eventStartDate));
+      const endDateTimestamp = Timestamp.fromDate(new Date(eventEndDate));
+  
       // Constructing the event data
       const eventData = {
         name: eventName,
         description: eventDescription,
-        startDate: eventStartDate,
-        endDate: eventEndDate,
+        startDate: startDateTimestamp,
+        endDate: endDateTimestamp, 
         venue,
         courses: selectedCourses,
         majors: selectedMajors,
         organizations: selectedOrgs,
         selectedDepartments,
+        officers: selectedOfficer, 
         yearLevels: selectedYearLevels,
         createdBy: user.uid,
-        status: 'pending', // Initial status for admin approval
+        status: 'pending',
       };
 
       // Adding the event to Firestore
@@ -173,6 +221,7 @@ const EventManagement = () => {
       setSelectedDepartments([]);
       setSelectedCourses([]);
       setSelectedMajors([]);
+      setSelectedOfficer(''); 
     } catch (error) {
       console.error('Error creating event:', error);
       alert(`Failed to create event: ${error.message}`);
@@ -200,31 +249,10 @@ useEffect(() => {
 
   return (
     <div className="event-management">
-      <header className="navbar">
-        <div className="logo">Event Management</div>
-        <div className="user-info">
-          <div className="user">{user ? user.displayName : 'Moderator'}</div>
-          <Logout />
-        </div>
-      </header>
+
 
       <div className="main-content">
-        <nav className={`sidebar`}>
-          <ul>
-            <li>
-              <a href="/moderator/dashboard">Dashboard</a>
-            </li>
-            <li>
-              <a href="/moderator/events">Event Management</a>
-            </li>
-            <li>
-              <a href="/moderator/attendance">Attendance Tracking</a>
-            </li>
-            <li>
-              <a href="/">Settings</a>
-            </li>
-          </ul>
-        </nav>
+
 
         <div className="content">
           <h2>Create Event</h2>
@@ -322,6 +350,19 @@ useEffect(() => {
                   {major.name}
                 </label>
               ))}
+            </fieldset>
+
+                        {/* Officer selection */}
+                        <fieldset>
+              <legend>Select Officer In-Charge</legend>
+              <select value={selectedOfficer} onChange={handleOfficerSelection} required>
+                <option value="">Select an Officer</option>
+                {officers.map((officer) => (
+                  <option key={officer.id} value={officer.id}>
+                    {officer.fullName}
+                  </option>
+                ))}
+              </select>
             </fieldset>
 
             <fieldset>

@@ -12,6 +12,7 @@ import SignUp from './pages/student/Signup';
 import NotFound from './pages/components/NotFount';
 import Layout from './pages/components/Layout';
 import AdminLayout from './pages/components/LayoutAdmin';
+import LayoutMod from './pages/components/LayoutMod';
 
 
 // Super Admin, Admin, Moderator Pages
@@ -29,12 +30,12 @@ import CreateModerator from './pages/Admin/CreateModerator';
 
 // Moderator Pages
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
-import AttendanceTracking from './pages/Moderator/AttendanceTracking';
+import CreateOfficer from './pages/Moderator/CreateOfficer';
 import EventManage from './pages/Moderator/EventManage';
 import OfficerDashboard from './pages/Moderator/OfficerDashboard';
 
 // Other
-import Logout from './pages/Admin/Logout';
+import Logout from './pages/components/Logout';
 
 function App() {
   return (
@@ -73,9 +74,9 @@ function MainApp() {
           </Route>
 
           {/* Moderator Layout */}
-          <Route element={<Layout />}>
+          <Route element={<LayoutMod />}>
             <Route path="/moderator" element={<ModeratorDashboard />} />
-            <Route path="/moderator/attendance" element={<AttendanceTracking />} />
+            <Route path="/moderator/CreateOfficer" element={<CreateOfficer />} />
             <Route path="/moderator/create" element={<EventManage />} />
             <Route path="/moderator/officers" element={<OfficerDashboard />} />
           </Route>

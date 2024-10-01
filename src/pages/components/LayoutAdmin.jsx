@@ -11,7 +11,7 @@ const AdminLayout = ({ children }) => {
             <div className="admin-content">
                 <SidebarAdmin />
                 <main>{children}
-                <Outlet />
+                <Outlet/>
                 </main>
             </div>
         </div>
