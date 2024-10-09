@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main'; // Import FIREBASE_AUTH for authentication
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, getDoc, doc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth'; // Import to track authentication state
 import LoadingScreen from '../components/LoadingScreen'; 
@@ -20,7 +20,6 @@ const EventCreation = () => {
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [majors, setMajors] = useState({});
   const [selectedMajors, setSelectedMajors] = useState([]);
-  const [selectedYearLevel, setSelectedYearLevel] = useState(''); 
   const [selectedYearLevels, setSelectedYearLevels] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
@@ -53,97 +52,134 @@ const EventCreation = () => {
     fetchOrganizations();
   }, []);
 
-  // Fetch departments, courses, and majors
-  useEffect(() => {
-    setLoading(true);
-    const fetchDepartments = async () => {
-      try {
-        const deptRef = collection(FIRESTORE_DB, 'departments');
-        const deptSnapshot = await getDocs(deptRef);
-        const depts = deptSnapshot.docs.map((doc) => ({
+  const fetchCoursesAndMajors = async (departmentId) => {
+    if (!departmentId) return;
+  
+    try {
+      // Fetch courses
+      const coursesRef = collection(FIRESTORE_DB, `departments/${departmentId}/courses`);
+      const coursesSnapshot = await getDocs(coursesRef);
+      const fetchedCourses = coursesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      // Update courses state
+      setCourses((prevCourses) => ({
+        ...prevCourses,
+        [departmentId]: fetchedCourses,
+      }));
+  
+      // Now fetch majors for each course under this department
+      const majorsForDept = {};
+      for (const course of fetchedCourses) {
+        const majorsRef = collection(FIRESTORE_DB, `departments/${departmentId}/courses/${course.id}/majors`);
+        const majorsSnapshot = await getDocs(majorsRef);
+        const fetchedMajors = majorsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setDepartments(depts);
-
-        const coursesMap = {};
-        const majorsMap = {};
-        for (const dept of deptSnapshot.docs) {
-          const courseRef = collection(dept.ref, 'courses');
-          const courseSnapshot = await getDocs(courseRef);
-          coursesMap[dept.id] = courseSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          for (const course of courseSnapshot.docs) {
-            const majorRef = collection(course.ref, 'majors');
-            const majorSnapshot = await getDocs(majorRef);
-            majorsMap[course.id] = majorSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-          }
-        }
-
-        setCourses(coursesMap);
-        setMajors(majorsMap);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching departments, courses, and majors:', error);
-        setLoading(false);
+        majorsForDept[course.id] = fetchedMajors; // Store majors under their corresponding course ID
       }
-    };
+  
+      // Update majors state
+      setMajors((prevMajors) => ({
+        ...prevMajors,
+        ...majorsForDept, // Merge with previous majors state
+      }));
+    } catch (error) {
+      console.error('Error fetching courses and majors:', error);
+    }
+  };
+  
+  
+  const handleDepartmentChange = (value) => {
+    handleCheckboxChange(value, setSelectedDepartments, selectedDepartments);
+    fetchCoursesAndMajors(value); // Fetch courses and majors when a department is selected
+  };
+  
 
-    fetchDepartments();
-  }, []);
-
-  // Fetch current user
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
-      if (user) {
-        setCurrentUser(user.uid);
-        fetchOfficers(user.uid); 
-      } else {
-        setCurrentUser(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-   // Fetch officers for the current admin
-   const fetchOfficers = async (adminUid) => {
+  const fetchAdminData = async (adminUid) => {
     if (!adminUid) {
       console.error('Admin UID is not defined.');
       return;
     }
-
+  
     try {
-      console.log('Fetching officers for admin UID:', adminUid);
-
-      const officersQuery = query(
-        collection(FIRESTORE_DB, 'users'),
-        where('role', '==', 'officer'),
-        where('adminId', '==', adminUid) // Query officers by adminId
-      );
-
-      const officersSnapshot = await getDocs(officersQuery);
-      if (officersSnapshot.empty) {
-        console.log('No officers found for this admin.');
-        setOfficers([]);
+      const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid)); // Fetch the admin document
+      if (adminDoc.exists()) {
+        const adminData = adminDoc.data();
+        setCurrentUser(adminUid); // Store department ID
+        fetchOfficers(adminUid);
       } else {
-        const fetchedOfficers = officersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        console.log('Officers fetched:', fetchedOfficers);
-        setOfficers(fetchedOfficers);
+        console.error('No such admin found.');
       }
     } catch (error) {
-      console.error('Error fetching officers:', error);
+      console.error('Error fetching admin data:', error);
     }
   };
+  
+  // Replace your current fetch user useEffect with this
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (user) {
+        fetchAdminData(user.uid);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+  
+    return () => unsubscribe();
+  }, []);
+  
+
+// Inside your fetchOfficers function, after you set currentUser
+const fetchOfficers = async (adminUid) => {
+  if (!adminUid) {
+    console.error('Admin UID is not defined.');
+    return;
+  }
+
+  try {
+    console.log('Fetching officers for admin UID:', adminUid);
+
+    const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid));
+    const adminData = adminDoc.data();
+    const adminDepartment = adminData.department; // Get the department of the current admin
+
+    const officersQuery = query(
+      collection(FIRESTORE_DB, 'users'),
+      where('role', '==', 'officer'),
+      where('adminId', '==', adminUid)
+    );
+
+    const officersSnapshot = await getDocs(officersQuery);
+    if (officersSnapshot.empty) {
+      console.log('No officers found for this admin.');
+      setOfficers([]);
+    } else {
+      const fetchedOfficers = officersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      console.log('Officers fetched:', fetchedOfficers);
+      setOfficers(fetchedOfficers);
+    }
+
+    // Filter departments based on admin's department
+    const deptRef = collection(FIRESTORE_DB, 'departments');
+    const deptSnapshot = await getDocs(deptRef);
+    const filteredDepartments = deptSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((dept) => dept.name === adminDepartment); // Assuming dept.name is the department name
+      console.log('Filtered Departments:', filteredDepartments);
+    setDepartments(filteredDepartments); // Set only the admin's department
+  } catch (error) {
+    console.error('Error fetching officers:', error);
+    
+  }
+};
+
 
   const handleCheckboxChange = (value, setter, selected) => {
     if (selected.includes(value)) {
@@ -169,40 +205,54 @@ const EventCreation = () => {
 
     // Validate form inputs
     if (!eventName || !startDate || !endDate || !venue) {
-      alert('Please fill in all required fields.');
-      return;
+        alert('Please fill in all required fields.');
+        return;
     }
+
+    // Map selected values to their names
+    const selectedOrgNames = selectedOrganizations.map(orgId => organizations.find(org => org.id === orgId)?.name || '');
+    const selectedCourseNames = selectedCourses.map(courseId => {
+        const deptCourses = Object.values(courses).flat();
+        return deptCourses.find(course => course.id === courseId)?.name || '';
+    });
+    const selectedMajorNames = selectedMajors.map(majorId => {
+        const deptMajors = Object.values(majors).flat();
+        return deptMajors.find(major => major.id === majorId)?.name || '';
+    });
+
+    // If year levels are not selected, set them as an empty array
+    const selectedYearLevelNames = selectedYearLevels.length > 0 ? selectedYearLevels : [];
 
     // Prepare data for Firestore
     const newEvent = {
-      name: eventName,
-      description,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      venue,
-      organizations: selectedOrganizations,
-      yearLevels: selectedYearLevels,
-      selectedDepartments: selectedDepartments,
-      courses: selectedCourses,
-      majors: selectedMajors,
-      officers: selectedOfficers, 
-      status: 'pending',
-      createdBy: currentUser || 'unknown', // Use currentUser if available, else fallback to 'unknown'
+        name: eventName,
+        description: description || '',  // Provide a default empty string if not entered
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        venue,
+        organizations: selectedOrgNames.filter(Boolean),  // Filter out any undefined values
+        yearLevels: selectedYearLevelNames,  // Store year level names
+        selectedDepartments: selectedDepartments.length > 0 ? selectedDepartments : [], // Keep department IDs if needed
+        courses: selectedCourseNames.filter(Boolean),  // Filter out undefined courses
+        majors: selectedMajorNames.filter(Boolean),    // Filter out undefined majors
+        officers: selectedOfficers.length > 0 ? selectedOfficers : [],  // Ensure empty array if no officers are selected
+        status: 'pending',
+        createdBy: currentUser || 'unknown',
+        adminID: currentUser || 'unknown',
     };
 
     try {
-      setLoading(true);
-      await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
-      alert('Event created successfully!');
-      navigate('/localadmin'); // Adjust the path to match your routing structure
+        setLoading(true);
+        await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
+        alert('Event created successfully!');
+        navigate('/localadmin'); // Adjust the path to match your routing structure
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event. Please try again.');
-    }  finally {
-      setLoading(false);
+        console.error('Error creating event:', error);
+        alert('Failed to create event. Please try again.');
+    } finally {
+        setLoading(false);
     }
-
-  };
+};
 
 
   if (loading) {
@@ -286,64 +336,65 @@ const EventCreation = () => {
   ))}
 </div>
 
+{/*Department*/}
+{departments.map((dept) => (
+  <fieldset key={dept.id} className="nested-fieldset">
+    <legend>{dept.name}</legend>
+    <div className="checkbox-group">
+      <input
+        type="checkbox"
+        value={dept.id}
+        onChange={() => handleDepartmentChange(dept.id)}
+        checked={selectedDepartments.includes(dept.id)}
+      />
+      <span>Select Department</span>
+    </div>
 
-        {/* Departments, Courses, Majors Legend */}
-        <div className="form-group">
-          <label>Departments:</label>
-          {departments.map((dept) => (
-            <fieldset key={dept.id} className="nested-fieldset">
-              <legend>{dept.name}</legend>
-              <div className="checkbox-group">
+    {/* Nested Courses */}
+    {courses[dept.id] && selectedDepartments.includes(dept.id) && (
+  <div className="nested-checkbox-group">
+    <label>Courses:</label>
+    {courses[dept.id].map((course) => (
+      <fieldset key={course.id} className="nested-fieldset">
+        <legend>{course.name}</legend>
+        <div className="checkbox-group">
+          <input
+            type="checkbox"
+            value={course.id}
+            onChange={() => handleCheckboxChange(course.id, setSelectedCourses, selectedCourses)}
+            checked={selectedCourses.includes(course.id)}
+          />
+          <span>Select Course</span>
+            </div>
+
+       {/* Nested Majors */}
+       {majors[course.id] && selectedCourses.includes(course.id) && majors[course.id].length > 0 && (
+          <div className="nested-checkbox-group">
+            <label>Majors:</label>
+            {majors[course.id].map((major) => (
+              <div key={major.id} className="checkbox-group">
                 <input
                   type="checkbox"
-                  value={dept.id}
-                  onChange={() => handleCheckboxChange(dept.id, setSelectedDepartments, selectedDepartments)}
-                  checked={selectedDepartments.includes(dept.id)}
+                  value={major.id}
+                  onChange={() => handleCheckboxChange(major.id, setSelectedMajors, selectedMajors)}
+                  checked={selectedMajors.includes(major.id)}
                 />
-                <span>Select Department</span>
+                <span>{major.name}</span>
+                  </div>
+                ))}
               </div>
+            )}
+          </fieldset>
+        ))}
+      </div>
+    )}
+  </fieldset>
+))}
 
-              {/* Nested Courses */}
-              {courses[dept.id] && selectedDepartments.includes(dept.id) && (
-                <div className="nested-checkbox-group">
-                  <label>Courses:</label>
-                  {courses[dept.id].map((course) => (
-                    <fieldset key={course.id} className="nested-fieldset">
-                      <legend>{course.name}</legend>
-                      <div className="checkbox-group">
-                        <input
-                          type="checkbox"
-                          value={course.id}
-                          onChange={() => handleCheckboxChange(course.id, setSelectedCourses, selectedCourses)}
-                          checked={selectedCourses.includes(course.id)}
-                        />
-                        <span>Select Course</span>
-                      </div>
 
-                      {/* Nested Majors */}
-                      {majors[course.id] && selectedCourses.includes(course.id) && (
-                        <div className="nested-checkbox-group">
-                          <label>Majors:</label>
-                          {majors[course.id].map((major) => (
-                            <div key={major.id} className="checkbox-group">
-                              <input
-                                type="checkbox"
-                                value={major.id}
-                                onChange={() => handleCheckboxChange(major.id, setSelectedMajors, selectedMajors)}
-                                checked={selectedMajors.includes(major.id)}
-                              />
-                              <span>{major.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </fieldset>
-                  ))}
-                </div>
-              )}
-            </fieldset>
-          ))}
-        </div>
+
+
+
 {/* Render the list of officers with checkboxes */}
 <div>
   <h2>Officers</h2>
@@ -406,6 +457,7 @@ const EventCreation = () => {
         <button type="submit" className="submit-button">Create Event</button>
       </form>
     </div>
+    
   );
 };
 

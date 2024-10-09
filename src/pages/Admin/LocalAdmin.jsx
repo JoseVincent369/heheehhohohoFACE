@@ -134,6 +134,29 @@ const LocalAdminDashboard = () => {
         setSelectedEvent(null);
     };
 
+
+    const getUserEmailsForEvent = async (event) => {
+        const emails = [];
+        try {
+            const userQuery = query(
+                collection(db, 'users'), // Adjust 'users' to your collection name
+                where('organization', 'in', event.organizations),
+                where('course', 'in', event.courses),
+                where('major', 'in', event.majors),
+                where('yearLevel', 'in', event.yearLevels)
+            );
+    
+            const querySnapshot = await getDocs(userQuery);
+            querySnapshot.forEach((doc) => {
+                emails.push(doc.data().email);
+            });
+        } catch (error) {
+            console.error('Error fetching user emails:', error);
+        }
+        return emails;
+    };
+    
+
     const handleChangeStatus = async (newStatus) => {
         if (selectedEvent) {
             const eventDoc = doc(db, 'events', selectedEvent.id);
@@ -215,26 +238,27 @@ const LocalAdminDashboard = () => {
             </tr>
         </thead>
         <tbody>
-            {pendingEvents.map((event, index) => {
-                const currentTime = Date.now();
-                const startTime = new Date(event.startDate?.seconds * 1000).getTime();
-                const endTime = new Date(event.endDate?.seconds * 1000).getTime();
-                const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
+    {pendingEvents.map((event) => {
+        const currentTime = Date.now();
+        const startTime = new Date(event.startDate?.seconds * 1000).getTime();
+        const endTime = new Date(event.endDate?.seconds * 1000).getTime();
+        const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
 
-                return (
-                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                        <td>{event.name}</td>
-                        <td>{event.description || 'N/A'}</td>
-                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{event.venue || 'N/A'}</td>
-                        <td>{event.status || 'N/A'}</td>
-                        <td>{eventPhase}</td>
-                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                    </tr>
-                );
-            })}
-        </tbody>
+        return (
+            <tr key={event.id} onClick={() => handleEventClick(event)}>
+                <td>{event.name}</td>
+                <td>{event.description || 'N/A'}</td>
+                <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                <td>{event.venue || 'N/A'}</td>
+                <td>{event.status || 'N/A'}</td>
+                <td>{eventPhase}</td>
+                <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+            </tr>
+        );
+    })}
+</tbody>
+
     </table>
 )}
 
@@ -272,7 +296,7 @@ const LocalAdminDashboard = () => {
                 const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
 
                 return (
-                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
                         <td>{event.name}</td>
                         <td>{event.description || 'N/A'}</td>
                         <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
@@ -317,7 +341,7 @@ const LocalAdminDashboard = () => {
                 const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
 
                 return (
-                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
                         <td>{event.name}</td>
                         <td>{event.description || 'N/A'}</td>
                         <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
@@ -364,7 +388,7 @@ const LocalAdminDashboard = () => {
                 const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
 
                 return (
-                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
                         <td>{event.name}</td>
                         <td>{event.description || 'N/A'}</td>
                         <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>

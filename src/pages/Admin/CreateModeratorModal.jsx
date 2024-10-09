@@ -88,7 +88,6 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
         createdBy: currentAdmin.uid, // Admin1's UID
         adminId: currentAdmin.uid,   // Admin1's UID
       };
-      
 
       await setDoc(doc(FIRESTORE_DB, 'users', uid), moderatorDoc);
 
@@ -125,6 +124,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 onChange={handleChange}
                 placeholder="Full Name"
                 required
+                autoComplete="off" // Disable autofill
               />
               <input
                 type="email"
@@ -133,6 +133,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 onChange={handleChange}
                 placeholder="Email"
                 required
+                autoComplete="off" // Disable autofill
               />
               <input
                 type="password"
@@ -141,6 +142,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 onChange={handleChange}
                 placeholder="Password"
                 required
+                autoComplete="new-password" // Disable autofill for passwords
               />
 
               {/* Organization Dropdown */}
@@ -148,7 +150,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 name="organization"
                 value={moderatorData.organization}
                 onChange={handleChange}
-                
+                autoComplete="off" // Disable autofill
               >
                 <option value="">Select Organization</option>
                 {organizationsList.map((org, index) => (
@@ -163,7 +165,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 name="department"
                 value={moderatorData.department}
                 onChange={handleChange}
-                
+                autoComplete="off" // Disable autofill
               >
                 <option value="">Select Department</option>
                 {departmentsList.map((dept, index) => (
@@ -173,7 +175,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
                 ))}
               </select>
 
-              <input type="file" onChange={handleFileChange} accept="image/*" required />
+              <input type="file" onChange={handleFileChange} accept="image/*" />
               <button type="submit">Create Moderator</button>
               {error && <p style={{ color: 'red' }}>{error}</p>}
             </form>

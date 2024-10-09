@@ -45,6 +45,9 @@ const LoginMain = () => {
         } else if (userRole === 'moderator') {
           console.log('Navigating to /moderator');
           navigate('/moderator'); // Redirect to Moderator Dashboard
+        } else if (userRole === 'officer') {
+          console.log('Navigating to /officer');
+          navigate('/home'); // Redirect to Moderator Dashboard
         } else {
           setError('Invalid role. Please contact the administrator.');
         }

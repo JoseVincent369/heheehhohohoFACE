@@ -134,6 +134,7 @@ const OfficerModal = ({ modalOpen, setModalOpen, currentModerator, onOfficerCrea
             onChange={handleChange}
             placeholder="Email"
             required
+            autoComplete="off"
           />
           <input
             type="password"
@@ -142,6 +143,7 @@ const OfficerModal = ({ modalOpen, setModalOpen, currentModerator, onOfficerCrea
             onChange={handleChange}
             placeholder="Password"
             required
+            autoComplete="new-password"
           />
           
           {/* Dropdown for organization */}

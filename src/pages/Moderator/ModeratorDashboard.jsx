@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, where } from 'firebase/firestore';
+import { getFirestore, collection, query, onSnapshot, where, getDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
@@ -16,7 +16,8 @@ const ModeratorDashboard = () => {
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
-
+    const [adminId, setAdminId] = useState(null);
+    
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
 
@@ -74,6 +75,60 @@ const ModeratorDashboard = () => {
 
         return () => unsubscribeEvents();
     }, [db, user]);
+
+    // Fetch the adminId from the user's document in the 'users' collection
+    useEffect(() => {
+        const fetchAdminId = async (userId) => {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', userId));
+                if (userDoc.exists()) {
+                    const adminIdFromDoc = userDoc.data().adminId;
+                    setAdminId(adminIdFromDoc);
+                }
+            } catch (error) {
+                console.error('Error fetching adminId:', error);
+                setError('Error fetching adminId.');
+            }
+        };
+
+        if (user) {
+            fetchAdminId(user.uid); // Fetch adminId based on the logged-in moderator
+        }
+    }, [db, user]);
+
+    // Fetch events based on the adminId and the logged-in moderator
+    useEffect(() => {
+        if (!adminId) return;
+
+        const fetchEvents = query(
+            collection(db, 'events'),
+            where('createdBy', 'in', [adminId, user.uid]) // Fetch events created by the adminId or the current moderator
+        );
+
+        const unsubscribeEvents = onSnapshot(
+            fetchEvents,
+            (querySnapshot) => {
+                const eventsData = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+
+                console.log("Fetched Events Data:", eventsData); // Debugging line
+                setApprovedEvents(eventsData.filter((event) => event.status === 'accepted'));
+                setRejectedEvents(eventsData.filter((event) => event.status === 'rejected'));
+                setPendingEvents(eventsData.filter((event) => event.status === 'pending'));
+                setEventsLoading(false);
+            },
+            (error) => {
+                console.error('Error fetching events:', error);
+                setError('Error fetching events.');
+                setEventsLoading(false);
+            }
+        );
+
+        return () => unsubscribeEvents();
+    }, [db, adminId, ]);
+
 
     const handleEventClick = (event) => {
         setSelectedEvent(event);

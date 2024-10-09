@@ -187,29 +187,48 @@ const EventManagement = () => {
       const startDateTimestamp = Timestamp.fromDate(new Date(eventStartDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(eventEndDate));
   
+      // Map selected values to their names
+      const selectedOrgNames = selectedOrgs.map(orgId => organizations.find(org => org.id === orgId)?.name).filter(Boolean); // Remove any undefined names
+      const selectedCourseNames = selectedCourses.map(courseId => {
+        const deptCourses = Object.values(courses).flat();
+        return deptCourses.find(course => course.id === courseId)?.name;
+      }).filter(Boolean); // Remove any undefined names
+  
+      const selectedMajorNames = selectedMajors.map(majorId => {
+        const deptMajors = Object.values(majors).flat();
+        return deptMajors.find(major => major.id === majorId)?.name;
+      }).filter(Boolean); // Remove any undefined names
+  
+      const selectedYearLevelNames = selectedYearLevels.map(yearId => {
+        return yearId; // Assuming yearId is already a valid name, else modify accordingly
+      });
+  
       // Constructing the event data
       const eventData = {
-        name: eventName,
-        description: eventDescription,
+        name: eventName || '', // Set default value if undefined
+        description: eventDescription || '', // Set default value if undefined
         startDate: startDateTimestamp,
-        endDate: endDateTimestamp, 
-        venue,
-        courses: selectedCourses,
-        majors: selectedMajors,
-        organizations: selectedOrgs,
-        selectedDepartments,
-        officers: selectedOfficer, 
-        yearLevels: selectedYearLevels,
+        endDate: endDateTimestamp,
+        venue: venue || '', // Set default value if undefined
+        organizations: selectedOrgNames, // Store organization names
+        yearLevels: selectedYearLevelNames, // Store year level names
+        selectedDepartments, // Keep department IDs if needed
+        courses: selectedCourseNames, // Store course names
+        majors: selectedMajorNames, // Store major names
+        officers: selectedOfficer || '', // Set default value if undefined
         createdBy: user.uid,
         status: 'pending',
       };
-
+  
+      // Log the event data to check for undefined values
+      console.log('Event Data:', eventData);
+  
       // Adding the event to Firestore
       const eventRef = await addDoc(collection(db, 'events'), eventData);
       console.log('Event created with ID:', eventRef.id);
-
+  
       alert('Event created successfully, awaiting admin approval!');
-
+  
       // Clear form inputs after successful submission
       setEventName('');
       setEventDescription('');
@@ -229,6 +248,7 @@ const EventManagement = () => {
       setLoading(false);
     }
   };
+  
 
   // Assume this is where you fetch or initialize the current user
 const currentUser = auth.currentUser;

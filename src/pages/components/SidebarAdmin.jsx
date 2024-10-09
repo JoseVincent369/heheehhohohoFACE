@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faClipboard, faUserPlus, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faTachometerAlt, faClipboardList, faUsers, faBuilding } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
-    // Toggle a class for the main content area
-    document.querySelector('.main-content').classList.toggle('shifted');
+    
+    // Make sure the main-content has the correct selector
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.toggle('shifted');
+    } else {
+      console.error('main-content element not found');
+    }
   };
 
   return (
     <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <button className="menu-button" onClick={toggleSidebar}>
         {isOpen ? '☰' : '✖'}
-        </button>
+      </button>
       <ul>
         <li>
           <Link to="/localadmin">
@@ -42,7 +48,6 @@ const Sidebar = () => {
             {isOpen && ' Create Moderator'}
           </Link>
         </li>
-        {/* Additional links if needed */}
       </ul>
     </div>
   );
