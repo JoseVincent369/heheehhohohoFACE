@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
+import { onSnapshot } from 'firebase/firestore'; 
 import CreateModeratorModal from './CreateModeratorModal';
 import './localstyles.css';
 
@@ -30,27 +31,32 @@ const ManageModerators = () => {
     const fetchModerators = async () => {
       if (!currentAdmin) return; // Prevent fetching if currentAdmin is null
       try {
+        console.log(`Fetching moderators for admin UID: ${currentAdmin.uid}`);
         const moderatorsQuery = query(
           collection(FIRESTORE_DB, 'users'),
           where('role', '==', 'moderator'),
-          where('createdBy', '==', currentAdmin.uid)
+          where('createdBy', '==', currentAdmin.uid) // Check the matching condition
         );
-
+  
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
+        console.log('Snapshot:', moderatorsSnapshot); // Log the snapshot
+  
         const moderatorsList = moderatorsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-
+  
+        console.log('Moderators fetched:', moderatorsList); // Check what moderators were fetched
         setModerators(moderatorsList);
       } catch (error) {
         console.error('Error fetching moderators:', error);
         setError(`Failed to fetch moderators: ${error.message}`);
       }
     };
-
+  
     fetchModerators();
   }, [currentAdmin]);
+  
 
   const handleOpenModal = () => {
     setEditModerator(null); // Reset editModerator when creating a new moderator

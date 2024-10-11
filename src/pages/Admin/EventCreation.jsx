@@ -24,8 +24,9 @@ const EventCreation = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [officers, setOfficers] = useState([]); // Store fetched officers
-  const [selectedOfficers, setSelectedOfficers] = useState([]); // Track selected officers
+  const [moderators, setModerators] = useState([]); // Store fetched moderators
+  const [selectedModerators, setSelectedModerators] = useState([]); // Track selected moderators
+
 
 
 
@@ -110,7 +111,7 @@ const EventCreation = () => {
       if (adminDoc.exists()) {
         const adminData = adminDoc.data();
         setCurrentUser(adminUid); // Store department ID
-        fetchOfficers(adminUid);
+        fetchModerators(adminUid);
       } else {
         console.error('No such admin found.');
       }
@@ -133,38 +134,41 @@ const EventCreation = () => {
   }, []);
   
 
-// Inside your fetchOfficers function, after you set currentUser
-const fetchOfficers = async (adminUid) => {
-  if (!adminUid) {
-    console.error('Admin UID is not defined.');
-    return;
-  }
-
-  try {
-    console.log('Fetching officers for admin UID:', adminUid);
-
-    const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid));
-    const adminData = adminDoc.data();
-    const adminDepartment = adminData.department; // Get the department of the current admin
-
-    const officersQuery = query(
-      collection(FIRESTORE_DB, 'users'),
-      where('role', '==', 'officer'),
-      where('adminId', '==', adminUid)
-    );
-
-    const officersSnapshot = await getDocs(officersQuery);
-    if (officersSnapshot.empty) {
-      console.log('No officers found for this admin.');
-      setOfficers([]);
-    } else {
-      const fetchedOfficers = officersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      console.log('Officers fetched:', fetchedOfficers);
-      setOfficers(fetchedOfficers);
+  const fetchModerators = async (adminUid) => {
+    if (!adminUid) {
+        console.error('Admin UID is not defined.');
+        return;
     }
+
+    try {
+        console.log('Fetching moderators for admin UID:', adminUid);
+
+        const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid));
+        const adminData = adminDoc.data();
+        const adminDepartment = adminData.department; // Get the department of the current admin
+
+        const moderatorsQuery = query(
+            collection(FIRESTORE_DB, 'users'),
+            where('role', '==', 'moderator'),
+            where('adminId', '==', adminUid)
+        );
+
+        const moderatorsSnapshot = await getDocs(moderatorsQuery);
+        const fetchedModerators = moderatorsSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+
+        console.log('Moderators fetched:', fetchedModerators);
+        setModerators(fetchedModerators);
+
+        // Check if any moderators were fetched
+        if (fetchedModerators.length === 0) {
+          alert('Before creating an event, please create a moderator first.'); // Alert if no moderators
+          navigate('/local/createMod'); // Navigate to the moderator creation path
+          return; // Ensure you exit the function after navigation
+      }
+      
 
     // Filter departments based on admin's department
     const deptRef = collection(FIRESTORE_DB, 'departments');
@@ -175,7 +179,7 @@ const fetchOfficers = async (adminUid) => {
       console.log('Filtered Departments:', filteredDepartments);
     setDepartments(filteredDepartments); // Set only the admin's department
   } catch (error) {
-    console.error('Error fetching officers:', error);
+    console.error('Error fetching moderators:', error);
     
   }
 };
@@ -235,8 +239,8 @@ const fetchOfficers = async (adminUid) => {
         selectedDepartments: selectedDepartments.length > 0 ? selectedDepartments : [], // Keep department IDs if needed
         courses: selectedCourseNames.filter(Boolean),  // Filter out undefined courses
         majors: selectedMajorNames.filter(Boolean),    // Filter out undefined majors
-        officers: selectedOfficers.length > 0 ? selectedOfficers : [],  // Ensure empty array if no officers are selected
-        status: 'pending',
+        moderators: selectedModerators.length > 0 ? selectedModerators : [],  // Ensure empty array if no Moderatorss are selected
+        status: 'accepted',
         createdBy: currentUser || 'unknown',
         adminID: currentUser || 'unknown',
     };
@@ -395,35 +399,35 @@ const fetchOfficers = async (adminUid) => {
 
 
 
-{/* Render the list of officers with checkboxes */}
+{/* Render the list of Moderatorss with checkboxes */}
 <div>
   <h2>Officers</h2>
-  {officers.length > 0 ? (
+  {moderators.length > 0 ? (
     <div className="checkbox-group">
       <input
         type="checkbox"
         onChange={(e) =>
-          handleSelectAll(officers.map((officer) => officer.id), setSelectedOfficers, selectedOfficers.length > 0)
+          handleSelectAll(moderators.map((moderator) => moderator.id), setSelectedOfficers, selectedOfficers.length > 0)
         }
-        checked={selectedOfficers.length === officers.length}
+        checked={selectedOfficers.length === moderators.length}
       />
       <span>Select All</span>
     </div>
   ) : (
-    <p>No officers found.</p>
+    <p>No moderators found.</p>
   )}
 
-  {officers.length > 0 &&
-    officers.map((officer) => (
-      <div key={officer.id} className="checkbox-group">
+  {moderators.length > 0 &&
+    moderators.map((moderator) => (
+      <div key={moderator.id} className="checkbox-group">
         <input
           type="checkbox"
-          value={officer.id}
-          onChange={() => handleCheckboxChange(officer.id, setSelectedOfficers, selectedOfficers)}
-          checked={selectedOfficers.includes(officer.id)}
+          value={moderator.id}
+          onChange={() => handleCheckboxChange(moderator.id, setSelectedOfficers, selectedOfficers)}
+          checked={selectedOfficers.includes(moderator.id)}
         />
         <span>
-          {officer.fullName} ({officer.email})
+          {moderator.fullName} ({moderator.email})
         </span>
       </div>
     ))}

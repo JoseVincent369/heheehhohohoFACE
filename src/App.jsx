@@ -1,6 +1,7 @@
 // src/App.jsx
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import 'react-toastify/dist/ReactToastify.css';
 // Loading
 import { LoadingProvider, useLoading } from './pages/components/LoadingContext';  // Import the Loading Context
 import LoadingScreen from './pages/components/LoadingScreen'; // Import the Loading Screen

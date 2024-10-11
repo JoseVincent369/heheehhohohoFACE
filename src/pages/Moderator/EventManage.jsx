@@ -22,15 +22,22 @@ const EventManagement = () => {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [selectedMajors, setSelectedMajors] = useState([]);
-  const [selectedOfficer, setSelectedOfficer] = useState(''); 
+  const [selectedOfficers, setSelectedOfficers] = useState([]); 
+  const [selectedOrganizations, setSelectedOrganizations] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [majors, setMajors] = useState([]);
+  const [courses, setCourses] = useState({});
+  const [majors, setMajors] = useState({});
   const [officers, setOfficers] = useState([]); 
-  const [yearLevels] = useState(['1', '2', '3', '4']);
+  const [yearLevels] = useState([
+    '1st Year', 
+    '2nd Year', 
+    '3rd Year', 
+    '4th Year'
+]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -53,23 +60,34 @@ const EventManagement = () => {
         const orgs = orgsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setOrganizations(orgs);
   
-        // Fetch departments
-        const deptsSnapshot = await getDocs(collection(db, 'departments'));
-        const depts = deptsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setDepartments(depts);
+        // Ensure user is logged in and fetch their department
+        if (user) {
+          const userSnapshot = await getDocs(collection(db, 'users'));
+          const currentUser = userSnapshot.docs.find((doc) => doc.id === user.uid);
+          const moderatorDepartment = currentUser?.data().department;
   
-        // Fetch officers
-
+          if (moderatorDepartment) {
+            // Fetch only the department assigned to this moderator
+            const deptsSnapshot = await getDocs(collection(db, 'departments'));
+            const depts = deptsSnapshot.docs
+              .map((doc) => ({ id: doc.id, ...doc.data() }))
+              .filter(dept => dept.name === moderatorDepartment);  // Filter by moderator's department
+  
+            setDepartments(depts);
+          }
+        }
       } catch (error) {
-        console.error('Error fetching organizations, departments, or officers:', error);
-        alert('Failed to fetch organizations, departments, or officers.');
+        console.error('Error fetching organizations or departments:', error);
+        alert('Failed to fetch organizations or departments.');
       } finally {
         setLoading(false);
       }
     };
   
     fetchOrganizationsAndDepartments();
-  }, [db]);
+  }, [db, user]);
+  
+
 
   useEffect(() => {
     const fetchOfficers = async () => {
@@ -105,53 +123,67 @@ const EventManagement = () => {
   
 
 
-  useEffect(() => {
-    // Fetch courses based on selected departments
-    const fetchCourses = async () => {
-      if (selectedDepartments.length === 0) return;
-      setLoading(true);
-      try {
-        const coursesPromises = selectedDepartments.map(async (deptId) => {
-          const coursesSnapshot = await getDocs(collection(db, `departments/${deptId}/courses`));
-          return coursesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        });
-        const coursesArrays = await Promise.all(coursesPromises);
-        const allCourses = [].concat(...coursesArrays);
-        setCourses(allCourses);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        alert('Failed to fetch courses.');
-      } finally {
-        setLoading(false);
-      }
-    };
+// Fetch courses based on selected departments
+useEffect(() => {
+  const fetchCourses = async () => {
+    if (selectedDepartments.length === 0) return;
+    setLoading(true);
+    try {
+      const coursesPromises = selectedDepartments.map(async (deptId) => {
+        const coursesSnapshot = await getDocs(collection(db, `departments/${deptId}/courses`));
+        const coursesData = coursesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        return { deptId, coursesData }; // Return both deptId and coursesData
+      });
+      const coursesArrays = await Promise.all(coursesPromises);
+      
+      // Create a mapping of department ID to its courses
+      const coursesMap = {};
+      coursesArrays.forEach(({ deptId, coursesData }) => {
+        coursesMap[deptId] = coursesData;
+      });
+      setCourses(coursesMap); // Set the courses state to the new mapping
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      alert('Failed to fetch courses.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCourses();
-  }, [selectedDepartments, db]);
+  fetchCourses();
+}, [selectedDepartments, db]);
 
-  useEffect(() => {
-    // Fetch majors based on selected courses
-    const fetchMajors = async () => {
-      if (selectedCourses.length === 0) return;
-      setLoading(true);
-      try {
-        const majorsPromises = selectedCourses.map(async (courseId) => {
-          const majorsSnapshot = await getDocs(collection(db, `departments/${selectedDepartments[0]}/courses/${courseId}/majors`));
-          return majorsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        });
-        const majorsArrays = await Promise.all(majorsPromises);
-        const allMajors = [].concat(...majorsArrays);
-        setMajors(allMajors);
-      } catch (error) {
-        console.error('Error fetching majors:', error);
-        alert('Failed to fetch majors.');
-      } finally {
-        setLoading(false);
-      }
-    };
+// Fetch majors based on selected courses
+useEffect(() => {
+  const fetchMajors = async () => {
+    if (selectedCourses.length === 0) return;
+    setLoading(true);
+    try {
+      const majorsPromises = selectedCourses.map(async (courseId) => {
+        // Ensure to get the department ID of the selected course
+        const deptId = selectedDepartments[0]; // Assuming one department is selected
+        const majorsSnapshot = await getDocs(collection(db, `departments/${deptId}/courses/${courseId}/majors`));
+        const majorsData = majorsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        return { courseId, majorsData }; // Return both courseId and majorsData
+      });
+      const majorsArrays = await Promise.all(majorsPromises);
+      
+      // Create a mapping of course ID to its majors
+      const majorsMap = {};
+      majorsArrays.forEach(({ courseId, majorsData }) => {
+        majorsMap[courseId] = majorsData;
+      });
+      setMajors(majorsMap); // Set the majors state to the new mapping
+    } catch (error) {
+      console.error('Error fetching majors:', error);
+      alert('Failed to fetch majors.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchMajors();
-  }, [selectedCourses, selectedDepartments, db]);
+  fetchMajors();
+}, [selectedCourses, selectedDepartments, db]);
 
   const handleCheckboxChange = (setter) => (e) => {
     const { value, checked } = e.target;
@@ -163,15 +195,35 @@ const EventManagement = () => {
       }
     });
   };
+  
 
-  const handleOfficerSelection = (e) => {
-    setSelectedOfficer(e.target.value); // Set the selected officer
+  const handleSelectAll = (type) => (e) => {
+    const { checked } = e.target;
+    if (type === 'organizations') {
+      if (checked) {
+        setSelectedOrganizations(organizations.map(org => org.id));
+      } else {
+        setSelectedOrganizations([]);
+      }
+    } else if (type === 'departments') {
+      if (checked) {
+        setSelectedDepartments(departments.map(dept => dept.id));
+      } else {
+        setSelectedDepartments([]);
+      }
+    }
+  };
+  
+  const handleYearLevelClick = (yearLevel) => {
+    setSelectedYearLevels(prev => 
+      prev.includes(yearLevel) ? prev.filter(level => level !== yearLevel) : [...prev, yearLevel]
+    );
   };
 
-  const handleLogout = () => {
-    signOut(auth).catch((error) => {
-      console.error('Error logging out: ', error);
-    });
+  const handleOfficerClick = (officerId) => {
+    setSelectedOfficers(prev => 
+      prev.includes(officerId) ? prev.filter(id => id !== officerId) : [...prev, officerId]
+    );
   };
 
   const handleCreateEvent = async (e) => {
@@ -215,7 +267,7 @@ const EventManagement = () => {
         selectedDepartments, // Keep department IDs if needed
         courses: selectedCourseNames, // Store course names
         majors: selectedMajorNames, // Store major names
-        officers: selectedOfficer || '', // Set default value if undefined
+        officers: selectedOfficers,  // Set default value if undefined
         createdBy: user.uid,
         status: 'pending',
       };
@@ -240,7 +292,7 @@ const EventManagement = () => {
       setSelectedDepartments([]);
       setSelectedCourses([]);
       setSelectedMajors([]);
-      setSelectedOfficer(''); 
+      setSelectedOfficers([]); 
     } catch (error) {
       console.error('Error creating event:', error);
       alert(`Failed to create event: ${error.message}`);
@@ -310,95 +362,156 @@ useEffect(() => {
               required
             />
             
-            <fieldset>
-              <legend>Select Organizations</legend>
-              {organizations.map((org) => (
-                <label key={org.id}>
-                  <input
-                    type="checkbox"
-                    value={org.id}
-                    checked={selectedOrgs.includes(org.id)}
-                    onChange={handleCheckboxChange(setSelectedOrgs)}
-                  />
-                  {org.name}
-                </label>
-              ))}
-            </fieldset>
 
-            <fieldset>
-              <legend>Select Departments</legend>
-              {departments.map((dept) => (
-                <label key={dept.id}>
-                  <input
-                    type="checkbox"
-                    value={dept.id}
-                    checked={selectedDepartments.includes(dept.id)}
-                    onChange={handleCheckboxChange(setSelectedDepartments)}
-                  />
-                  {dept.name}
-                </label>
-              ))}
-            </fieldset>
 
-            <fieldset>
-              <legend>Select Courses</legend>
-              {courses.map((course) => (
-                <label key={course.id}>
-                  <input
-                    type="checkbox"
-                    value={course.id}
-                    checked={selectedCourses.includes(course.id)}
-                    onChange={handleCheckboxChange(setSelectedCourses)}
-                    disabled={!selectedDepartments.length}
-                  />
-                  {course.name}
-                </label>
-              ))}
-            </fieldset>
+{/* Organization selection */}
+<fieldset>
+  <legend>Select Organizations</legend>
+  <div>
+    <input
+      type="checkbox"
+      onChange={handleSelectAll('organizations')}
+      checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
+    />
+    <label>Select All</label> {/* Use <label> for consistency */}
+  </div>
+  {organizations.map((org) => (
+    <div key={org.id}>
+      <label>
+        <input
+          type="checkbox"
+          value={org.id}
+          checked={selectedOrganizations.includes(org.id)}
+          onChange={handleCheckboxChange(setSelectedOrganizations)}
+        />
+        {org.name}
+      </label>
+    </div>
+  ))}
+</fieldset>
 
-            <fieldset>
-              <legend>Select Majors</legend>
-              {majors.map((major) => (
-                <label key={major.id}>
-                  <input
-                    type="checkbox"
-                    value={major.id}
-                    checked={selectedMajors.includes(major.id)}
-                    onChange={handleCheckboxChange(setSelectedMajors)}
-                    disabled={!selectedCourses.length}
-                  />
-                  {major.name}
-                </label>
-              ))}
-            </fieldset>
 
-                        {/* Officer selection */}
-                        <fieldset>
-              <legend>Select Officer In-Charge</legend>
-              <select value={selectedOfficer} onChange={handleOfficerSelection} required>
-                <option value="">Select an Officer</option>
-                {officers.map((officer) => (
-                  <option key={officer.id} value={officer.id}>
-                    {officer.fullName}
-                  </option>
+
+{/* Departments with Nested Courses and Majors */}
+{departments.map((dept) => (
+  <fieldset key={dept.id} className="nested-fieldset">
+    <legend>{dept.name}</legend>
+    <div className="checkbox-group">
+      <input
+        type="checkbox"
+        value={dept.id}
+        onChange={handleCheckboxChange(setSelectedDepartments)}
+    checked={selectedDepartments.includes(dept.id)}
+
+      />
+      <span>Select Department</span>
+    </div>
+
+    {/* Nested Courses */}
+    {courses[dept.id] && selectedDepartments.includes(dept.id) && (
+      <div className="nested-checkbox-group">
+        <label>Courses:</label>
+        {courses[dept.id].map((course) => (
+          <fieldset key={course.id} className="nested-fieldset">
+            <legend>{course.name}</legend>
+            <div className="checkbox-group">
+              <input
+                type="checkbox"
+                value={course.id}
+                onChange={handleCheckboxChange(setSelectedCourses)}
+                checked={selectedCourses.includes(course.id)}
+              />
+              <span>Select Course</span>
+            </div>
+
+            {/* Nested Majors */}
+            {majors[course.id] && selectedCourses.includes(course.id) && majors[course.id].length > 0 && (
+              <div className="nested-checkbox-group">
+                <label>Majors:</label>
+                {majors[course.id].map((major) => (
+                  <div key={major.id} className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      value={major.id}
+                      onChange={handleCheckboxChange(setSelectedMajors)}
+                      checked={selectedMajors.includes(major.id)}
+                    />
+                    <span>{major.name}</span>
+                  </div>
                 ))}
-              </select>
-            </fieldset>
+              </div>
+            )}
+          </fieldset>
+        ))}
+      </div>
+    )}
+  </fieldset>
+))}
 
-            <fieldset>
-              <legend>Select Year Levels</legend>
-              {yearLevels.map((level) => (
-                <label key={level}>
-                  <input
-                    type="checkbox"
-                    value={level}
-                    checked={selectedYearLevels.includes(level)}
-                    onChange={handleCheckboxChange(setSelectedYearLevels)}
-                  />
-                  Year {level}
-                </label>
-              ))}
-            </fieldset>
+{/* Year Levels */}
+<fieldset>
+  <legend>Year Levels</legend>
+  <div className="checkbox-group">
+    <input
+      type="checkbox"
+      checked={selectedYearLevels.length === yearLevels.length}
+      onChange={() => {
+        if (selectedYearLevels.length === yearLevels.length) {
+          setSelectedYearLevels([]); // Deselect all
+        } else {
+          setSelectedYearLevels(yearLevels); // Select all
+        }
+      }}
+    />
+    <span>Select All</span>
+  </div>
+  {yearLevels.map((level) => (
+    <div key={level} className="checkbox-group">
+      <input
+        type="checkbox"
+        value={level}
+        checked={selectedYearLevels.includes(level)}
+        onChange={() => handleYearLevelClick(level)}
+      />
+      <span>{level}</span>
+    </div>
+  ))}
+</fieldset>
+
+{/* Officers */}
+<fieldset>
+  <legend>Officers</legend>
+  <div className="checkbox-group">
+    <input
+      type="checkbox"
+      checked={selectedOfficers.length === officers.length}
+      onChange={() => {
+        if (selectedOfficers.length === officers.length) {
+          setSelectedOfficers([]); // Deselect all
+        } else {
+          setSelectedOfficers(officers.map(officer => officer.id)); // Select all
+        }
+      }}
+    />
+    <span>Select All</span>
+  </div>
+  {officers.length > 0 ? (
+    officers.map((officer) => (
+      <div key={officer.id} className="checkbox-group">
+        <input
+          type="checkbox"
+          value={officer.id}
+          checked={selectedOfficers.includes(officer.id)}
+          onChange={() => handleOfficerClick(officer.id)}
+        />
+        <span>{officer.fullName}</span>
+      </div>
+    ))
+  ) : (
+    <p>No officers available.</p>
+  )}
+</fieldset>
+
 
             <button type="submit" disabled={loading}>
               {loading ? 'Creating Event...' : 'Create Event'}
