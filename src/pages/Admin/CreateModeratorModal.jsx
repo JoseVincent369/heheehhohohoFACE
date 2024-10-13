@@ -58,55 +58,23 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
     setPhoto(e.target.files[0]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!photo) {
-      setError('Please upload a photo.');
-      return;
-    }
+  const handleSubmit = async () => {
+    const newModeratorData = {
+      fullName,
+      email,
+      department,
+      organization,
+      photoURL,
+      role: 'moderator',
+      createdBy: currentAdmin.uid,
+    };
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        FIREBASE_AUTH,
-        moderatorData.email,
-        moderatorData.password
-      );
-
-      const uid = userCredential.user.uid;
-
-      const photoRef = ref(STORAGE, `moderators/${uid}/${photo.name}`);
-      await uploadBytes(photoRef, photo);
-      const url = await getDownloadURL(photoRef);
-
-      const moderatorDoc = {
-        fullName: moderatorData.fullName,
-        email: moderatorData.email,
-        role: 'moderator',
-        organization: moderatorData.organization,
-        department: moderatorData.department,
-        photoURL: url,
-        createdBy: currentAdmin.uid, // Admin1's UID
-        adminId: currentAdmin.uid,   // Admin1's UID
-      };
-
-      await setDoc(doc(FIRESTORE_DB, 'users', uid), moderatorDoc);
-
-      alert('Moderator account created successfully!');
-      setModeratorData({
-        fullName: '',
-        email: '',
-        password: '',
-        organization: '',
-        department: '',
-      });
-      setPhoto(null);
-      setError('');
-
-      await fetchModerators(); // Refresh the list of moderators
-      handleClose(); // Close the modal
+      await addDoc(collection(FIRESTORE_DB, 'users'), newModeratorData);
+      fetchModerators(); // Refresh the moderators list after creation
+      handleClose(); // Close the modal after submission
     } catch (error) {
       console.error('Error creating moderator:', error);
-      setError(`Failed to create moderator account: ${error.message}`);
     }
   };
 

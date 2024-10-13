@@ -8,6 +8,7 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { Timestamp } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import './ModeratorStyles.css';
 
 
@@ -37,7 +38,7 @@ const EventManagement = () => {
 ]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  
+  const navigate = useNavigate(); 
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -110,9 +111,13 @@ const EventManagement = () => {
   
         console.log("Fetched Officers:", officersList); // Log fetched officers for debugging
         setOfficers(officersList); 
+
+        if (officersList.length === 0) {
+          alert('No officers found. You need to create an officer first.');
+          navigate('/moderator/CreateOfficer'); // Navigate to CreateOfficer page
+        }
       } catch (error) {
         console.error('Error fetching officers:', error);
-        alert('Failed to fetch officers.');
       } finally {
         setLoading(false);
       }

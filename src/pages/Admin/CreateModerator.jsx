@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
-import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
-import { onSnapshot } from 'firebase/firestore'; 
+import { onAuthStateChanged, getAuth, signInWithEmailAndPassword, deleteUser, EmailAuthProvider } from 'firebase/auth'; 
+import { getStorage, ref, deleteObject } from 'firebase/storage'; 
+import { getFirestore, getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE  } from '../../firebaseutil/firebase_main';
+import { initializeApp } from "firebase/app";
 import CreateModeratorModal from './CreateModeratorModal';
 import './localstyles.css';
+
+
+
 
 const ManageModerators = () => {
   const [moderators, setModerators] = useState([]);
@@ -73,16 +77,35 @@ const ManageModerators = () => {
     setShowModal(true);
   };
 
-  const handleDeleteModerator = async (id) => {
+  const handleDeleteModerator = async (moderatorToDelete) => {
+    const auth = getAuth(); // Getting the auth instance
+    const storage = getStorage(); // Getting the storage instance
+  
     try {
-      await deleteDoc(doc(FIRESTORE_DB, 'users', id));
-      setModerators(moderators.filter((moderator) => moderator.id !== id));
+      // Step 1: Reauthenticate the user
+      await auth.currentUser.reauthenticateWithCredential(
+        EmailAuthProvider.credential(moderatorToDelete.email, 'yourModeratorPassword') // replace with the actual password
+      );
+  
+      // Delete the user from Firebase Authentication
+      await auth.deleteUser(moderatorToDelete.uid); // Use the uid of the moderator
+  
+      // Step 2: Delete the moderator document from Firestore
+      await deleteDoc(doc(FIRESTORE_DB, 'users', moderatorToDelete.id)); // moderatorToDelete.id is the document ID
+  
+      // Step 3: Delete the moderator's image from Firebase Storage
+      const imageRef = ref(storage, `moderator/${moderatorToDelete.id}`);
+      await deleteObject(imageRef); // Delete the image
+  
+      setModerators(moderators.filter((moderator) => moderator.id !== moderatorToDelete.id)); // Update state
       alert('Moderator deleted successfully!');
     } catch (error) {
       console.error('Error deleting moderator:', error);
       setError(`Failed to delete moderator: ${error.message}`);
     }
   };
+  
+  
 
   return (
     <div className="organization-management">
