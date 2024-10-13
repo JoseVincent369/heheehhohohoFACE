@@ -92,29 +92,27 @@ const EventManagement = () => {
 
   useEffect(() => {
     const fetchOfficers = async () => {
-      // Ensure user is not null
       if (!user) {
         console.log('No user is logged in, skipping officer fetch');
-        return; // Exit early if user is null
+        return;
       }
   
       setLoading(true);
       try {
-        // Get the current user's UID
         const currentUserUID = user.uid;
+        console.log("Fetching officers for user UID:", currentUserUID);
   
-        // Fetch all users
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const officersList = usersSnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() })) // Map to get user data
-          .filter(user => user.role === 'officer' && user.createdBy === currentUserUID); // Filter by role and createdBy
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter(user => user.role === 'officer' && user.createdBy === currentUserUID);
   
-        console.log("Fetched Officers:", officersList); // Log fetched officers for debugging
+        console.log("Fetched Officers:", officersList);
         setOfficers(officersList); 
-
+  
         if (officersList.length === 0) {
           alert('No officers found. You need to create an officer first.');
-          navigate('/moderator/CreateOfficer'); // Navigate to CreateOfficer page
+          navigate('/moderator/CreateOfficer');
         }
       } catch (error) {
         console.error('Error fetching officers:', error);
@@ -124,7 +122,7 @@ const EventManagement = () => {
     };
   
     fetchOfficers();
-  }, [db, user]); // user as a dependency to re-fetch when user changes
+  }, [db, user]);
   
 
 

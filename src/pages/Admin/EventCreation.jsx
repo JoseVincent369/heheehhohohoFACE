@@ -401,15 +401,15 @@ const EventCreation = () => {
 
 {/* Render the list of Moderatorss with checkboxes */}
 <div>
-  <h2>Officers</h2>
+  <h2>Moderatorss</h2>
   {moderators.length > 0 ? (
     <div className="checkbox-group">
       <input
         type="checkbox"
         onChange={(e) =>
-          handleSelectAll(moderators.map((moderator) => moderator.id), setSelectedOfficers, selectedOfficers.length > 0)
+          handleSelectAll(moderators.map((moderator) => moderator.id), setSelectedModerators, selectedModerators.length > 0)
         }
-        checked={selectedOfficers.length === moderators.length}
+        checked={selectedModerators.length === moderators.length}
       />
       <span>Select All</span>
     </div>
@@ -423,8 +423,8 @@ const EventCreation = () => {
         <input
           type="checkbox"
           value={moderator.id}
-          onChange={() => handleCheckboxChange(moderator.id, setSelectedOfficers, selectedOfficers)}
-          checked={selectedOfficers.includes(moderator.id)}
+          onChange={() => handleCheckboxChange(moderator.id, setSelectedModerators, selectedModerators)}
+          checked={selectedModerators.includes(moderator.id)}
         />
         <span>
           {moderator.fullName} ({moderator.email})

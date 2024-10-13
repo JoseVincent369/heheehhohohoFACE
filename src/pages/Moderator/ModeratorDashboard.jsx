@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, where, getDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, onSnapshot, 
+    where, getDoc, doc, getDocs, updateDoc  } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
 import LoadingScreen from '../components/LoadingScreen';
+import Select from 'react-select';
 import './moderatorStyles.css';
 
 const ModeratorDashboard = () => {
@@ -17,9 +19,13 @@ const ModeratorDashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [adminId, setAdminId] = useState(null);
+    const [officers, setOfficers] = useState([]);
+    const [selectedOfficerId, setSelectedOfficerId] = useState('');
+    const [selectedOfficers, setSelectedOfficers] = useState([]);
     
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
+    
 
     // Authentication
     useEffect(() => {
@@ -46,12 +52,12 @@ const ModeratorDashboard = () => {
     // Fetch Approved, Rejected, and Pending Events
     useEffect(() => {
         if (!user) return;
-
+    
         const fetchEvents = query(
             collection(db, 'events'),
-            where('createdBy', '==', user.uid) // Fetch events created by the current moderator
+            where('moderators', 'array-contains', user.uid) // Check if the moderator's ID is in the 'moderators' array
         );
-
+    
         const unsubscribeEvents = onSnapshot(
             fetchEvents,
             (querySnapshot) => {
@@ -59,7 +65,7 @@ const ModeratorDashboard = () => {
                     id: doc.id,
                     ...doc.data(),
                 }));
-
+    
                 console.log("Fetched Events Data:", eventsData); // Debugging line
                 setApprovedEvents(eventsData.filter((event) => event.status === 'accepted'));
                 setRejectedEvents(eventsData.filter((event) => event.status === 'rejected'));
@@ -72,63 +78,63 @@ const ModeratorDashboard = () => {
                 setEventsLoading(false);
             }
         );
-
+    
         return () => unsubscribeEvents();
     }, [db, user]);
+    
 
-    // Fetch the adminId from the user's document in the 'users' collection
+
+    
     useEffect(() => {
-        const fetchAdminId = async (userId) => {
+        const fetchOfficers = async (adminId) => {
             try {
-                const userDoc = await getDoc(doc(db, 'users', userId));
-                if (userDoc.exists()) {
-                    const adminIdFromDoc = userDoc.data().adminId;
-                    setAdminId(adminIdFromDoc);
-                }
+                const officersQuery = query(
+                    collection(db, 'users'),
+                    where('role', '==', 'officer'), // Assuming 'role' field identifies officers
+                    where('adminId', '==', adminId)
+                );
+                const officersSnapshot = await getDocs(officersQuery);
+                const officersList = officersSnapshot.docs.map((doc) => ({
+                    value: doc.id, // Use officer's ID as the value
+                    label: doc.data().fullName || 'Unnamed Officer', // Use officer's full name or a fallback label
+                    ...doc.data(),
+                }));
+                setOfficers(officersList);
             } catch (error) {
-                console.error('Error fetching adminId:', error);
-                setError('Error fetching adminId.');
+                console.error('Error fetching officers:', error);
+                setError('Error fetching officers.');
             }
         };
-
-        if (user) {
-            fetchAdminId(user.uid); // Fetch adminId based on the logged-in moderator
+    
+        if (adminId) {
+            fetchOfficers(adminId); // Fetch officers based on the adminId
         }
-    }, [db, user]);
+    }, [db, adminId]);
+    
 
-    // Fetch events based on the adminId and the logged-in moderator
-    useEffect(() => {
-        if (!adminId) return;
 
-        const fetchEvents = query(
-            collection(db, 'events'),
-            where('createdBy', 'in', [adminId, user.uid]) // Fetch events created by the adminId or the current moderator
-        );
-
-        const unsubscribeEvents = onSnapshot(
-            fetchEvents,
-            (querySnapshot) => {
-                const eventsData = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-
-                console.log("Fetched Events Data:", eventsData); // Debugging line
-                setApprovedEvents(eventsData.filter((event) => event.status === 'accepted'));
-                setRejectedEvents(eventsData.filter((event) => event.status === 'rejected'));
-                setPendingEvents(eventsData.filter((event) => event.status === 'pending'));
-                setEventsLoading(false);
-            },
-            (error) => {
-                console.error('Error fetching events:', error);
-                setError('Error fetching events.');
-                setEventsLoading(false);
+    const handleOfficerChange = (event) => {
+        setSelectedOfficerId(event.target.value);
+    };
+    
+    const assignOfficer = async () => {
+        if (selectedEvent && selectedOfficerId) {
+            try {
+                await updateDoc(doc(db, 'events', selectedEvent.id), {
+                    officerId: selectedOfficerId,
+                });
+                alert('Officer assigned successfully!');
+                handleModalClose(); // Close modal after assignment
+            } catch (error) {
+                console.error('Error assigning officer:', error);
+                alert('Error assigning officer.');
             }
-        );
-
-        return () => unsubscribeEvents();
-    }, [db, adminId, ]);
-
+        }
+    };
+    
+    const handleOfficerSelect = (selectedOptions) => {
+        setSelectedOfficers(selectedOptions);
+    };
 
     const handleEventClick = (event) => {
         setSelectedEvent(event);
@@ -139,6 +145,24 @@ const ModeratorDashboard = () => {
         setIsModalOpen(false);
         setSelectedEvent(null);
     };
+
+    const saveOfficersToEvent = () => {
+        // Save selected officers to the event in the database
+        if (selectedEvent && selectedOfficers.length > 0) {
+            const eventRef = doc(db, 'events', selectedEvent.id);
+            const officerIds = selectedOfficers.map(officer => officer.value);
+            updateDoc(eventRef, {
+                officers: officerIds
+            }).then(() => {
+                alert('Officers assigned successfully.');
+                setIsModalOpen(false);
+            }).catch((error) => {
+                console.error('Error assigning officers:', error);
+                setError('Error assigning officers.');
+            });
+        }
+    };
+
 
     if (loading) {
         return <LoadingScreen />; // Show loading screen for authentication
@@ -263,10 +287,23 @@ const ModeratorDashboard = () => {
                                 <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
                                 <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
                                 <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
+
+                                {/* Multi-select dropdown for officers */}
+                                <label htmlFor="officerSelect">Select Officers:</label>
+                                <Select
+                                    id="officerSelect"
+                                    isMulti
+                                    options={officers}
+                                    value={selectedOfficers}
+                                    onChange={handleOfficerSelect}
+                                />
+                                
+                                <button onClick={saveOfficersToEvent}>Assign Officers</button>
                                 <button onClick={handleModalClose}>Close</button>
                             </div>
                         </div>
                     )}
+
                 </div>
             </div>
         </div>
