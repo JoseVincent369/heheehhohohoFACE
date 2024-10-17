@@ -38,12 +38,16 @@ const LoginMain = () => {
         // Navigate based on the user's role
         if (userRole === 'superadmin') {
           console.log('Navigating to /superadmin');
+          navigate('/superadmin'); // Redirect to Admin Dashboard
         } else if (userRole === 'admin') {
           console.log('Navigating to /localadmin');
+          navigate('/localadmin'); // Redirect to Local Admin Dashboard
         } else if (userRole === 'moderator') {
           console.log('Navigating to /moderator');
+          navigate('/moderator'); // Redirect to Moderator Dashboard
         } else if (userRole === 'user') {
-
+          console.log('Navigating to /home');
+          navigate('/home'); // Redirect to Moderator Dashboard
         } else {
           setError('Invalid role. Please contact the administrator.');
         }
