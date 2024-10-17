@@ -3,8 +3,12 @@ import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main'; 
 import { collection, getDocs, addDoc, query, where, getDoc, doc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth'; // Import to track authentication state
+import { Form, Input, DatePicker, Checkbox, Button, Select, Spin } from 'antd'; // Importing Ant Design components
 import LoadingScreen from '../components/LoadingScreen'; 
 import './localstyles.css'; // Import the CSS file
+
+const { TextArea } = Input;
+const { Option } = Select;
 
 const EventCreation = () => {
   const [eventName, setEventName] = useState('');
@@ -251,24 +255,30 @@ const EventCreation = () => {
     };
 
     try {
-        setLoading(true);
-        await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
-        alert('Event created successfully!');
-        navigate('/localadmin'); // Adjust the path to match your routing structure
+      setLoading(true);
+      await addDoc(collection(FIRESTORE_DB, 'events'), newEvent);
+      alert('Event created successfully!');
+      navigate('/localadmin');
     } catch (error) {
-        console.error('Error creating event:', error);
-        alert('Failed to create event. Please try again.');
+      console.error('Error creating event:', error);
+      alert('Failed to create event. Please try again.');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
 
+  // Rendering the form
   if (loading) {
-    return <LoadingScreen />;
+    return <Spin tip="Loading..." />; // Ant Design Spin component for loading state
   }
+
+
+
   return (
+    <div className="main-content">
     <div className="event-creation">
+          
       <h1>Create Event</h1>
       <form onSubmit={handleEventCreation} className="event-form">
         <div className="form-group">
@@ -466,7 +476,7 @@ const EventCreation = () => {
         <button type="submit" className="submit-button">Create Event</button>
       </form>
     </div>
-    
+    </div>
   );
 };
 

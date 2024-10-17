@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged, getAuth,  EmailAuthProvider } from 'firebase/auth'; 
+import { onAuthStateChanged, getAuth, EmailAuthProvider } from 'firebase/auth'; 
 import { getStorage, ref, deleteObject } from 'firebase/storage'; 
 import { getDoc, getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
-import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE  } from '../../firebaseutil/firebase_main';
-import { initializeApp } from "firebase/app";
+import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
 import CreateModeratorModal from './CreateModeratorModal';
+import { Table, Button, Typography, Alert } from 'antd';
 import './localstyles.css';
 
+const { Title } = Typography;
 
 const ManageModerators = () => {
   const [moderators, setModerators] = useState([]);
@@ -34,7 +35,6 @@ const ManageModerators = () => {
       if (!currentAdmin) return; // Prevent fetching if currentAdmin is null
 
       try {
-        console.log(`Fetching moderators for admin UID: ${currentAdmin.uid}`);
         const moderatorsQuery = query(
           collection(FIRESTORE_DB, 'users'),
           where('role', '==', 'moderator'),
@@ -42,10 +42,8 @@ const ManageModerators = () => {
         );
 
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
-        console.log('Snapshot:', moderatorsSnapshot); // Log the snapshot
 
         if (moderatorsSnapshot.empty) {
-          console.log('No moderators found for this admin.');
           setModerators([]); // Ensure moderators is set to empty if none found
           return; // Exit if no moderators are found
         }
@@ -55,7 +53,6 @@ const ManageModerators = () => {
           ...doc.data(),
         }));
 
-        console.log('Moderators fetched:', moderatorsList); // Check what moderators were fetched
         setModerators(moderatorsList);
       } catch (error) {
         console.error('Error fetching moderators:', error);
@@ -65,7 +62,6 @@ const ManageModerators = () => {
   
     fetchModerators();
   }, [currentAdmin]);
-  
 
   const handleOpenModal = () => {
     setEditModerator(null); // Reset editModerator when creating a new moderator
@@ -109,49 +105,69 @@ const ManageModerators = () => {
       setError(`Failed to delete moderator: ${error.message}`);
     }
   };
-  
-  
+
+  const columns = [
+    {
+      title: 'Full Name',
+      dataIndex: 'fullName',
+      key: 'fullName',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Department',
+      dataIndex: 'department',
+      key: 'department',
+    },
+    {
+      title: 'Organization',
+      dataIndex: 'organization',
+      key: 'organization',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text, moderator) => (
+        <>
+          <Button onClick={() => handleEditModerator(moderator)} type="link">Edit</Button>
+          <Button onClick={() => handleDeleteModerator(moderator)} type="link" danger>Delete</Button>
+        </>
+      ),
+    },
+  ];
 
   return (
+    <div className="main-content">
     <div className="organization-management">
-      <div className="main-content">
-        <h2>Your Moderators</h2>
-        <button onClick={handleOpenModal}>Create Moderator</button>
+              {/* Title */}
+              <Title level={2}>Your Moderators</Title>
+        
+        {/* Button */}
+        <Button type="primary" onClick={handleOpenModal} style={{ marginBottom: '20px' }}>
+          Create Moderator
+        </Button>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {/* Error Alert */}
+        {error && <Alert message={error} type="error" style={{ marginBottom: '20px' }} />}
 
+      
+
+        {/* Table */}
         {moderators.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Department</th>
-                <th>Organization</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {moderators.map((moderator) => (
-                <tr key={moderator.id}>
-                  <td>{moderator.fullName}</td>
-                  <td>{moderator.email}</td>
-                  <td>{moderator.department}</td>
-                  <td>{moderator.organization}</td>
-                  <td>
-                  </td>
-                  <td>
-                    <button onClick={() => handleEditModerator(moderator)}>Edit</button>
-                    <button onClick={() => handleDeleteModerator(moderator.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            dataSource={moderators}
+            columns={columns}
+            rowKey="id"
+            pagination={false}
+          />
         ) : (
           <p>No moderators created by you.</p>
         )}
 
+        {/* Modal for creating/editing moderators */}
         {currentAdmin && ( // Ensure currentAdmin is defined before rendering modal
           <CreateModeratorModal
             showModal={showModal}
