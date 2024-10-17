@@ -103,6 +103,8 @@ const LocalAdminDashboard = () => {
                     return eventsSnapshot.docs.map((doc) => ({
                         id: doc.id,
                         ...doc.data(),
+                        moderatorName: moderator.fullName, // Assuming fullName is the field for the moderator's name
+                        moderatorEmail: moderator.email
                     }));
                 });
 

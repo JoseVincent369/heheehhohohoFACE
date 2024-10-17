@@ -117,9 +117,7 @@ useEffect(() => {
 }, [user]);
 
 
-  useEffect(() => {
-    fetchUsersWithRoleUser();
-  }, [user]);
+
 
 // Fetch courses based on selected departments
 useEffect(() => {

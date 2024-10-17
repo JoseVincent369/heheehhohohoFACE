@@ -129,7 +129,9 @@ const AttendanceRecord = () => {
   ];
 
   return (
-    <div>
+<div className="main-content">
+<div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}> 
+       
       <h2>Attendance Record</h2>
       <Button onClick={() => sortEvents('attendeesCount')}>Sort by Attendees</Button>
       <Table
@@ -162,6 +164,7 @@ const AttendanceRecord = () => {
           pagination={false} // No pagination for modal list
         />
       </Modal>
+    </div>
     </div>
   );
 };

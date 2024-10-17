@@ -5,8 +5,11 @@ import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
 import LoadingScreen from '../components/LoadingScreen';
-import Select from 'react-select';
 import './moderatorStyles.css';
+
+import { Select } from 'antd';
+const { Option } = Select; // Destructure Option from Select
+
 
 const ModeratorDashboard = () => {
     const [approvedEvents, setApprovedEvents] = useState([]);
@@ -19,9 +22,10 @@ const ModeratorDashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [adminId, setAdminId] = useState(null);
-    const [officers, setOfficers] = useState([]);
-    const [selectedOfficerId, setSelectedOfficerId] = useState('');
-    const [selectedOfficers, setSelectedOfficers] = useState([]);
+    const [usersInCharge, setUsersInCharge] = useState([]);
+    const [selectedUserInChargeId, setSelectedUserInChargeId] = useState('');
+    const [selectedUsersInCharge, setSelectedUsersInCharge] = useState([]);
+    const [userInCharge, setUserInCharge] = useState(null); 
     
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
@@ -31,12 +35,12 @@ const ModeratorDashboard = () => {
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             if (currentUser) {
-                setUser(currentUser);
+                setUser(currentUser); // Set the logged-in user
                 setLoading(false);
             } else {
-                setUser(null); // Handle logged out state
+                setUser(null); // Handle logged-out state
+                setLoading(false);
             }
-            setLoading(false);
         });
         return () => unsubscribe();
     }, [auth]);
@@ -55,7 +59,7 @@ const ModeratorDashboard = () => {
     
         const fetchEvents = query(
             collection(db, 'events'),
-            where('moderators', 'array-contains', user.uid) // Check if the moderator's ID is in the 'moderators' array
+            where('createdBy', '==', user.uid)  // Check if the event was created by the current user
         );
     
         const unsubscribeEvents = onSnapshot(
@@ -83,85 +87,117 @@ const ModeratorDashboard = () => {
     }, [db, user]);
     
 
+    const fetchEligibleUsers = async () => {
+        try {
+            // Ensure user is authenticated and available
+            if (!user) {
+                console.error("No user is logged in.");
+                return; // Exit if no user is authenticated
+            }
+    
+            // Get the current moderator's information
+            const moderatorRef = doc(db, "users", user.uid);
+            const moderatorSnapshot = await getDoc(moderatorRef);
+    
+            // Check if moderator data exists
+            if (!moderatorSnapshot.exists()) {
+                console.error("Moderator data not found");
+                return; // Exit if moderator data is not found
+            }
+    
+            const moderatorData = moderatorSnapshot.data();
+            console.log("Moderator's data:", moderatorData); // Optional: Log moderator's data for debugging
+    
+            // Define the base query to filter by 'user' role
+            const q = query(collection(db, "users"), where("role", "==", "user"));
+    
+            // Fetch matching users
+            const snapshot = await getDocs(q);
+            const eligibleUsers = snapshot.docs.map(doc => ({
+                value: doc.id, // Set the value to user ID
+                label: `${doc.data().fname} ${doc.data().lname}`, // Full name for the dropdown label
+                ...doc.data()
+            }));
+    
+            // Set eligible users to the state
+            setUsersInCharge(eligibleUsers);
+    
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
+    
+    
+    
+    
+    
 
     
-    useEffect(() => {
-        const fetchOfficers = async (adminId) => {
-            try {
-                const officersQuery = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'officer'), // Assuming 'role' field identifies officers
-                    where('adminId', '==', adminId)
+// Fetch users based on userInCharge criteria
+useEffect(() => {
+    const fetchUsersInCharge = async () => {
+        if (!user) return;
+
+        try {
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const filteredUsers = usersSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(user => 
+                    user.role === 'user' &&
+                    user.department === userInCharge.department &&
+                    user.organization && 
+                    user.organization.some(org => userInCharge.organization.includes(org))
                 );
-                const officersSnapshot = await getDocs(officersQuery);
-                const officersList = officersSnapshot.docs.map((doc) => ({
-                    value: doc.id, // Use officer's ID as the value
-                    label: doc.data().fullName || 'Unnamed Officer', // Use officer's full name or a fallback label
-                    ...doc.data(),
-                }));
-                setOfficers(officersList);
-            } catch (error) {
-                console.error('Error fetching officers:', error);
-                setError('Error fetching officers.');
-            }
-        };
-    
-        if (adminId) {
-            fetchOfficers(adminId); // Fetch officers based on the adminId
-        }
-    }, [db, adminId]);
-    
 
-
-    const handleOfficerChange = (event) => {
-        setSelectedOfficerId(event.target.value);
-    };
-    
-    const assignOfficer = async () => {
-        if (selectedEvent && selectedOfficerId) {
-            try {
-                await updateDoc(doc(db, 'events', selectedEvent.id), {
-                    officerId: selectedOfficerId,
-                });
-                alert('Officer assigned successfully!');
-                handleModalClose(); // Close modal after assignment
-            } catch (error) {
-                console.error('Error assigning officer:', error);
-                alert('Error assigning officer.');
-            }
+            setUsersInCharge(filteredUsers);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            setError('Failed to fetch users. Please try again later.');
         }
     };
+
+    fetchUsersInCharge();
+}, [userInCharge]); 
+  
     
-    const handleOfficerSelect = (selectedOptions) => {
-        setSelectedOfficers(selectedOptions);
-    };
+    
+    const assignUserInCharge = async () => {
+    // Check if both selectedEvent and selectedUserInChargeId are defined
+    if (selectedEvent && selectedUsersInCharge) {
+        try {
+            console.log("Assigning user in charge:", selectedUsersInCharge, "to event:", selectedEvent.id); // Debugging line
+            
+            // Update the event document in Firestore
+            await updateDoc(doc(db, 'events', selectedEvent.id), {
+                userInCharge: selectedUsersInCharge, // Assuming this is where the user in charge should be stored
+            });
+    
+            alert('User in charge assigned successfully!');
+            handleModalClose(); // Close modal after assignment
+        } catch (error) {
+            console.error('Error assigning user in charge:', error);
+            alert('Error assigning user in charge.');
+        }
+    } else {
+        console.error("Either selectedEvent or selectedUserInChargeId is not defined.");
+        alert('Please select an event and a user to assign.');
+    }
+};
+
+    
 
     const handleEventClick = (event) => {
         setSelectedEvent(event);
+        fetchEligibleUsers();
         setIsModalOpen(true);
     };
 
     const handleModalClose = () => {
         setIsModalOpen(false);
         setSelectedEvent(null);
+        setSelectedUsersInCharge([]);
     };
 
-    const saveOfficersToEvent = () => {
-        // Save selected officers to the event in the database
-        if (selectedEvent && selectedOfficers.length > 0) {
-            const eventRef = doc(db, 'events', selectedEvent.id);
-            const officerIds = selectedOfficers.map(officer => officer.value);
-            updateDoc(eventRef, {
-                officers: officerIds
-            }).then(() => {
-                alert('Officers assigned successfully.');
-                setIsModalOpen(false);
-            }).catch((error) => {
-                console.error('Error assigning officers:', error);
-                setError('Error assigning officers.');
-            });
-        }
-    };
 
 
     if (loading) {
@@ -278,31 +314,48 @@ const ModeratorDashboard = () => {
                     )}
 
                     {/* Modal for Event Details */}
-                    {isModalOpen && selectedEvent && (
-                        <div className="modal">
-                            <div className="modal-content">
-                                <h3>{selectedEvent.name}</h3>
-                                <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
-                                <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-                                <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-                                <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
-                                <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
+{isModalOpen && selectedEvent && (
+    <div className="modal">
+        <div className="modal-content">
+            <h3>{selectedEvent.name}</h3>
+            <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
+            <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+            <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+            <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
+            <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
 
-                                {/* Multi-select dropdown for officers */}
-                                <label htmlFor="officerSelect">Select Officers:</label>
-                                <Select
-                                    id="officerSelect"
-                                    isMulti
-                                    options={officers}
-                                    value={selectedOfficers}
-                                    onChange={handleOfficerSelect}
-                                />
-                                
-                                <button onClick={saveOfficersToEvent}>Assign Officers</button>
-                                <button onClick={handleModalClose}>Close</button>
-                            </div>
-                        </div>
-                    )}
+            <h4>Assign User in Charge</h4>
+            <Select
+                style={{ width: '100%' }}
+                mode="multiple"
+                showSearch
+                allowClear
+                placeholder="Select User(s) in Charge"
+                value={selectedUsersInCharge.map(userId => usersInCharge.find(user => user.value === userId))}
+                onChange={(selectedValues) => {
+                    setSelectedUsersInCharge(selectedValues);
+                }}
+                filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                }
+            >
+                {usersInCharge.map(user => (
+                    <Option key={user.value} value={user.value}>
+                        {user.label}
+                    </Option>
+                ))}
+            </Select>
+
+            {/* Conditionally render the assign button */}
+            {selectedEvent.status === 'accepted' && (
+                <button onClick={assignUserInCharge}>Assign</button>
+            )}
+
+            <button onClick={handleModalClose}>Close</button>
+        </div>
+    </div>
+)}
+
 
                 </div>
             </div>

@@ -217,10 +217,10 @@ button.delete:hover {
     border-radius: 1%;
     box-shadow: blue;
     width: 73vw;
-    height: 100vh;
+    height: 210vh;
     align-items: center;
     margin: auto;
-    margin-top: 50px;
+    margin-top: 1000px;
     border-radius: 25px;
     color: black;
 }

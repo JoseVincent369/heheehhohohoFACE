@@ -30,7 +30,8 @@ const EventCreation = () => {
   const [loading, setLoading] = useState(false);
   const [moderators, setModerators] = useState([]); // Store fetched moderators
   const [selectedModerators, setSelectedModerators] = useState([]); // Track selected moderators
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredOrganizations, setFilteredOrganizations] = useState([]);
 
 
 
@@ -48,6 +49,7 @@ const EventCreation = () => {
         }));
         setOrganizations(orgs);
         setLoading(false);
+        setFilteredOrganizations(orgs);
       } catch (error) {
         console.error('Error fetching organizations:', error);
         setLoading(false);
@@ -202,16 +204,6 @@ const EventCreation = () => {
     }
   };
 
-  const handleSelectAll = (items, setter, isSelected) => {
-    if (isSelected) {
-      setter([]); // Deselect all if any are selected
-    } else {
-      setter(items); // Select all
-    }
-  };
-
-
-  
 
   const handleEventCreation = async (e) => {
     e.preventDefault();
@@ -267,15 +259,13 @@ const EventCreation = () => {
     }
   };
 
-
-  // Rendering the form
-  if (loading) {
-    return <Spin tip="Loading..." />; // Ant Design Spin component for loading state
-  }
-
-
+  // Filter moderators based on search term
+  const filteredModerators = moderators.filter((moderator) =>
+    moderator.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
+    
     <div className="main-content">
     <div className="event-creation">
           
@@ -331,29 +321,36 @@ const EventCreation = () => {
         </div>
 
         {/* Organizations Checkbox */}
-<div className="form-group">
-  <label>Organizations:</label>
-  <div className="checkbox-group">
-    <input
-      type="checkbox"
-      onChange={() => handleSelectAll(organizations.map((org) => org.id), setSelectedOrganizations, selectedOrganizations.length === organizations.length)}
-      checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
-    />
-    <span>Select All</span>
-  </div>
+        <Form.Item label="Organizations">
+  <Select
+    mode="multiple"
+    showSearch
+    placeholder="Search and select organizations"
+    value={selectedOrganizations} // State to store selected organizations
+    onChange={setSelectedOrganizations} // Handler for selection changes
+    filterOption={(input, option) => {
+      // Match only when the first letter of the organization name matches the input
+      return option.label.toLowerCase().startsWith(input.toLowerCase());
+    }}
+    style={{ width: '100%' }}
+    optionLabelProp="label"
+  >
+    {filteredOrganizations.map((organization) => (
+      <Option 
+        key={organization.id} 
+        value={organization.id} 
+        label={organization.name} // Use organization name as the label for filtering
+      >
+        <Checkbox
+          checked={selectedOrganizations.includes(organization.id)} // Checkbox checked state
+        >
+          {organization.name} {/* Display organization name */}
+        </Checkbox>
+      </Option>
+    ))}
+  </Select>
+</Form.Item>
 
-  {organizations.map((org) => (
-    <div key={org.id} className="checkbox-group">
-      <input
-        type="checkbox"
-        value={org.id}
-        onChange={() => handleCheckboxChange(org.id, setSelectedOrganizations, selectedOrganizations)}
-        checked={selectedOrganizations.includes(org.id)}
-      />
-      <span>{org.name}</span>
-    </div>
-  ))}
-</div>
 
 {/*Department*/}
 {departments.map((dept) => (
@@ -412,66 +409,54 @@ const EventCreation = () => {
 
 
 
-
-
-{/* Render the list of Moderatorss with checkboxes */}
-<div>
-  <h2>Moderatorss</h2>
-  {moderators.length > 0 ? (
-    <div className="checkbox-group">
-      <input
-        type="checkbox"
-        onChange={(e) =>
-          handleSelectAll(moderators.map((moderator) => moderator.id), setSelectedModerators, selectedModerators.length > 0)
-        }
-        checked={selectedModerators.length === moderators.length}
-      />
-      <span>Select All</span>
-    </div>
-  ) : (
-    <p>No moderators found.</p>
-  )}
-
-  {moderators.length > 0 &&
-    moderators.map((moderator) => (
-      <div key={moderator.id} className="checkbox-group">
-        <input
-          type="checkbox"
-          value={moderator.id}
-          onChange={() => handleCheckboxChange(moderator.id, setSelectedModerators, selectedModerators)}
-          checked={selectedModerators.includes(moderator.id)}
-        />
-        <span>
-          {moderator.fullName} ({moderator.email})
-        </span>
-      </div>
-    ))}
-</div>
-
-
          {/* Year Levels Checkbox */}
-         <div className="form-group">
-          <label>Year Levels:</label>
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              onChange={(e) => handleSelectAll(yearLevels, setSelectedYearLevels, selectedYearLevels.length > 0)}
-              checked={selectedYearLevels.length === yearLevels.length}
-            />
-            <span>Select All</span>
-          </div>
-          {yearLevels.map((yearLevel) => (
-            <div key={yearLevel} className="checkbox-group">
-              <input
-                type="checkbox"
-                value={yearLevel}
-                onChange={() => handleCheckboxChange(yearLevel, setSelectedYearLevels, selectedYearLevels)}
-                checked={selectedYearLevels.includes(yearLevel)}
-              />
-              <span>{yearLevel}</span>
-            </div>
-          ))}
-        </div>
+         
+          <Form.Item label="Year Levels"style={{ marginTop: '20px' }}>
+            <Select
+              mode="multiple"
+              placeholder="Select year levels"
+              onChange={setSelectedYearLevels}
+            >
+              {yearLevels.map((year) => (
+                <Option key={year} value={year}>
+                  {year}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item label="Moderators">
+  <Select
+    mode="multiple"
+    showSearch
+    placeholder="Search and select moderators"
+    value={selectedModerators} // State to store selected moderators
+    onChange={setSelectedModerators} // Handler for selection changes
+    filterOption={(input, option) => {
+      // Match only when the first letter of the full name matches the input
+      return option.label.toLowerCase().startsWith(input.toLowerCase());
+    }}
+    style={{ width: '100%' }}
+    optionLabelProp="label"
+  >
+    {filteredModerators.map((moderator) => (
+      <Option 
+        key={moderator.id} 
+        value={moderator.id} 
+        label={`${moderator.fullName} (${moderator.email})`} // Show fullName and email in label
+      >
+        <Checkbox
+          checked={selectedModerators.includes(moderator.id)} // Checkbox checked state
+        >
+          {moderator.fullName} - {moderator.email} {/* Display moderator name and email */}
+        </Checkbox>
+      </Option>
+    ))}
+  </Select>
+</Form.Item>
+
+
+
+
 
         <button type="submit" className="submit-button">Create Event</button>
       </form>

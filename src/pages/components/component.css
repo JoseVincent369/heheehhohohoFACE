@@ -135,4 +135,39 @@
       transform: scaleY(0.8) scaleX(1.2);
     }
   }
-  
+  table {
+    width: 100%;
+    border-collapse: collapse; /* Removes double borders */
+}
+
+th {
+    background-color: #d9d9d9; /* Header color */
+    padding: 10px; /* Adds space within cells */
+    border: 1px solid #ddd; /* Adds a border around cells */
+}
+
+td {
+    padding: 10px; /* Adds space within cells */
+    border: 1px solid #ddd; /* Adds a border around cells */
+}
+
+td:nth-child(2) ul li:nth-child(odd), /* Odd items in Courses */
+td:nth-child(3) ul li:nth-child(odd) { /* Odd items in Majors */
+    background-color: #f9f9f9; /* Primary background color */
+}
+
+td:nth-child(2) ul li:nth-child(even), /* Even items in Courses */
+td:nth-child(3) ul li:nth-child(even) { /* Even items in Majors */
+    background-color: #e9e9e9; /* Secondary background color */
+}
+
+tr:hover td:nth-child(2) ul li,
+tr:hover td:nth-child(3) ul li {
+    background-color: #c9c9c9; /* Highlight color on hover */
+}
+
+ul {
+    padding-left: 20px; /* Indent list */
+    margin: 0; /* Removes default margin */
+    list-style-type: disc; /* Bulleted list */
+}

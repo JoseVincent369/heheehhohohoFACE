@@ -68,20 +68,21 @@
 
 /* Event Creation */
 .event-creation {
-    display: flex;
-    flex-direction: column;
-    background: white;
-    padding: 20px;
-    border-radius: 1%;
-    box-shadow: blue;
-    width: 73vw;
-    height: 100vh;
-    align-items: center;
-    margin: auto;
-    margin-top: 50px;
-    border-radius: 25px;
-    color: black;
-}
+    
+        display: flex;
+        flex-direction: column;
+        background: white;
+        padding: 20px;
+        border-radius: 1%;
+        box-shadow: blue;
+        width: 73vw;
+        height: 100vh;
+        margin: auto;
+        margin-top: 50px;
+        border-radius: 25px;
+        color: black;
+
+    }
 
 h1 {
     text-align: center;
@@ -290,5 +291,28 @@ h1 {
     margin-bottom: 20px;
   }
   
+  .admin-content {
+    
+        display: flex;
+        flex-direction: column;
+        background: white;
+        padding: 20px;
+        border-radius: 1%;
+        box-shadow: blue;
+        width: 73vw;
+        height: 100vh;
+        margin: auto;
+        margin-top: 50px;
+        border-radius: 25px;
+        color: black;
+    
+  }
+
+  .table-item {
+    padding: 5px;
+    border: 1px solid #f0f0f0;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
 
   
