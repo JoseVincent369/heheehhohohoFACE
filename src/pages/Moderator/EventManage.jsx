@@ -248,12 +248,8 @@ useEffect(() => {
   
       const selectedYearLevelNames = selectedYearLevels.map(yearId => yearId); // Assuming yearId is a valid name
   
-      // Ensure mappedUsers is defined, fallback to empty array if undefined
-      const mappedUsers = students?.map(student => ({
-        id: student.id, // Ensure student.id exists
-        lname: student.lname || student.fullName || "Unknown",  // Adapt to your data structure
-        email: student.email // If needed
-      })) || [];
+      const mappedUserIds = students?.map(student => student.id) || []; // Create an array of user IDs
+
   
       // Constructing the event data, using null for undefined values
       const eventData = {
@@ -267,7 +263,7 @@ useEffect(() => {
         selectedDepartments: selectedDepartments.length > 0 ? selectedDepartments : null, // Check if departments are selected
         courses: selectedCourseNames.length > 0 ? selectedCourseNames : null,
         majors: selectedMajorNames.length > 0 ? selectedMajorNames : null,
-        userInCharge: mappedUsers.length > 0 ? mappedUsers : null, // Use null if no users are selected
+        userInCharge: mappedUserIds.length > 0 ? mappedUserIds : [], // Use an empty array if no users are selected        // Use null if no users are selected
         createdBy: user.uid,
         adminID: adminID,
         status: 'pending',
