@@ -112,6 +112,7 @@ const EventCreation = () => {
         const adminData = adminDoc.data();
         setCurrentUser(adminUid); // Store department ID
         fetchModerators(adminUid);
+        return adminData.departments || []; // Return departments if available
       } else {
         console.error('No such admin found.');
       }
@@ -119,6 +120,7 @@ const EventCreation = () => {
       console.error('Error fetching admin data:', error);
     }
   };
+  
   
   // Replace your current fetch user useEffect with this
   useEffect(() => {
@@ -145,12 +147,15 @@ const EventCreation = () => {
 
         const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid));
         const adminData = adminDoc.data();
-        const adminDepartment = adminData.department; // Get the department of the current admin
+        const adminDepartments = adminData.departments || [];  // Get the department of the current admin
 
+        
+
+        console.log(`Fetching moderators for admin UID: ${adminUid}`);
         const moderatorsQuery = query(
-            collection(FIRESTORE_DB, 'users'),
-            where('role', '==', 'moderator'),
-            where('adminId', '==', adminUid)
+          collection(FIRESTORE_DB, 'users'),
+          where('role', '==', 'moderator'),
+          where('createdBy', '==', adminUid) // Check the matching condition
         );
 
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
@@ -165,7 +170,7 @@ const EventCreation = () => {
         // Check if any moderators were fetched
         if (fetchedModerators.length === 0) {
           alert('Before creating an event, please create a moderator first.'); // Alert if no moderators
-          navigate('/local/createMod'); // Navigate to the moderator creation path
+           // Navigate to the moderator creation path
           return; // Ensure you exit the function after navigation
       }
       
@@ -175,7 +180,7 @@ const EventCreation = () => {
     const deptSnapshot = await getDocs(deptRef);
     const filteredDepartments = deptSnapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((dept) => dept.name === adminDepartment); // Assuming dept.name is the department name
+      .filter((dept) => adminDepartments.includes(dept.name)); // Assuming dept.name is the department name
       console.log('Filtered Departments:', filteredDepartments);
     setDepartments(filteredDepartments); // Set only the admin's department
   } catch (error) {

@@ -31,9 +31,9 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/moderator/CreateOfficer">
+          <Link to="/moderator/ModeratorsRecord">
             <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
-            {isOpen && ' Create Officer'}
+            {isOpen && ' Moderators Record'}
           </Link>
         </li>
         {/* Additional links if needed */}

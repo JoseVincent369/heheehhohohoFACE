@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { Button, Form, Alert, Image } from 'react-bootstrap';
 import Webcam from 'react-webcam'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; // Use getDoc for fetching documents
+import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
@@ -22,8 +22,8 @@ const SignUp = () => {
     major: "",
     schoolID: "",
     password: "",
-    organization: [], // Treat organization as an array
-    department: "", // Removed department from formData
+    organization: [], 
+    department: "", 
   });
 
   const [photos, setPhotos] = useState({
@@ -208,35 +208,37 @@ const SignUp = () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
-
+  
     try {
       // Fetch names for course, major, yearLevel, and organization
       const courseDoc = await getDoc(doc(FIRESTORE_DB, `departments/${formData.department}/courses/${formData.course}`));
       const courseName = courseDoc.exists() ? courseDoc.data().name : "";
-
+  
       const majorDoc = formData.major
         ? await getDoc(doc(FIRESTORE_DB, `departments/${formData.department}/courses/${formData.course}/majors/${formData.major}`))
         : null;
       const majorName = majorDoc?.exists() ? majorDoc.data().name : "";
-
-
+  
       const orgPromises = formData.organization.map(async (orgId) => {
         const orgDoc = await getDoc(doc(FIRESTORE_DB, `organizations/${orgId}`));
         return orgDoc.exists() ? orgDoc.data().name : "";
       });
       const organizationNames = await Promise.all(orgPromises);
-
+  
+      // Fetch department name
+      const departmentDoc = await getDoc(doc(FIRESTORE_DB, `departments/${formData.department}`));
+      const departmentName = departmentDoc.exists() ? departmentDoc.data().name : "";
+  
       // Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(
         FIREBASE_AUTH,
         formData.email,
         formData.password
       );
-
+  
       const userId = userCredential.user.uid;
       const photoURLs = await uploadPhotos(userId);
       
-
       // Save user data in Firestore
       await setDoc(doc(FIRESTORE_DB, "users", userId), {
         fname: formData.fname,
@@ -249,14 +251,15 @@ const SignUp = () => {
         course: courseName,
         major: majorName,
         organization: organizationNames,
+        department: departmentName,
         schoolID: formData.schoolID,
         role: "user",
         photos: photoURLs,
       });
-
+  
       setSuccess("User registered successfully!");
       navigate("/");
-
+  
     } catch (error) {
       console.error("Sign-up failed:", error);
       switch (error.code) {
@@ -279,7 +282,8 @@ const SignUp = () => {
       setLoading(false);
     }
   };
-
+  
+  
   return (
     <div className="signup-container">
       <h2>Sign Up</h2>

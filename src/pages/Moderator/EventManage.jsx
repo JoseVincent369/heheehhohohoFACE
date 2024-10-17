@@ -3,14 +3,16 @@ import {
   getFirestore,
   collection,
   addDoc,
-  getDocs
+  getDocs,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
-import { Timestamp } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { FIREBASE_APP  } from '../../firebaseutil/firebase_main';
+import { Timestamp  } from 'firebase/firestore';
+import { Input, Checkbox, Button, Select, Spin } from 'antd';
 import './ModeratorStyles.css';
 
+const { Search } = Input;
+const { Option } = Select;
 
 const EventManagement = () => {
   const [eventName, setEventName] = useState('');
@@ -23,13 +25,12 @@ const EventManagement = () => {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [selectedMajors, setSelectedMajors] = useState([]);
-  const [selectedOfficers, setSelectedOfficers] = useState([]); 
   const [selectedOrganizations, setSelectedOrganizations] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [courses, setCourses] = useState({});
   const [majors, setMajors] = useState({});
-  const [officers, setOfficers] = useState([]); 
+  const [students, setStudents] = useState([]);
   const [yearLevels] = useState([
     '1st Year', 
     '2nd Year', 
@@ -37,8 +38,9 @@ const EventManagement = () => {
     '4th Year'
 ]);
   const [user, setUser] = useState(null);
+  const [filteredStudents, setFilteredStudents] = useState(students);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); 
+  
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -54,6 +56,8 @@ const EventManagement = () => {
 
   useEffect(() => {
     const fetchOrganizationsAndDepartments = async () => {
+      if (!user) return; // Wait for user to be authenticated
+  
       setLoading(true);
       try {
         // Fetch organizations
@@ -61,25 +65,25 @@ const EventManagement = () => {
         const orgs = orgsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setOrganizations(orgs);
   
-        // Ensure user is logged in and fetch their department
-        if (user) {
-          const userSnapshot = await getDocs(collection(db, 'users'));
-          const currentUser = userSnapshot.docs.find((doc) => doc.id === user.uid);
-          const moderatorDepartment = currentUser?.data().department;
+        // Fetch user's assigned departments (by names, assuming that's how they are stored)
+        const userSnapshot = await getDocs(collection(db, 'users'));
+        const currentUser = userSnapshot.docs.find((doc) => doc.id === user.uid);
+        const moderatorDepartments = currentUser?.data()?.department; // Use the correct field for department
   
-          if (moderatorDepartment) {
-            // Fetch only the department assigned to this moderator
-            const deptsSnapshot = await getDocs(collection(db, 'departments'));
-            const depts = deptsSnapshot.docs
-              .map((doc) => ({ id: doc.id, ...doc.data() }))
-              .filter(dept => dept.name === moderatorDepartment);  // Filter by moderator's department
+        console.log("Moderator's departments:", moderatorDepartments); // Debugging
   
-            setDepartments(depts);
-          }
+        if (moderatorDepartments && moderatorDepartments.length > 0) {
+          // Fetch all departments
+          const deptsSnapshot = await getDocs(collection(db, 'departments'));
+          const depts = deptsSnapshot.docs
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .filter(dept => moderatorDepartments.includes(dept.name)); // Use dept.name
+  
+          console.log("Fetched departments:", depts); // Debugging
+          setDepartments(depts);
         }
       } catch (error) {
         console.error('Error fetching organizations or departments:', error);
-        alert('Failed to fetch organizations or departments.');
       } finally {
         setLoading(false);
       }
@@ -88,43 +92,34 @@ const EventManagement = () => {
     fetchOrganizationsAndDepartments();
   }, [db, user]);
   
+  
+  // Fetch users with role 'user'
+const fetchUsersWithRoleUser = async () => {
+  if (!user) return;
+
+  setLoading(true);
+  try {
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const filteredUsers = usersSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(user => user.role === 'user' && (user.department || user.department === 'department'));
+
+    setStudents(filteredUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchUsersWithRoleUser();
+}, [user]);
 
 
   useEffect(() => {
-    const fetchOfficers = async () => {
-      if (!user) {
-        console.log('No user is logged in, skipping officer fetch');
-        return;
-      }
-  
-      setLoading(true);
-      try {
-        const currentUserUID = user.uid;
-        console.log("Fetching officers for user UID:", currentUserUID);
-  
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        const officersList = usersSnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter(user => user.role === 'officer' && user.createdBy === currentUserUID);
-  
-        console.log("Fetched Officers:", officersList);
-        setOfficers(officersList); 
-  
-        if (officersList.length === 0) {
-          alert('No officers found. You need to create an officer first.');
-          navigate('/moderator/CreateOfficer');
-        }
-      } catch (error) {
-        console.error('Error fetching officers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchOfficers();
-  }, [db, user]);
-  
-
+    fetchUsersWithRoleUser();
+  }, [user]);
 
 // Fetch courses based on selected departments
 useEffect(() => {
@@ -223,12 +218,6 @@ useEffect(() => {
     );
   };
 
-  const handleOfficerClick = (officerId) => {
-    setSelectedOfficers(prev => 
-      prev.includes(officerId) ? prev.filter(id => id !== officerId) : [...prev, officerId]
-    );
-  };
-
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -242,36 +231,47 @@ useEffect(() => {
       const startDateTimestamp = Timestamp.fromDate(new Date(eventStartDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(eventEndDate));
   
+      // Fetch the adminID from the createdBy field
+      const userSnapshot = await getDocs(collection(db, 'users'));
+      const currentUser = userSnapshot.docs.find((doc) => doc.id === user.uid);
+      const adminID = currentUser?.data()?.createdBy || null; // Get the admin ID from the 'createdBy' field or use null if undefined
+  
       // Map selected values to their names
-      const selectedOrgNames = selectedOrgs.map(orgId => organizations.find(org => org.id === orgId)?.name).filter(Boolean); // Remove any undefined names
+      const selectedOrgNames = selectedOrgs.map(orgId => organizations.find(org => org.id === orgId)?.name).filter(Boolean); // Remove undefined names
       const selectedCourseNames = selectedCourses.map(courseId => {
         const deptCourses = Object.values(courses).flat();
         return deptCourses.find(course => course.id === courseId)?.name;
-      }).filter(Boolean); // Remove any undefined names
+      }).filter(Boolean);
   
       const selectedMajorNames = selectedMajors.map(majorId => {
         const deptMajors = Object.values(majors).flat();
         return deptMajors.find(major => major.id === majorId)?.name;
-      }).filter(Boolean); // Remove any undefined names
+      }).filter(Boolean);
   
-      const selectedYearLevelNames = selectedYearLevels.map(yearId => {
-        return yearId; // Assuming yearId is already a valid name, else modify accordingly
-      });
+      const selectedYearLevelNames = selectedYearLevels.map(yearId => yearId); // Assuming yearId is a valid name
   
-      // Constructing the event data
+      // Ensure mappedUsers is defined, fallback to empty array if undefined
+      const mappedUsers = students?.map(student => ({
+        id: student.id, // Ensure student.id exists
+        lname: student.lname || student.fullName || "Unknown",  // Adapt to your data structure
+        email: student.email // If needed
+      })) || [];
+  
+      // Constructing the event data, using null for undefined values
       const eventData = {
-        name: eventName || '', // Set default value if undefined
-        description: eventDescription || '', // Set default value if undefined
+        name: eventName || null,
+        description: eventDescription || null,
         startDate: startDateTimestamp,
         endDate: endDateTimestamp,
-        venue: venue || '', // Set default value if undefined
-        organizations: selectedOrgNames, // Store organization names
-        yearLevels: selectedYearLevelNames, // Store year level names
-        selectedDepartments, // Keep department IDs if needed
-        courses: selectedCourseNames, // Store course names
-        majors: selectedMajorNames, // Store major names
-        officers: selectedOfficers,  // Set default value if undefined
+        venue: venue || null,
+        organizations: selectedOrgNames || null,
+        yearLevels: selectedYearLevelNames || null,
+        selectedDepartments: selectedDepartments.length > 0 ? selectedDepartments : null, // Check if departments are selected
+        courses: selectedCourseNames.length > 0 ? selectedCourseNames : null,
+        majors: selectedMajorNames.length > 0 ? selectedMajorNames : null,
+        userInCharge: mappedUsers.length > 0 ? mappedUsers : null, // Use null if no users are selected
         createdBy: user.uid,
+        adminID: adminID,
         status: 'pending',
       };
   
@@ -281,7 +281,6 @@ useEffect(() => {
       // Adding the event to Firestore
       const eventRef = await addDoc(collection(db, 'events'), eventData);
       console.log('Event created with ID:', eventRef.id);
-  
       alert('Event created successfully, awaiting admin approval!');
   
       // Clear form inputs after successful submission
@@ -295,7 +294,6 @@ useEffect(() => {
       setSelectedDepartments([]);
       setSelectedCourses([]);
       setSelectedMajors([]);
-      setSelectedOfficers([]); 
     } catch (error) {
       console.error('Error creating event:', error);
       alert(`Failed to create event: ${error.message}`);
@@ -303,6 +301,7 @@ useEffect(() => {
       setLoading(false);
     }
   };
+  
   
 
   // Assume this is where you fetch or initialize the current user
@@ -321,14 +320,20 @@ useEffect(() => {
   checkCurrentUser();
 }, []);
 
+const handleSearchUsers = (value) => {
+  // Filter students based on the email
+  const filtered = students.filter(student =>
+    student.email.toLowerCase().includes(value.toLowerCase())
+  );
+  
+  setFilteredStudents(filtered); // Update state with filtered results
+};
+
+
 
   return (
     <div className="event-management">
-
-
       <div className="main-content">
-
-
         <div className="content">
           <h2>Create Event</h2>
           <form onSubmit={handleCreateEvent}>
@@ -367,31 +372,39 @@ useEffect(() => {
             
 
 
-{/* Organization selection */}
-<fieldset>
-  <legend>Select Organizations</legend>
-  <div>
-    <input
-      type="checkbox"
-      onChange={handleSelectAll('organizations')}
-      checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
-    />
-    <label>Select All</label> {/* Use <label> for consistency */}
-  </div>
-  {organizations.map((org) => (
-    <div key={org.id}>
-      <label>
-        <input
-          type="checkbox"
-          value={org.id}
-          checked={selectedOrganizations.includes(org.id)}
-          onChange={handleCheckboxChange(setSelectedOrganizations)}
-        />
-        {org.name}
-      </label>
-    </div>
-  ))}
-</fieldset>
+
+           {/* Organization selection */}
+           <fieldset>
+              <legend>Select Organizations</legend>
+              <div>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAll('organizations')}
+                  checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
+                />
+                <label>Select All</label>
+                
+              </div>
+              
+              {organizations.map((org) => (
+                <div key={org.id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      value={org.id}
+                      checked={selectedOrganizations.includes(org.id)}
+                      onChange={(e) => {
+                        const { value, checked } = e.target;
+                        setSelectedOrganizations(prev =>
+                          checked ? [...prev, value] : prev.filter(id => id !== value)
+                        );
+                      }}
+                    />
+                    {org.name}
+                  </label>
+                </div>
+              ))}
+            </fieldset>
 
 
 
@@ -403,8 +416,8 @@ useEffect(() => {
       <input
         type="checkbox"
         value={dept.id}
+        checked={selectedDepartments.includes(dept.id)}
         onChange={handleCheckboxChange(setSelectedDepartments)}
-    checked={selectedDepartments.includes(dept.id)}
 
       />
       <span>Select Department</span>
@@ -481,39 +494,28 @@ useEffect(() => {
   ))}
 </fieldset>
 
-{/* Officers */}
-<fieldset>
-  <legend>Officers</legend>
-  <div className="checkbox-group">
-    <input
-      type="checkbox"
-      checked={selectedOfficers.length === officers.length}
-      onChange={() => {
-        if (selectedOfficers.length === officers.length) {
-          setSelectedOfficers([]); // Deselect all
-        } else {
-          setSelectedOfficers(officers.map(officer => officer.id)); // Select all
-        }
-      }}
-    />
-    <span>Select All</span>
-  </div>
-  {officers.length > 0 ? (
-    officers.map((officer) => (
-      <div key={officer.id} className="checkbox-group">
-        <input
-          type="checkbox"
-          value={officer.id}
-          checked={selectedOfficers.includes(officer.id)}
-          onChange={() => handleOfficerClick(officer.id)}
-        />
-        <span>{officer.fullName}</span>
-      </div>
-    ))
-  ) : (
-    <p>No officers available.</p>
-  )}
-</fieldset>
+     {/* Searchable Select for Users */}
+     <fieldset>
+        <legend>Select Users</legend>
+        {loading ? (
+          <Spin />
+        ) : (
+          <Select
+    mode="multiple" // Adjust this based on your needs
+    placeholder="Search Users by Email"
+    onSearch={handleSearchUsers}
+    style={{ width: '100%' }}
+    showSearch // Enable search functionality
+  >
+  
+            {students.map((student) => (
+              <Option key={student.id} value={student.id}>
+              {student.lname} {student.fname} ({student.email})
+            </Option>
+            ))}
+          </Select>
+        )}
+      </fieldset>
 
 
             <button type="submit" disabled={loading}>

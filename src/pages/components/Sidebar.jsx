@@ -25,12 +25,6 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/admin/events">
-            <FontAwesomeIcon icon={faClipboardList} className="sidebar-icon" />
-            {isOpen && ' Event Registration'}
-          </Link>
-        </li>
-        <li>
           <Link to="/admin/admins">
             <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
             {isOpen && ' Admin Management'}

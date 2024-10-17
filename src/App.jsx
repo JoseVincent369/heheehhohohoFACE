@@ -26,14 +26,14 @@ import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin';
 import Department from './pages/admin_main/Department';
 import LocalAdmin from './pages/Admin/LocalAdmin';
 import EventCreation from './pages/Admin/EventCreation';
-import OrganizationManagement from './pages/Admin/OrganizationManagement';
+import Records from './pages/Admin/Records';
 import CreateModerator from './pages/Admin/CreateModerator';
 
 // Moderator Pages
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
 import CreateOfficer from './pages/Moderator/CreateOfficer';
 import EventManage from './pages/Moderator/EventManage';
-import OfficerDashboard from './pages/Moderator/OfficerDashboard';
+import ModeratorsRecord from './pages/Moderator/ModeratorsRecord';
 
 // Other
 import Logout from './pages/components/Logout';
@@ -67,11 +67,22 @@ function MainApp() {
           {/* Super Admin Layout */}
           <Route element={<Layout />}>
             <Route path="/superadmin" element={<AdminDashboard />} />
-            <Route path="/admin/events" element={<EventManagement />} />
             <Route path="/admin/admins" element={<AdminManagement />} />
             <Route path="/admin/addOrg" element={<AddOrganization />} />
             <Route path="/admin/StudentManage" element={<StudentManage />} />
             <Route path="/admin/department" element={<Department />} />
+          </Route>
+
+           {/* Super Admin Change */}
+          <Route path="/admin/events" element={<EventManagement />} />
+
+
+          {/* Local Admin Layout */}
+          <Route element={<AdminLayout />}>
+            <Route path="/localadmin" element={<LocalAdmin />} />
+            <Route path="/local/create" element={<EventCreation />} />
+            <Route path="/local/Records" element={<Records />} />
+            <Route path="/local/createMod" element={<CreateModerator />} />
           </Route>
 
           {/* Moderator Layout */}
@@ -79,16 +90,9 @@ function MainApp() {
             <Route path="/moderator" element={<ModeratorDashboard />} />
             <Route path="/moderator/CreateOfficer" element={<CreateOfficer />} />
             <Route path="/moderator/create" element={<EventManage />} />
-            <Route path="/moderator/officers" element={<OfficerDashboard />} />
+            <Route path="/moderator/ModeratorsRecord" element={<ModeratorsRecord />} />
           </Route>
 
-          {/* Local Admin Layout */}
-          <Route element={<AdminLayout />}>
-            <Route path="/localadmin" element={<LocalAdmin />} />
-            <Route path="/local/create" element={<EventCreation />} />
-            <Route path="/local/Org" element={<OrganizationManagement />} />
-            <Route path="/local/createMod" element={<CreateModerator />} />
-          </Route>
 
           {/* Other */}
           <Route path="/logout" element={<Logout />} />

@@ -37,15 +37,15 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/local/Org">
-            <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
-            {isOpen && ' Organization Management'}
-          </Link>
-        </li>
-        <li>
           <Link to="/local/createMod">
             <FontAwesomeIcon icon={faBuilding} className="sidebar-icon" />
             {isOpen && ' Create Moderator'}
+          </Link>
+        </li>
+        <li>
+          <Link to="/local/Records">
+            <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
+            {isOpen && ' Records'}
           </Link>
         </li>
       </ul>

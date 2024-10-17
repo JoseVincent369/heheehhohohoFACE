@@ -13,11 +13,11 @@ const EventManagement = () => {
     venue: "",
     organizations: [],
     year: [],
-    selectedDepartments: {}, // Correctly initialized
+    selectedDepartments: {},
   });
 
   const [organizationsList, setOrganizationsList] = useState([]);
-  const [yearLevels, setYearLevels] = useState(["Year 1", "Year 2", "Year 3", "Year 4"]);
+  const [yearLevels, setYearLevels] = useState(["1st Year", "2nd Year", "3rd Year", "4th Year"]);
   const [departments, setDepartments] = useState({}); // Stores department, course, and major names
 
   const navigate = useNavigate(); 
@@ -310,52 +310,73 @@ const EventManagement = () => {
           ))}
         </div>
 
-        {/* Department, Course, and Major Selection as Checkboxes */}
-        <div className="checkbox-group">
-          <label>Select Departments:</label>
-          {Object.keys(departments).map((department, deptIndex) => (
-            <div key={deptIndex}>
-              <div className="checkbox-item">
-                <input
-                  type="checkbox"
-                  id={`department-${deptIndex}`}
-                  value={department}
-                  onChange={handleDepartmentChange}
-                  checked={eventData.selectedDepartments[department] !== undefined}
-                />
-                <label htmlFor={`department-${deptIndex}`}>{department}</label>
-              </div>
-              {eventData.selectedDepartments[department] && Object.keys(departments[department]).map((course, courseIndex) => (
-                <div key={courseIndex} style={{ marginLeft: '20px' }}>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id={`course-${deptIndex}-${courseIndex}`}
-                      value={`${department}|${course}`}
-                      onChange={handleCourseChange}
-                      checked={eventData.selectedDepartments[department][course] !== undefined}
-                    />
-                    <label htmlFor={`course-${deptIndex}-${courseIndex}`}>{course}</label>
-                  </div>
-                  {eventData.selectedDepartments[department][course] && departments[department][course].map((major, majorIndex) => (
-                    <div key={majorIndex} style={{ marginLeft: '40px' }}>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id={`major-${deptIndex}-${courseIndex}-${majorIndex}`}
-                          value={`${department}|${course}|${major}`}
-                          onChange={handleMajorChange}
-                          checked={eventData.selectedDepartments[department][course].includes(major)}
-                        />
-                        <label htmlFor={`major-${deptIndex}-${courseIndex}-${majorIndex}`}>{major}</label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
+<div className="checkbox-group">
+  {/* Department Selection */}
+  <fieldset>
+    <legend>Select Department:</legend>
+    {Object.keys(departments).map((department, deptIndex) => (
+      <div className="checkbox-item" key={deptIndex}>
+        <input
+          type="checkbox"
+          id={`department-${deptIndex}`}
+          value={department}
+          onChange={handleDepartmentChange}
+          checked={eventData.selectedDepartments[department] !== undefined}
+        />
+        <label htmlFor={`department-${deptIndex}`}>{department}</label>
+      </div>
+    ))}
+  </fieldset>
+
+  {/* Course Selection (for selected departments) */}
+  {Object.keys(eventData.selectedDepartments).length > 0 && (
+    <fieldset>
+      <legend>Select Course:</legend>
+      {Object.keys(eventData.selectedDepartments).map((department, deptIndex) =>
+        departments[department] && Object.keys(departments[department]).map((course, courseIndex) => (
+          <div className="checkbox-item" key={courseIndex}>
+            <input
+              type="checkbox"
+              id={`course-${deptIndex}-${courseIndex}`}
+              value={`${department}|${course}`}
+              onChange={handleCourseChange}
+              checked={eventData.selectedDepartments[department]?.[course] !== undefined}
+            />
+            <label htmlFor={`course-${deptIndex}-${courseIndex}`}>{course}</label>
+          </div>
+        ))
+      )}
+    </fieldset>
+  )}
+
+  {/* Major Selection (for selected courses) */}
+  {Object.keys(eventData.selectedDepartments).some(department =>
+    Object.keys(eventData.selectedDepartments[department]).length > 0
+  ) && (
+    <fieldset>
+      <legend>Select Major:</legend>
+      {Object.keys(eventData.selectedDepartments).map((department, deptIndex) =>
+        Object.keys(eventData.selectedDepartments[department]).map((course, courseIndex) =>
+          departments[department][course] && departments[department][course].map((major, majorIndex) => (
+            <div className="checkbox-item" key={majorIndex}>
+              <input
+                type="checkbox"
+                id={`major-${deptIndex}-${courseIndex}-${majorIndex}`}
+                value={`${department}|${course}|${major}`}
+                onChange={handleMajorChange}
+                checked={eventData.selectedDepartments[department][course].includes(major)}
+              />
+              <label htmlFor={`major-${deptIndex}-${courseIndex}-${majorIndex}`}>{major}</label>
             </div>
-          ))}
-        </div>
+          ))
+        )
+      )}
+    </fieldset>
+  )}
+</div>
+
+
+
 
         <button type="submit">Add Event</button>
       </form>

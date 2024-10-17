@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged, getAuth, signInWithEmailAndPassword, deleteUser, EmailAuthProvider } from 'firebase/auth'; 
+import { onAuthStateChanged, getAuth,  EmailAuthProvider } from 'firebase/auth'; 
 import { getStorage, ref, deleteObject } from 'firebase/storage'; 
-import { getFirestore, getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { getDoc, getDocs, collection, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE  } from '../../firebaseutil/firebase_main';
 import { initializeApp } from "firebase/app";
 import CreateModeratorModal from './CreateModeratorModal';
 import './localstyles.css';
-
-
 
 
 const ManageModerators = () => {
@@ -34,6 +32,7 @@ const ManageModerators = () => {
   useEffect(() => {
     const fetchModerators = async () => {
       if (!currentAdmin) return; // Prevent fetching if currentAdmin is null
+
       try {
         console.log(`Fetching moderators for admin UID: ${currentAdmin.uid}`);
         const moderatorsQuery = query(
@@ -41,15 +40,21 @@ const ManageModerators = () => {
           where('role', '==', 'moderator'),
           where('createdBy', '==', currentAdmin.uid) // Check the matching condition
         );
-  
+
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
         console.log('Snapshot:', moderatorsSnapshot); // Log the snapshot
-  
+
+        if (moderatorsSnapshot.empty) {
+          console.log('No moderators found for this admin.');
+          setModerators([]); // Ensure moderators is set to empty if none found
+          return; // Exit if no moderators are found
+        }
+
         const moderatorsList = moderatorsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-  
+
         console.log('Moderators fetched:', moderatorsList); // Check what moderators were fetched
         setModerators(moderatorsList);
       } catch (error) {
@@ -123,7 +128,6 @@ const ManageModerators = () => {
                 <th>Email</th>
                 <th>Department</th>
                 <th>Organization</th>
-                <th>Photo</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -135,11 +139,6 @@ const ManageModerators = () => {
                   <td>{moderator.department}</td>
                   <td>{moderator.organization}</td>
                   <td>
-                    <img 
-                      src={moderator.photoURL} 
-                      alt={`${moderator.fullName}'s profile`} 
-                      style={{ width: '50px', height: '50px', borderRadius: '50%' }} 
-                    />
                   </td>
                   <td>
                     <button onClick={() => handleEditModerator(moderator)}>Edit</button>

@@ -465,7 +465,7 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
       {/* Main Content */}
       <div style={{ display: 'flex', width: 720, height: 560 }}>
         {/* Video Section */}
-        <div style={{ flex: 1, position: 'relative', marginRight: '20px' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
           <video
             ref={videoRef}
             width={720}
@@ -476,7 +476,7 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
           />
           <canvas
             ref={canvasRef}
-            style={{ position: 'absolute', left: 0, top: 0 }}
+            style={{ position: 'absolute', left: 0, top: 0, transform: 'scaleX(-1)', zIndex: 1 }}
           />
         </div>
   
