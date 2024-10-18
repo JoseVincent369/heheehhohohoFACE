@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { Input, Button, Table, Modal, Divider } from 'antd';
 import './generalstyles.css';
 
 const AddOrganization = () => {
@@ -56,10 +57,14 @@ const AddOrganization = () => {
         setFilteredOrganizations([...filteredOrganizations, newOrg]);
       }
       resetForm();
-      alert('Organization saved successfully!');
+      Modal.success({
+        content: 'Organization saved successfully!',
+      });
     } catch (error) {
       console.error('Error saving organization:', error);
-      alert('Failed to save organization. Please try again.');
+      Modal.error({
+        content: 'Failed to save organization. Please try again.',
+      });
     }
   };
 
@@ -71,17 +76,25 @@ const AddOrganization = () => {
 
   // Handle deleting an organization
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this organization?")) {
-      try {
-        await deleteDoc(doc(FIRESTORE_DB, "organizations", id));
-        setOrganizations(organizations.filter(org => org.id !== id));
-        setFilteredOrganizations(filteredOrganizations.filter(org => org.id !== id));
-        alert('Organization deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting organization:', error);
-        alert('Failed to delete organization. Please try again.');
+    Modal.confirm({
+      title: 'Confirm Deletion',
+      content: 'Are you sure you want to delete this organization?',
+      onOk: async () => {
+        try {
+          await deleteDoc(doc(FIRESTORE_DB, "organizations", id));
+          setOrganizations(organizations.filter(org => org.id !== id));
+          setFilteredOrganizations(filteredOrganizations.filter(org => org.id !== id));
+          Modal.success({
+            content: 'Organization deleted successfully!',
+          });
+        } catch (error) {
+          console.error('Error deleting organization:', error);
+          Modal.error({
+            content: 'Failed to delete organization. Please try again.',
+          });
+        }
       }
-    }
+    });
   };
 
   // Reset the form after submission or canceling an edit
@@ -90,62 +103,60 @@ const AddOrganization = () => {
     setEditingOrgId(null);
   };
 
+  const columns = [
+    {
+      title: 'Organization Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text, org) => (
+        <span>
+          <Button type="link" onClick={() => handleEdit(org)}>Edit</Button>
+          <Button type="link" danger onClick={() => handleDelete(org.id)}>Delete</Button>
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="admin-panel">
       {/* Back Button */}
-      <button className="back-button" onClick={() => navigate('/superadmin')}>
-        &lt; Back
-      </button>
+
 
       <h2>{editingOrgId ? "Edit Organization" : "Add Organization"}</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          value={currentOrg.name}
-          onChange={handleInputChange}
-          placeholder="Organization Name"
-          required
-        />
-        <button type="submit">{editingOrgId ? "Update Organization" : "Add Organization"}</button>
-        {editingOrgId && <button type="button" onClick={resetForm}>Cancel</button>}
-      </form>
+      <Input
+        placeholder="Organization Name"
+        value={currentOrg.name}
+        onChange={handleInputChange}
+        style={{ marginBottom: '16px' }}
+      />
+      <Button type="primary" onClick={handleSubmit} style={{ marginRight: '8px' }}>
+        {editingOrgId ? "Update Organization" : "Add Organization"}
+      </Button>
+      {editingOrgId && (
+        <Button type="default" onClick={resetForm}>
+          Cancel
+        </Button>
+      )}
 
-      <div className="search-container">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search Organizations"
-        />
-      </div>
+      <Divider orientation="left">Search Organizations</Divider>
+      <Input
+        placeholder="Search..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{ marginBottom: '16px' }}
+      />
 
-      <h3>Existing Organizations</h3>
-      <div className="organization-list">
-        {filteredOrganizations.map(org => (
-          <div className="organization-item" key={org.id}>
-            {editingOrgId === org.id ? (
-              <div className="edit-form">
-                <input
-                  type="text"
-                  value={currentOrg.name}
-                  onChange={handleInputChange}
-                />
-                <button onClick={handleSubmit}>Update</button>
-                <button onClick={resetForm}>Cancel</button>
-              </div>
-            ) : (
-              <>
-                <span>{org.name}</span>
-                <div>
-                  <button onClick={() => handleEdit(org)}>Edit</button>
-                  <button onClick={() => handleDelete(org.id)}>Delete</button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+      <Divider orientation="left">Existing Organizations</Divider>
+      <Table
+        columns={columns}
+        dataSource={filteredOrganizations}
+        rowKey="id"
+        pagination={false}
+      />
     </div>
   );
 };

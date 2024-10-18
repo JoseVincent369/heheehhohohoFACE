@@ -17,7 +17,7 @@ body {
     padding: 20px;
     border-radius: 1%;
     box-shadow: blue;
-    height: 100vh;
+    height: auto;
     align-items: center;
     margin: auto;
     margin-top: 50px;

@@ -122,7 +122,8 @@ const AdminManagement = () => {
 
 
     return (
-        <>
+        <div className="main-content" style={{ marginLeft: '-15px' }}>
+            <div className="admin-management">
             <Button type="primary" onClick={() => setShowModal(true)}>Create Admin</Button>
 
             {showModal && (
@@ -306,7 +307,8 @@ const AdminManagement = () => {
                     ))}
                 </tbody>
             </table>
-        </>
+            </div>
+            </div>
     );
 };
 

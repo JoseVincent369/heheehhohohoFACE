@@ -22,7 +22,7 @@ import EventManagement from './pages/admin_main/EventManagement';
 import AdminManagement from './pages/admin_main/AdminManagement';
 import AddOrganization from './pages/admin_main/AddOrganization';
 import StudentManage from './pages/admin_main/StudentManage';
-import CreateSuperAdmin from './pages/admin_main/CreateSuperAdmin';
+import CreateSuperAdmin from './pages/admin_main/zzz';
 import Department from './pages/admin_main/Department';
 import LocalAdmin from './pages/Admin/LocalAdmin';
 import EventCreation from './pages/Admin/EventCreation';

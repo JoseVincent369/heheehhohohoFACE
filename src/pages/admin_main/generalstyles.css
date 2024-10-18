@@ -688,3 +688,51 @@ input[type="file"] {
 }
 
 
+  
+  h2 {
+    margin-bottom: 20px;
+  }
+  
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .stat {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    margin-right: 10px;
+    text-align: center;
+  }
+  
+  .stat:last-child {
+    margin-right: 0;
+  }
+  
+  .badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+  }
+  
+  .table {
+    margin-top: 20px;
+  }
+  
+  .table .ant-table {
+    background-color: #fff;
+    border-radius: 5px;
+  }
+  
+  .ant-modal {
+    padding: 20px;
+  }
+  
