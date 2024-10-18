@@ -24,6 +24,9 @@ const AdminManagement = () => {
     const [departmentsList, setDepartmentsList] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false); // Track if we are editing
+    const [currentAdminId, setCurrentAdminId] = useState(null); // Track current admin being edited
+
 
     const navigate = useNavigate();
     const { Search } = Input;
@@ -92,6 +95,7 @@ const AdminManagement = () => {
             alert(`Failed to create admin account: ${error.message}`);
         }
     };
+    
 
     const handleMultiSelectChange = (value, type) => {
         setAdminData((prev) => ({

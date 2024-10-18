@@ -285,7 +285,7 @@ const SignUp = () => {
   
   
   return (
-    <div className="signup-container">
+    <div className="signup-container" style={{ maxHeight: '190vh',  }}>
       <h2>Sign Up</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}

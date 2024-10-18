@@ -113,19 +113,23 @@ const EventCreation = () => {
     }
   
     try {
-      const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid)); // Fetch the admin document
+      const adminDoc = await getDoc(doc(FIRESTORE_DB, 'users', adminUid));
       if (adminDoc.exists()) {
         const adminData = adminDoc.data();
-        setCurrentUser(adminUid); // Store department ID
-        fetchModerators(adminUid);
-        return adminData.departments || []; // Return departments if available
+        setCurrentUser(adminUid);
+        setDepartments(adminData.departments || []); // Set departments directly from admin data
+        fetchModerators(adminUid); // Fetch moderators afterwards
+        return adminData.departments || [];
       } else {
         console.error('No such admin found.');
+        
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
     }
   };
+  
+  
   
   
   // Replace your current fetch user useEffect with this
@@ -163,12 +167,14 @@ const EventCreation = () => {
           where('role', '==', 'moderator'),
           where('createdBy', '==', adminUid) // Check the matching condition
         );
-
+        
+       
         const moderatorsSnapshot = await getDocs(moderatorsQuery);
         const fetchedModerators = moderatorsSnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
         }));
+        
 
         console.log('Moderators fetched:', fetchedModerators);
         setModerators(fetchedModerators);
@@ -176,7 +182,7 @@ const EventCreation = () => {
         // Check if any moderators were fetched
         if (fetchedModerators.length === 0) {
           alert('Before creating an event, please create a moderator first.'); // Alert if no moderators
-           // Navigate to the moderator creation path
+          navigate('/local/createMod');// Navigate to the moderator creation path
           return; // Ensure you exit the function after navigation
       }
       
