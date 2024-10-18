@@ -194,7 +194,7 @@ const EventCreation = () => {
     
   }
 };
-
+console.log('Admin Departments:', departments); // Check admin departments
 
   const handleCheckboxChange = (value, setter, selected) => {
     if (selected.includes(value)) {
