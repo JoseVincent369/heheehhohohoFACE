@@ -90,6 +90,75 @@ const AttendanceRecord = () => {
     setSelectedParticipants([]); // Clear participants when modal closes
   };
 
+  // Print the details of an event
+  // Print the details of an event
+const handlePrint = (event) => {
+  const printContent = `
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 18px;
+        margin: 5px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table, th, td {
+        border: 1px solid black;
+      }
+      th, td {
+        padding: 10px;
+        text-align: left;
+      }
+    </style>
+    <h2>${event.name}</h2>
+    <p><strong>Moderator:</strong> ${event.moderatorName}</p>
+    <p><strong>Attendees Count:</strong> ${event.attendeesCount}</p>
+    <p><strong>Start Date:</strong> ${new Date(event.startDate.seconds * 1000).toLocaleDateString()}</p>
+    <p><strong>End Date:</strong> ${event.endDate ? new Date(event.endDate.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
+    <h3>Participants:</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>School ID</th>
+          <th>Course</th>
+          <th>Year Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${event.attendance.map((participant) => `
+          <tr>
+            <td>${participant.studentInfo.fname}</td>
+            <td>${participant.studentInfo.lname}</td>
+            <td>${participant.schoolID}</td>
+            <td>${participant.studentInfo.course}</td>
+            <td>${participant.studentInfo.yearLevel}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  const newWindow = window.open('', '', 'width=800,height=600');
+  newWindow.document.write(printContent);
+  newWindow.document.close();
+  newWindow.focus();
+  newWindow.print();
+  newWindow.close();
+};
+
+  
+
   const columns = [
     {
       title: 'Event Name',
@@ -126,6 +195,14 @@ const AttendanceRecord = () => {
         <Button onClick={() => showParticipants(attendance)}>View Participants</Button>
       ),
     },
+
+    {
+      title: 'Print',
+      key: 'print',
+      render: (text, record) => (
+        <Button onClick={() => handlePrint(record)}>Print</Button>
+      ),
+    },
   ];
 
   return (
@@ -144,7 +221,7 @@ const AttendanceRecord = () => {
       {/* Modal for displaying participants */}
       <Modal
         title="Participants List"
-        visible={visible}
+        open={visible}
         onCancel={handleCancel}
         footer={null} // Remove default footer
         width={800}
