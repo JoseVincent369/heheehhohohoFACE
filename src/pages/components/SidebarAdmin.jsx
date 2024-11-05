@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faClipboardList, faUsers, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faStar } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -30,12 +30,7 @@ const Sidebar = () => {
             {isOpen && ' Dashboard'}
           </Link>
         </li>
-        <li>
-          <Link to="/local/create">
-            <FontAwesomeIcon icon={faClipboardList} className="sidebar-icon" />
-            {isOpen && ' Event Creation'}
-          </Link>
-        </li>
+
         <li>
           <Link to="/local/createMod">
             <FontAwesomeIcon icon={faBuilding} className="sidebar-icon" />
@@ -43,9 +38,21 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
+          <Link to="/local/create">
+            <FontAwesomeIcon icon={faClipboardList} className="sidebar-icon" />
+            {isOpen && ' Event Creation'}
+          </Link>
+        </li>
+        <li>
           <Link to="/local/Records">
             <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
             {isOpen && ' Records'}
+          </Link>
+        </li>
+        <li>
+          <Link to="/local/StudentAttendanceSearch">
+            <FontAwesomeIcon icon={faStar} className="sidebar-icon" />
+            {isOpen && ' StudentAttendanceSearch'}
           </Link>
         </li>
       </ul>

@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, where, query, doc, getDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
-import { Table, Button, Modal } from 'antd';
+import { Table, Button, Modal, Input, Select } from 'antd';
+
+const { Search } = Input;
+const { Option } = Select;
+
 
 const AttendanceRecord = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false); // State for modal visibility
   const [selectedParticipants, setSelectedParticipants] = useState([]); // State for selected event participants
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
   const auth = getAuth();
 
   useEffect(() => {
@@ -54,6 +61,7 @@ const AttendanceRecord = () => {
         console.log('Fetched Events:', eventsData);
         setEvents(eventsData);
         setLoading(false);
+        setFilteredEvents(eventsData);
       } catch (error) {
         console.error('Error fetching events:', error);
         setLoading(false);
@@ -73,10 +81,26 @@ const AttendanceRecord = () => {
     return () => unsubscribe(); // Cleanup subscription on unmount
   }, [auth]);
 
-  const sortEvents = (field) => {
-    const sortedEvents = [...events].sort((a, b) => b[field] - a[field]);
-    setEvents(sortedEvents);
+  const handleFilterByYear = () => {
+    const filtered = events.filter(event => {
+      const startDate = new Date(event.startDate.seconds * 1000);
+      const endDate = event.endDate ? new Date(event.endDate.seconds * 1000) : null;
+  
+      // Check if startYear is selected and the event's start date is after or in the selected year
+      const isAfterStartYear = !startYear || startDate.getFullYear() >= startYear;
+  
+      // Check if endYear is selected and (if exists) the event's end date is before or in the selected year
+      const isBeforeEndYear = !endYear || (endDate && endDate.getFullYear() <= endYear);
+  
+      return isAfterStartYear && isBeforeEndYear;
+    });
+  
+    setFilteredEvents(filtered);
   };
+  
+  
+  
+
 
   // Function to open modal with participants
   const showParticipants = (attendance) => {
@@ -206,44 +230,89 @@ const handlePrint = (event) => {
   ];
 
   return (
-<div className="main-content">
-<div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}> 
-       
-      <h2>Attendance Record</h2>
-      <Button onClick={() => sortEvents('attendeesCount')}>Sort by Attendees</Button>
-      <Table
-        loading={loading}
-        columns={columns}
-        dataSource={events}
-        rowKey={(record) => record.id}
-      />
+    <div className="main-content">
+      <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+        <h2>Attendance Record</h2>
 
-      {/* Modal for displaying participants */}
-      <Modal
-        title="Participants List"
-        open={visible}
-        onCancel={handleCancel}
-        footer={null} // Remove default footer
-        width={800}
-      >
-        <Table
-          columns={[
-            { title: 'First Name', dataIndex: ['studentInfo', 'fname'], key: 'fname' },
-            { title: 'Last Name', dataIndex: ['studentInfo', 'lname'], key: 'lname' },
-            { title: 'School ID', dataIndex: 'schoolID', key: 'schoolID' },
-            { title: 'Time In', dataIndex: 'timeIn', key: 'timeIn' },
-            { title: 'Course', dataIndex: ['studentInfo', 'course'], key: 'course' },
-            { title: 'Year Level', dataIndex: ['studentInfo', 'yearLevel'], key: 'yearLevel' },
-            { title: 'Time Out', dataIndex: 'timeOut', key: 'timeOut' }
-          ]}
-          dataSource={selectedParticipants}
-          rowKey={(record) => record.schoolID}
-          pagination={false} // No pagination for modal list
+        <Search
+          placeholder="Search by event name"
+          onSearch={(value) => {
+            const filtered = events.filter(event => 
+              event.name.toLowerCase().includes(value.toLowerCase())
+            );
+            setFilteredEvents(filtered);
+          }}
+          enterButton
+          style={{ width: 300, marginBottom: 20 }}
         />
-      </Modal>
-    </div>
+
+        <div style={{ marginTop: 20 }}>
+        <Select
+  placeholder="Select Starting Year"
+  onChange={(value) => setStartYear(value)}
+  style={{ width: 150, marginRight: 10 }}
+>
+  {[...Array(10).keys()].map(i => (
+    <Option key={i} value={2024 - i}>{2024 - i}</Option>
+  ))}
+</Select>
+<Select
+  placeholder="Select Ending Year"
+  onChange={(value) => setEndYear(value)}
+  style={{ width: 150, marginRight: 10 }}
+>
+  {[...Array(10).keys()].map(i => (
+    <Option key={i} value={2024 - i}>{2024 - i}</Option>
+  ))}
+</Select>
+<Button onClick={handleFilterByYear}>Apply Year Filter</Button>
+<span style={{ marginLeft: 10, color: 'red' }}>
+  {(!startYear || !endYear) && ''}
+</span>
+
+        </div>
+
+        <Table style={{ marginTop: 30 }}
+          loading={loading}
+          columns={[
+            { title: 'Event Name', dataIndex: 'name', key: 'name' },
+            { title: 'Attendees Count', dataIndex: 'attendeesCount', key: 'attendeesCount' },
+            { title: 'Start Date', dataIndex: 'startDate', key: 'startDate', render: (startDate) => new Date(startDate.seconds * 1000).toLocaleDateString() },
+            { title: 'End Date', dataIndex: 'endDate', key: 'endDate', render: (endDate) => endDate ? new Date(endDate.seconds * 1000).toLocaleDateString() : 'N/A' },
+            { title: 'Moderator', dataIndex: 'moderatorName', key: 'moderatorName' },
+            { title: 'Participants', dataIndex: 'attendance', key: 'attendance', render: (attendance) => <Button onClick={() => showParticipants(attendance)}>View Participants</Button> },
+            { title: 'Print', key: 'print', render: (text, record) => <Button onClick={() => handlePrint(record)}>Print</Button> },
+          ]}
+          dataSource={filteredEvents}
+          rowKey={(record) => record.id}
+        />
+
+        <Modal
+          title="Participants List"
+          open={visible}
+          onCancel={() => setVisible(false)}
+          footer={null}
+          width={800}
+        >
+          <Table
+            columns={[
+              { title: 'First Name', dataIndex: ['studentInfo', 'fname'], key: 'fname' },
+              { title: 'Last Name', dataIndex: ['studentInfo', 'lname'], key: 'lname' },
+              { title: 'School ID', dataIndex: 'schoolID', key: 'schoolID' },
+              { title: 'Course', dataIndex: ['studentInfo', 'course'], key: 'course' },
+              { title: 'Year Level', dataIndex: ['studentInfo', 'yearLevel'], key: 'yearLevel' },
+              { title: 'Time Out', dataIndex: 'timeOut', key: 'timeOut' },
+              { title: 'Time In', dataIndex: 'timeIn', key: 'timeIn' },
+            ]}
+            dataSource={selectedParticipants}
+            rowKey={(record) => record.schoolID}
+            pagination={false}
+          />
+        </Modal>
+      </div>
     </div>
   );
 };
 
 export default AttendanceRecord;
+

@@ -152,7 +152,7 @@ useEffect(() => {
             setUsersInCharge(filteredUsers);
         } catch (error) {
             console.error('Error fetching users:', error);
-            setError('Failed to fetch users. Please try again later.');
+            
         }
     };
 
@@ -211,7 +211,7 @@ useEffect(() => {
     return (
         <div className="moderator-dashboard">
             <div className="main-content">
-                <div className="content">
+                <div className="content"style={{ maxHeight: '190vh', overflowY: 'auto'  }}>
                     {error && <p className="error-message">{error}</p>}
 
                     {/* Approved Events Table */}

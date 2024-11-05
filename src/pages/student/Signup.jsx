@@ -258,7 +258,7 @@ const SignUp = () => {
       });
   
       setSuccess("User registered successfully!");
-      navigate("/");
+      
   
     } catch (error) {
       console.error("Sign-up failed:", error);

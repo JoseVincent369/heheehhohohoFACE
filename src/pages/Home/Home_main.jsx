@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { collection, getDocs, query, where, doc, getDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
-import { getAuth } from 'firebase/auth'; 
-import './Homestyles.css';
+import './homestyles.css';
 import Logout from '../components/Logout';
+
 
 function Home_main() {
   const videoRef = useRef(null);
@@ -13,55 +13,26 @@ function Home_main() {
   const [selectedEvent, setSelectedEvent] = useState(''); // State for selected event
   const [eventConfirmed, setEventConfirmed] = useState(false); // State for event confirmation
   const [showPopup, setShowPopup] = useState(true); // State for popup visibility
-  const [attendingUser, setAttendingUser] = useState(null); // State for currently attending user
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
+  const [manualSchoolID, setManualSchoolID] = useState(''); // State for manual School ID
   const [attendanceRecords, setAttendanceRecords] = useState([]); // Attendance data state
-  const [officerID, setOfficerID] = useState(null); // Store the officer ID
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // State for login status
+  const [attendanceType, setAttendanceType] = useState('timeIn');
+  const [attendingUser, setAttendingUser] = useState(null);
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
-
   
 
+  // Fetch events from Firestore
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        const currentOfficer = user.uid; // Assuming uid is the officer ID
-        setOfficerID(currentOfficer);
-        setIsLoggedIn(true); // Update login status
-      } else {
-        setIsLoggedIn(false); // User is logged out
-        setOfficerID(null); // Reset officer ID
-      }
-    });
-  
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    const loadEvents = async () => {
+      const eventsCollection = collection(FIRESTORE_DB, 'events');
+      const eventsSnapshot = await getDocs(eventsCollection);
+      const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setEvents(eventsList);
+    };
+
+    loadEvents();
   }, []);
-  
-
-  useEffect(() => {
-    if (officerID) {
-        const loadEvents = async () => {
-            const eventsCollection = collection(FIRESTORE_DB, 'events');
-            // Fetch events where officerID is in 'officers' and status is 'accepted'
-            const q = query(
-                eventsCollection, 
-                where('officers', 'array-contains', officerID),
-                where('status', '==', 'accepted') // Add this line
-            );
-            const eventsSnapshot = await getDocs(q);
-            const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setEvents(eventsList);
-        };
-
-        loadEvents();
-    }
-}, [officerID]); // Fetch events when officerID changes
-
-
-
 
   const fetchAttendanceRecords = async () => {
     try {
@@ -73,7 +44,7 @@ function Home_main() {
       console.error('Error fetching attendance records:', error);
       return [];
     }
-  };  
+  };
 
   // Video and face detection setup
   useEffect(() => {
@@ -101,7 +72,7 @@ function Home_main() {
 
     const handleVideoPlay = async () => {
       const labeledFaceDescriptors = await loadLabeledImages();
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.4);
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
 
       alert('Loaded!');
 
@@ -240,55 +211,67 @@ function Home_main() {
     return null;
   };
 
-  const attendanceCache = useRef(new Set()); // Cache to store attended users
+  const addAttendanceMessage = (message) => {
+    setAttendanceMessages((prevMessages) => [...prevMessages, message]);
+  };
 
+  const attendanceUpdatesMap = {
+    timeIn: 'timeIn',
+    timeOut: 'timeOut',
+    lateIn: 'lateIn',
+  };
+
+
+  // Update attendance function
   const attendance = async (label) => {
     if (label !== 'unknown' && !tempAttendance.current.has(label)) {
-      tempAttendance.current.add(label); // Avoid duplicate detection for the current session
-  
-      // Check if user is already in the attendance cache
-      if (attendanceCache.current.has(label)) {
-        alert(`${label} has already been recorded as attending this event (from cache).`);
-        return;
-      }
-  
+      tempAttendance.current.add(label);
+
       try {
         const user = await fetchUserBySchoolID(label);
         const event = events.find(e => e.id === selectedEvent);
-  
-        // Check if user matches the event's requirements
+
         const isUserEligible =
-          (event.department === user.department) &&
           (event.courses.length === 0 || event.courses.includes(user.course)) &&
           (event.majors.length === 0 || event.majors.includes(user.major)) &&
-          (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel)) &&
-          (event.organizations.length === 0 || event.organizations.includes(user.organization));
-  
+          (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
+
         if (!isUserEligible) {
-          alert(`${user.fname} ${user.lname} is not eligible to attend this event.`);
-          setAttendingUser(null);
+          const message = `${user.fname} ${user.lname} is not eligible to join the event.`;
+          alert(message);
+          addAttendanceMessage(message);
+          tempAttendance.current.delete(label);
           return;
         }
-  
-        // Query Firestore to see if the user has already attended the event
+
         const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
         const attendanceQuery = query(attendanceRef, where('schoolID', '==', label));
         const querySnapshot = await getDocs(attendanceQuery);
-  
+
         if (!querySnapshot.empty) {
-          // Add user to cache since they have already attended
-          attendanceCache.current.add(label); // Update cache with this schoolID
-          alert(`${user.fname} ${user.lname} has already attended this event (from Firestore).`);
-          return; // Exit the function to avoid duplicate entries
-        }
+          const attendanceDoc = querySnapshot.docs[0];
+          const attendanceData = attendanceDoc.data();
 
-        const now = new Date();
+          if (attendanceData[attendanceType]) {
+            const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
+            alert(message);
+            addAttendanceMessage(message);
+            setAttendingUser(user);  // Update the attending user
+            return;
+          }
 
-        if (isUserEligible) {
-          // Add attendance record to Firestore
+          await updateDoc(attendanceDoc.ref, {
+            [attendanceUpdatesMap[attendanceType]]: new Date().toLocaleString(),
+          });
+          const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
+          alert(message);
+          addAttendanceMessage(message);
+          setAttendingUser(user);  // Update the attending user
+        } else {
+          const now = new Date();
           await addDoc(attendanceRef, {
             schoolID: label,
-            timestamp: now.toLocaleString(),
+            [attendanceUpdatesMap[attendanceType]]: now.toLocaleString(),
             studentInfo: {
               fname: user.fname,
               lname: user.lname,
@@ -301,57 +284,103 @@ function Home_main() {
               organization: user.organization,
             },
           });
-          const isAttendanceAllowed = (studentDetails, event) => {
-            // Check for department match first (highest priority)
-            if (event.selectedDepartments.includes(studentDetails.department)) {
-              return true;
-            }
-            
-            // If no department match, check for course match
-            if (event.courses.includes(studentDetails.course)) {
-              return true;
-            }
-          
-            // If no course match, check for major match
-            if (event.majors.includes(studentDetails.major)) {
-              return true;
-            }
-          
-            // If no major match, check for year level match (lowest priority)
-            if (event.yearLevels.includes(studentDetails.yearLevel)) {
-              return true;
-            }
-          
-            // If none of the conditions match, attendance is not allowed
-            return false;
-          };
-          
-          // Example usage
-          if (isAttendanceAllowed(studentDetails, event)) {
-            console.log('Student is allowed for attendance');
-          } else {
-            console.log('Student is not allowed for attendance');
-          }
-          
-
-          // Update the cache and attendance messages
-          attendanceCache.current.add(label); // Add the user to the cache after successful attendance
-          setAttendanceMessages(prevMessages => [
-            ...prevMessages,
-            `${user.fname} ${user.lname} attended ${event?.name} at ${now.toLocaleString()}`,
-          ]);
-          setAttendingUser(user);
-
-        } else {
-          alert(`${user.fname} ${user.lname} is not eligible to attend this event.`);
-          setAttendingUser(null);
+          const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
+          alert(message);
+          addAttendanceMessage(message);
+          setAttendingUser(user);  // Update the attending user
         }
-
       } catch (error) {
-        console.error('Error adding attendance record:', error);
+        console.error('Error updating attendance record:', error);
       }
     }
   };
+
+  // Manual attendance function
+  const handleManualAttendance = async () => {
+    if (manualSchoolID.trim()) {
+      const event = events.find(e => e.id === selectedEvent);
+
+      if (!event) {
+        alert('Event not found or not selected.');
+        return;
+      }
+
+      try {
+        const user = await fetchUserBySchoolID(manualSchoolID.trim());
+        const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
+        const attendanceQuery = query(attendanceRef, where('schoolID', '==', manualSchoolID.trim()));
+        const querySnapshot = await getDocs(attendanceQuery);
+
+        if (!user) {
+          alert('User not found.');
+          return;
+        }
+
+        const isUserEligible =
+          (event.courses.length === 0 || event.courses.includes(user.course)) &&
+          (event.majors.length === 0 || event.majors.includes(user.major)) &&
+          (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
+
+        if (!isUserEligible) {
+          const message = `User ${user.fname} ${user.lname} is not eligible to join the event.`;
+          alert(message);
+          addAttendanceMessage(message);
+          return;
+        }
+
+        if (!querySnapshot.empty) {
+          const attendanceDoc = querySnapshot.docs[0];
+          const attendanceData = attendanceDoc.data();
+
+          if (attendanceData[attendanceType]) {
+            const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
+            alert(message);
+            addAttendanceMessage(message);
+            setAttendingUser(user);  // Update the attending user
+            return;
+          }
+
+          await updateDoc(attendanceDoc.ref, {
+            [attendanceUpdatesMap[attendanceType]]: new Date().toLocaleString(),
+          });
+          const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
+          alert(message);
+          addAttendanceMessage(message);
+          setAttendingUser(user);  // Update the attending user
+        } else {
+          const now = new Date();
+          await addDoc(attendanceRef, {
+            schoolID: manualSchoolID.trim(),
+            [attendanceUpdatesMap[attendanceType]]: now.toLocaleString(),
+            studentInfo: {
+              fname: user.fname,
+              lname: user.lname,
+              mname: user.mname,
+              age: user.age,
+              email: user.email,
+              course: user.course,
+              major: user.major,
+              yearLevel: user.yearLevel,
+              organization: user.organization,
+            },
+          });
+          const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
+          alert(message);
+          addAttendanceMessage(message);
+          setAttendingUser(user);  // Update the attending user
+        }
+
+        setManualSchoolID('');
+
+      } catch (error) {
+        console.error('Error updating attendance record:', error);
+        alert('An error occurred while updating attendance.');
+      }
+    } else {
+      alert('Please enter a valid school ID.');
+    }
+  };
+  
 
   // Fetch user by school ID
   const fetchUserBySchoolID = async (schoolID) => {
@@ -369,17 +398,30 @@ function Home_main() {
   };
 
   const handleViewAttendance = async () => {
-    const records = await fetchAttendanceRecords(); // Fetch attendance records
-    setAttendanceRecords(records); // Store them in the state
-    setIsModalOpen(true); // Open the modal
+    const records = await fetchAttendanceRecords();
+    setAttendanceRecords(records);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmEvent = () => {
+    setEventConfirmed(true);
+    setShowPopup(false);
+  };
+  
+//enterbutton
+  const handleAttendanceSubmit = () => {
+    if (manualSchoolID.trim()) {
+      const confirmed = window.confirm(`Are you sure you want to record attendance for School ID: ${manualSchoolID.trim()}?`);
+      if (confirmed) {
+        handleManualAttendance();
+      }
+    } else {
+      alert('Please enter a valid school ID.');
+    }
   };
   
 
-  // Confirm event selection and close popup
-  const handleConfirmEvent = () => {
-    setEventConfirmed(true);
-    setShowPopup(false); // Close popup after confirming
-  };
+
 
   // Modal component with attendance records in a table format
 const AttendanceModal = ({ isOpen, onClose, records }) => {
@@ -390,7 +432,7 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
       <div className="modal-content">
         <h2>Attendance Records</h2>
         <button className="close-button" onClick={onClose}>Close</button>
-        
+
         <table className="attendance-table">
           <thead>
             <tr>
@@ -398,7 +440,9 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
               <th>Age</th>
               <th>Course</th>
               <th>Year Level</th>
-              <th>Timestamp</th>
+              <th>Time-In</th>
+              <th>Late</th>
+              <th>Time-Out</th>
             </tr>
           </thead>
           <tbody>
@@ -408,7 +452,9 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
                 <td>{record.studentInfo.age}</td>
                 <td>{record.studentInfo.course}</td>
                 <td>{record.studentInfo.yearLevel}</td>
-                <td>{record.timestamp}</td>
+                <td>{record.timeIn}</td>
+                <td>{record.lateIn}</td>
+                <td>{record.timeOut}</td>
               </tr>
             ))}
           </tbody>
@@ -419,111 +465,131 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
 };
 
 
-  return (
-    <>
-    {isLoggedIn ? (
-      <>
-        {/* Render the main content of the app here */}
-        {/* Existing components and logic */}
-      </>
-    ) : (
-      <div>Please log in to access this page.</div>
-    )}
-      {/* Event Title as Header */}
-      {eventConfirmed && <h1>{events.find(e => e.id === selectedEvent)?.name}</h1>}
+return (
+  <>
+    {showPopup && !eventConfirmed && (
+      <div className="popup">
+        <h2>Select Event</h2>
+        <select
+          onChange={(e) => setSelectedEvent(e.target.value)}
+          value={selectedEvent}
+        >
+          <option value="">Select an event</option>
+          {events.map(event => (
+            <option key={event.id} value={event.id}>{event.name}</option>
+          ))}
+          
+        </select>
+        <select value={attendanceType} onChange={(e) => setAttendanceType(e.target.value)}>
+  <option value="timeIn">Time In</option>
+  <option value="timeOut">Time Out</option>
+  <option value="lateIn">Late In</option>
+</select>
 
-      {/* View Attendance Records Button */}
-<div className="button-att">
-  <button onClick={handleViewAttendance}>
-    Attendance Records
+        <button onClick={handleConfirmEvent} disabled={!selectedEvent}>
+          Confirm
+        </button>
+        <button onClick={() => setShowPopup(false)}>Close</button>
+      </div>
+    )}
+
+    {!showPopup && eventConfirmed && (
+      <div className="main-container">
+<div className="logout-button-container">
+          <Logout />
+        </div>
+        <h1>
+  " {events.find(e => e.id === selectedEvent)?.name} "
+  <span style={{ fontSize: '0.6em', color: 'gray' }}>
+   - ({attendanceType})
+  </span>
+</h1>
+
+
+        <div className="attendance-actions">
+          <div className="button-att">
+            <button onClick={handleViewAttendance}>
+              Attendance Records
+            </button>
+          </div>
+  
+<div className="manual-input">
+  <input
+    type="text"
+    value={manualSchoolID}
+    onChange={(e) => setManualSchoolID(e.target.value)}
+    onKeyPress={(e) => {
+      if (e.key === 'Enter') {
+        handleAttendanceSubmit();
+      }
+    }}
+    placeholder="Enter School ID"
+  />
+
+  {/* Hiding the select dropdown */}
+  <select
+    value={attendanceType}
+    onChange={(e) => setAttendanceType(e.target.value)}
+    style={{ display: 'none' }} // This hides the dropdown
+  >
+    <option value="timeIn">Time In</option>
+    <option value="timeOut">Time Out</option>
+    <option value="lateIn">Late In</option>
+  </select>
+
+  <button onClick={handleAttendanceSubmit}>
+    Submit
   </button>
+</div>
+        </div>
+        <h3 className='jj'>Student Information:</h3>
+        <div className="video-section">
+        <div className="user-info">
+        {attendingUser ? (
+          <div>
+            <p><strong>Name:</strong> {attendingUser.fname} {attendingUser.lname}</p>
+            <p><strong>ID:</strong> {attendingUser.schoolID}</p>
+            <p><strong>Age:</strong> {attendingUser.age}</p>
+            <p><strong>Year Level:</strong> {attendingUser.yearLevel}</p>
+            <p><strong>Course:</strong> {attendingUser.course}</p>
+          </div>
+        ) : (
+      <p className='jojo'>No user currently attending.</p>
+    )}
+  </div>
+  <div className="video-container">
+    <video
+      ref={videoRef}
+      width={760}
+      height={570}
+      autoPlay
+      muted
+      style={{ transform: 'scaleX(-1)' }}
+    />
+    <canvas
+      ref={canvasRef}
+      className="video-canvas"
+    />
+  </div>
+  <div className="attendance-messages">
+  <h3>Attendance Notifications: </h3>
+  {attendanceMessages.slice(-7).map((message, index) => (
+    <p key={index}>{message}</p>
+  ))}
+</div>
+
 </div>
 
 
-      {/* Event Selection Popup */}
-      {showPopup && (
-        <div className="popup">
-          <h2>Select Event</h2>
-          <select
-            onChange={(e) => setSelectedEvent(e.target.value)}
-            value={selectedEvent}
-          >
-            <option value="">Select an event</option>
-            {events.map(event => (
-              <option key={event.id} value={event.id}>{event.name}</option>
-            ))}
-          </select>
-  
-          <button onClick={handleConfirmEvent} disabled={!selectedEvent}>
-            Confirm
-          </button>
-          <button onClick={() => setShowPopup(false)}>Close</button>
-        </div>
-      )}
-      <Logout/>
-  
-      {/* Main Content */}
-      <div style={{ display: 'flex', width: 720, height: 560 }}>
-        {/* Video Section */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          <video
-            ref={videoRef}
-            width={720}
-            height={560}
-            autoPlay
-            muted
-            style={{ transform: 'scaleX(-1)' }}
-          />
-          <canvas
-            ref={canvasRef}
-            style={{ position: 'absolute', left: 0, top: 0, transform: 'scaleX(-1)', zIndex: 1 }}
-          />
-        </div>
-  
-        {/* User Information Section */}
-        <div style={{ width: '500px', backgroundColor: '#f9f9f9', padding: '80px' }}>
-          <h3>Attending User Info</h3>
-          {attendingUser ? (
-            <div>
-              <p><strong>Name:</strong> {attendingUser.fname} {attendingUser.lname}</p>
-              <p><strong>ID:</strong> {attendingUser.schoolID}</p>
-              <p><strong>Age:</strong> {attendingUser.age}</p>
-              <p><strong>Year Level:</strong> {attendingUser.yearLevel}</p>
-              <p><strong>Course:</strong> {attendingUser.course}</p>
-            </div>
-          ) : (
-            <p>No user currently attending.</p>
-          )}
-        </div>
+        <AttendanceModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          records={attendanceRecords}
+        />
       </div>
-
-  
-      {/* Render Attendance Modal */}
-      <AttendanceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        records={attendanceRecords}
-      />
-      {/* Overlaying Attendance Messages */}
-          <div style={{
-            position: 'relative',
-            top: '-100px',
-            left: 0,
-            width: '100%',
-            color: 'white',
-            padding: '10px',
-            zIndex: 2,
-            pointerEvents: 'none'  // Allow interaction with the video underneath
-          }}>
-            <h3>Attendance Messages</h3>
-            {attendanceMessages.map((message, index) => (
-              <p key={index} style={{ margin: 0 }}>{message}</p>
-            ))}
-          </div>
-      
-    </>
-  );
-  
+    )}
+  </>
+);
 
 }
 

@@ -162,33 +162,46 @@ const LocalAdminDashboard = () => {
     const handleChangeStatus = async (newStatus) => {
         if (selectedEvent) {
             const eventDoc = doc(db, 'events', selectedEvent.id);
-
+    
             try {
                 // Update the status in Firestore
                 await updateDoc(eventDoc, { status: newStatus });
-
-                // Update local state
+    
+                // Update local state to avoid duplicates
                 setEvents((prevEvents) =>
                     prevEvents.map((event) =>
                         event.id === selectedEvent.id ? { ...event, status: newStatus } : event
                     )
                 );
-
+    
+                // Check for existing events before adding to approved or rejected arrays
                 if (newStatus === 'accepted') {
-                    setApprovedEvents((prev) => [...prev, { ...selectedEvent, status: newStatus }]);
+                    setApprovedEvents((prev) => {
+                        // Only add if it doesn't already exist
+                        if (!prev.some(event => event.id === selectedEvent.id)) {
+                            return [...prev, { ...selectedEvent, status: newStatus }];
+                        }
+                        return prev;
+                    });
                     setPendingEvents((prev) => prev.filter((event) => event.id !== selectedEvent.id));
                 } else if (newStatus === 'rejected') {
-                    setRejectedEvents((prev) => [...prev, { ...selectedEvent, status: newStatus }]);
+                    setRejectedEvents((prev) => {
+                        // Only add if it doesn't already exist
+                        if (!prev.some(event => event.id === selectedEvent.id)) {
+                            return [...prev, { ...selectedEvent, status: newStatus }];
+                        }
+                        return prev;
+                    });
                     setPendingEvents((prev) => prev.filter((event) => event.id !== selectedEvent.id));
                 }
-
+    
                 handleModalClose();
             } catch (error) {
                 console.error('Error updating event status:', error);
             }
         }
     };
-
+    
     if (loading) {
         return <LoadingScreen />; // Show loading screen for authentication
     }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faClipboard, faUserPlus, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faClipboard, faUserPlus, faUser, faStar } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -25,9 +25,9 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/admin/admins">
-            <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
-            {isOpen && ' Admin Management'}
+          <Link to="/admin/department">
+            <FontAwesomeIcon icon={faClipboard} className="sidebar-icon" />
+            {isOpen && ' Department'}
           </Link>
         </li>
         <li>
@@ -36,10 +36,17 @@ const Sidebar = () => {
             {isOpen && ' Organization Register'}
           </Link>
         </li>
+
         <li>
-          <Link to="/admin/department">
-            <FontAwesomeIcon icon={faClipboard} className="sidebar-icon" />
-            {isOpen && ' Department'}
+          <Link to="/admin/admins">
+            <FontAwesomeIcon icon={faUsers} className="sidebar-icon" />
+            {isOpen && ' Admin Management'}
+          </Link>
+        </li>
+        <li>
+          <Link to="/signup">
+            <FontAwesomeIcon icon={faUserPlus} className="sidebar-icon" />
+            {isOpen && ' Student Registration'}
           </Link>
         </li>
         <li>
@@ -49,9 +56,15 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/signup">
-            <FontAwesomeIcon icon={faUserPlus} className="sidebar-icon" />
-            {isOpen && ' Student Registration'}
+          <Link to="/admin/SuperAdminRecord">
+            <FontAwesomeIcon icon={faUser} className="sidebar-icon" />
+            {isOpen && ' Student Manage'}
+          </Link>
+        </li>
+        <li>
+          <Link to="/admin/SuperAdminAttendanceSearch">
+            <FontAwesomeIcon icon={faStar} className="sidebar-icon" />
+            {isOpen && 'Attendance Search'}
           </Link>
         </li>
       </ul>

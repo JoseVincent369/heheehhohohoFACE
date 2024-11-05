@@ -41,6 +41,7 @@ const Modal = ({ isOpen, onClose, event, onChangeStatus, isLoading }) => {
         { title: 'Courses', dataIndex: 'courses', key: 'courses' },
         { title: 'Majors', dataIndex: 'majors', key: 'majors' },
         { title: 'Moderators', dataIndex: 'moderators', key: 'moderators' },
+        { title: 'User in Charge', dataIndex: 'userInCharge', key: 'userInCharge' }, // New column for User in Charge
     ];
 
     // Prepare the data source for the Table
@@ -74,14 +75,16 @@ const Modal = ({ isOpen, onClose, event, onChangeStatus, isLoading }) => {
                     })}
                 </ul>
             ) : 'N/A',
+            userInCharge: event.userInCharge ? (
+                <span>{event.userInCharge.fullName} ({event.userInCharge.email})</span>
+            ) : 'N/A', // Assuming userInCharge contains user data
         },
     ];
-    
 
     return (
         <AntdModal
             title={event.name}
-            open={isOpen} // Change this line
+            open={isOpen}
             onCancel={onClose}
             footer={null}
             width={800}
@@ -90,7 +93,7 @@ const Modal = ({ isOpen, onClose, event, onChangeStatus, isLoading }) => {
                 <Spin size="large" />
             ) : (
                 <>
-                    {/* Table to display organizations, courses, majors, and moderators */}
+                    {/* Table to display organizations, courses, majors, moderators, and user in charge */}
                     <Table
                         columns={columns}
                         dataSource={dataSource}

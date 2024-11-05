@@ -22,12 +22,14 @@ import EventManagement from './pages/admin_main/EventManagement';
 import AdminManagement from './pages/admin_main/AdminManagement';
 import AddOrganization from './pages/admin_main/AddOrganization';
 import StudentManage from './pages/admin_main/StudentManage';
+import SuperAdminAttendanceSearch from './pages/admin_main/SuperAdminAttendanceSearch';
 import CreateSuperAdmin from './pages/admin_main/zzz';
 import Department from './pages/admin_main/Department';
 import LocalAdmin from './pages/Admin/LocalAdmin';
 import EventCreation from './pages/Admin/EventCreation';
 import Records from './pages/Admin/Records';
 import CreateModerator from './pages/Admin/CreateModerator';
+import StudentAttendanceSearch from './pages/Admin/StudentAttendanceSearch';
 
 // Moderator Pages
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
@@ -72,8 +74,9 @@ function MainApp() {
             <Route path="/admin/StudentManage" element={<StudentManage />} />
             <Route path="/admin/department" element={<Department />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/admin/SuperAdminAttendanceSearch" element={<SuperAdminAttendanceSearch />} />
           </Route>
-
+          SuperAdminAttendanceSearch 
            {/* Super Admin Change */}
           <Route path="/admin/events" element={<EventManagement />} />
 
@@ -84,6 +87,7 @@ function MainApp() {
             <Route path="/local/create" element={<EventCreation />} />
             <Route path="/local/Records" element={<Records />} />
             <Route path="/local/createMod" element={<CreateModerator />} />
+            <Route path="/local/StudentAttendanceSearch" element={<StudentAttendanceSearch />} />
           </Route>
 
           {/* Moderator Layout */}
