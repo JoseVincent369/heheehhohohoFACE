@@ -1,4 +1,5 @@
 // src/App.jsx
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
@@ -23,13 +24,13 @@ import AdminManagement from './pages/admin_main/AdminManagement';
 import AddOrganization from './pages/admin_main/AddOrganization';
 import StudentManage from './pages/admin_main/StudentManage';
 import SuperAdminAttendanceSearch from './pages/admin_main/SuperAdminAttendanceSearch';
-import CreateSuperAdmin from './pages/admin_main/zzz';
 import Department from './pages/admin_main/Department';
 import LocalAdmin from './pages/Admin/LocalAdmin';
 import EventCreation from './pages/Admin/EventCreation';
 import Records from './pages/Admin/Records';
 import CreateModerator from './pages/Admin/CreateModerator';
 import StudentAttendanceSearch from './pages/Admin/StudentAttendanceSearch';
+import ModeratorManage from './pages/admin_main/ModeratorManage';
 
 // Moderator Pages
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
@@ -62,7 +63,6 @@ function MainApp() {
           <Route path="/" element={<Login_main />} />
           
 
-          <Route path="/CreateSuperAdmin" element={<CreateSuperAdmin />} />
           {/* CAMERA Routes */}
           <Route path="/home" element={<Home_main />} />
 
@@ -75,8 +75,9 @@ function MainApp() {
             <Route path="/admin/department" element={<Department />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/admin/SuperAdminAttendanceSearch" element={<SuperAdminAttendanceSearch />} />
+            <Route path="/admin/ModeratorManage" element={<ModeratorManage />} />
           </Route>
-          SuperAdminAttendanceSearch 
+          
            {/* Super Admin Change */}
           <Route path="/admin/events" element={<EventManagement />} />
 

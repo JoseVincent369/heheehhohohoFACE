@@ -1,16 +1,6 @@
 
 /* Body and Admin Dashboard */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+
 .admin-dashboard {
     display: flex;
     flex-direction: column;
@@ -26,6 +16,22 @@ body {
     font-family: Arial, sans-serif;
     
 }
+
+
+.ant-table {
+  width: 100% !important; /* Ensure table occupies 100% width of its container */
+  margin: 0 auto; /* Center the table */
+}
+
+/* Media query to remove horizontal scroll on smaller screens */
+@media (max-width: 768px) {
+  .ant-table {
+    width: 100% !important;
+    overflow-x: unset !important; /* Remove horizontal scroll */
+  }
+
+}
+
 
 /* Navbar Styling */
 .navbar {
@@ -72,10 +78,7 @@ body {
 
 
 /* User Info Styling */
-.user-info {
-    display: flex;
-    align-items: center;
-}
+
 
 .admin {
     margin-right: 20px;
@@ -95,115 +98,156 @@ body {
 .logout-btn:hover {
     background-color: #c0392b;
 }
+/* Layout container: full height and width of the viewport */
+.dashboard-layout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The content section (sidebar + main content) */
+.dashboard-content {
+  display: flex;
+  width: 100%;  /* Ensure the content takes full width */
+  height: 90%; /* Full height of the container */
+
+  box-sizing: border-box;
+}
+
+/* Main content: Flex to fill remaining space */
+.main-content {
+  flex: 1; /* Take up remaining space */
+  height: 90vh; /* Full height */
+  background-color: #ffffff; /* Optional background for main content */
+  box-sizing: border-box;
+}
+
+/* Optional: Hide sidebar on smaller screens (mobile view) */
+@media (max-width: 768px) {
 
 
-/* Main Content and Sidebar */
+  .main-content {
+    width: 100%; /* Main content takes full width */
+    margin-left: 0; /* Remove left margin */
+  }
+}
 
-
-  
-  
-  /* Other styles as needed */
-  
-
-
-/* generalstyles.css */
-/* Sidebar */
 .sidebar {
-    width: 250px;  /* Sidebar width when open */
-    transition: width 0.3s;
-    background-color: #fff;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     position: fixed;
-    top: 60px;  /* Below the navbar */
+    top: 50px; /* Adjust so sidebar doesn't overlap navbar */
     left: 0;
-    height: calc(100% - 60px); /* Full height minus navbar */
-    overflow: hidden;
-    z-index: 1000;
-}
-
-/* Main Content */
-.main-content {
-    flex: 1;  /* Take up the remaining space */
-    margin-left: 250px;  /* Shifted by sidebar when open */
-    margin-top: 60px;  /* Adjust for the navbar */
-    padding: 20px;
-    transition: margin-left 0.3s ease; /* Smooth transition */
-}
-
-.main-content {
-
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-
-
-.main-content.shifted {
-    margin-left: 60px; /* Adjust when sidebar is closed */
-}
-
-  .sidebar.closed {
-    width: 60px; /* Width when closed */
+    width: 200px;
+    height: calc(100% - 50px); /* Adjust height to avoid overlapping navbar */
+    background-color: #faf6f6;
+    transition: left 0.3s ease;
+    z-index: 1; /* Sidebar should be below the navbar */
   }
   
-/* generalstyles.css */
-.sidebar ul {
-    list-style-type: none;
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar ul {
+    list-style: none;
     padding: 0;
   }
   
-  .sidebar li {
-    display: flex;
-    align-items: center; /* Center align items */
-    padding: 5px;
+  .sidebar ul li {
+    margin: 5px 0;
   }
   
-.sidebar-icon {
-  margin-right: 5px; /* Space between icon and text */
-  width: 18px; /* Set a fixed width */
-  height: 18px; /* Set a fixed height */
-  font-size: 16px; /* Adjust font size to match the dimensions */
-}
+  .sidebar ul li a {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    color: rgb(15, 12, 12);
+    text-decoration: none;
+  }
+  
+  .sidebar ul li a:hover {
+    background-color: #444;
+  }
+  
+  /* Icon styles for collapsible sidebar */
+  .sidebar-icon {
+    margin-right: 10px;
+  }
   
   .menu-button {
-    display: flex;
-    justify-content: center;
-    cursor: pointer; /* Change cursor to pointer */
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 30px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
   }
   
+  /* Sidebar link text visibility based on the sidebar state */
+  .d-none {
+    display: none;
+  }
   
+  /* Responsive styles: mobile view < 800px */
+  @media (max-width: 800px) {
+    .sidebar.open {
+      transform: translateX(0);
+    }
   
+    .sidebar.closed {
+      transform: translateX(-100%);
+    }
+  
+    .sidebar ul li a {
+      width: 50px;
+      justify-content: center;
+    }
+  
+    .sidebar ul li span {
+      display: none;
+    }
+  
+    .sidebar ul li a:hover {
+      background-color: #444;
+    }
+  }
+  
+  /* When sidebar is open on desktop/tablet (>= 800px) */
+  @media (min-width: 800px) {
+    .sidebar {
+      transform: translateX(0);
+      width: 250px;
+    }
+  
+    .sidebar ul li a {
+      padding: 15px;
+      font-size: 14px;
+    }
+  
+    .sidebar ul li span {
+      display: inline-block;
+    }
+  }
 
-.sidebar ul li a {
-    color: rgb(0, 0, 0);
-    text-decoration: none;
-    font-size: 16px;
-    display: block;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
 
-.sidebar ul li a:hover {
-    background-color: #2980b9;
-}
 
+  
 /* Content Area */
 .content {
     flex: 1;
     padding: 20px;
     background-color: #ffffff;
 
-}
-
-/* Event Stats */
-.badge {
-    font-size: 22px;
-    margin-top: 10px;
-    color: #e3e5e7;
-    font-weight: bold;
 }
 
 /* Events Section */
@@ -438,21 +482,7 @@ body {
   .view-all-button:hover {
     background-color: #0056b3;
   }
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 60px;  /* Small sidebar on smaller screens */
-    }
 
-    .main-content {
-        margin-left: 60px; /* Shift content accordingly */
-        padding: 10px;
-    }
-
-    .main-content.shifted {
-        margin-left: 0; /* No margin on smaller screens */
-    }
-}
 
 
 

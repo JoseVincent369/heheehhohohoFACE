@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef  } from 'react';
-import { Button, Form, Alert, Image } from 'react-bootstrap';
+import { Container, Row, Col, Button, Form, Alert, Image } from 'react-bootstrap';
 import Webcam from 'react-webcam'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; 
@@ -24,6 +24,7 @@ const SignUp = () => {
     password: "",
     organization: [], 
     department: "", 
+    isIP: false,
   });
 
   const [photos, setPhotos] = useState({
@@ -92,7 +93,8 @@ const SignUp = () => {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
 
     if (name === "organization") {
       // Handle multiple organizations
@@ -115,12 +117,18 @@ const SignUp = () => {
 
       if (name === 'department') {
         fetchCourses(value);
-        fetchYearLevels(value);
       }
+      
 
       if (name === 'course') {
         fetchMajors(formData.department, value);
       }
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    
+    
     }
   };
 
@@ -159,7 +167,9 @@ const SignUp = () => {
     } else if (photoType === 'right') {
       setRightWebcamActive(true);
     }
+    
   };
+  
   
   
 
@@ -255,6 +265,7 @@ const SignUp = () => {
         schoolID: formData.schoolID,
         role: "user",
         photos: photoURLs,
+        isIP: formData.isIP,
       });
   
       setSuccess("User registered successfully!");
@@ -285,204 +296,382 @@ const SignUp = () => {
   
   
   return (
-    <div className="signup-container" style={{ maxHeight: '190vh',  }}>
-      <h2>Sign Up</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
-      {loading ? (
-        <LoadingScreen />
-      ) : (
-        <Form onSubmit={handleSubmit}>
+<Container fluid="md">
+  <h2 className="my-4 text-center">Sign Up</h2>
+  {error && <Alert variant="danger">{error}</Alert>}
+  {success && <Alert variant="success">{success}</Alert>}
+  {loading ? (
+    <LoadingScreen />
+  ) : (
+    <Form onSubmit={handleSubmit}>
+      <Row>
+        <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formFname">
             <Form.Label>First Name</Form.Label>
-            <Form.Control type="text" name="fname" value={formData.fname} onChange={handleChange} required />
+            <Form.Control
+              type="text"
+              name="fname"
+              value={formData.fname}
+              onChange={handleChange}
+              required
+            />
           </Form.Group>
-
+        </Col>
+        <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formMname">
             <Form.Label>Middle Name</Form.Label>
-            <Form.Control type="text" name="mname" value={formData.mname} onChange={handleChange} />
+            <Form.Control
+              type="text"
+              name="mname"
+              value={formData.mname}
+              onChange={handleChange}
+            />
           </Form.Group>
-
+        </Col>
+        <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formLname">
             <Form.Label>Last Name</Form.Label>
-            <Form.Control type="text" name="lname" value={formData.lname} onChange={handleChange} required />
+            <Form.Control
+              type="text"
+              name="lname"
+              value={formData.lname}
+              onChange={handleChange}
+              required
+            />
           </Form.Group>
-
-          {/* Name Extension Field */}
+        </Col>
+        <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formNameExtension">
             <Form.Label>Name Extension (e.g., Jr., Sr.)</Form.Label>
-            <Form.Control type="text" name="nameExtension" value={formData.nameExtension} onChange={handleChange} />
-          </Form.Group>
+            <Form.Control
+              type="text"
+              name="nameExtension"
+              value={formData.nameExtension}
+              onChange={handleChange}
+            />
 
+
+
+          </Form.Group>
+        </Col>
+        <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formAge">
             <Form.Label>Age</Form.Label>
-            <Form.Control type="number" name="age" value={formData.age} onChange={handleChange} required />
+            <Form.Control
+              type="number"
+              name="age"
+              value={formData.age}
+              onChange={handleChange}
+              required
+              style={{ marginTop: '15px' }}
+            />
           </Form.Group>
+        </Col>
 
-          <Form.Group controlId="formSchoolID">
-            <Form.Label>School ID</Form.Label>
-            <Form.Control type="text" name="schoolID" value={formData.schoolID} onChange={handleChange} required />
-          </Form.Group>
 
-          <Form.Group controlId="formEmail">
-            <Form.Label>Email</Form.Label>
-            <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} required />
-          </Form.Group>
-
-          {/* Department Dropdown */}
-          <Form.Group controlId="formDepartment">
-            <Form.Label>Department</Form.Label>
-            <Form.Control as="select" name="department" value={formData.department} onChange={handleChange} required>
-              <option value="">Select Department</option>
-              {departments.map(department => (
-                <option key={department.id} value={department.id}>{department.name}</option>
+        <Col md={6} lg={4} className="mb-3">
+          <Form.Group controlId="formYearLevel">
+            <Form.Label>Year Level</Form.Label>
+            <Form.Control
+              as="select"
+              name="yearLevel"
+              value={formData.yearLevel}
+              onChange={handleChange}
+              required
+              style={{ marginTop: '15px' }}
+            >
+              <option value="">Select Year Level</option>
+              {yearLevels.map((year) => (
+                <option key={year.id} value={year.id}>
+                  {year.name}
+                </option>
               ))}
             </Form.Control>
           </Form.Group>
+        </Col>
+      </Row>
 
-          {/* Year Level Dropdown */}
-          <Form.Group controlId="formYearLevel">
-  <Form.Label>Year Level</Form.Label>
-  <Form.Control
-    as="select"
-    name="yearLevel"
-    value={formData.yearLevel}
-    onChange={handleChange}
-    required
-  >
-    <option value="">Select Year Level</option>
-    {yearLevels.map(year => (
-      <option key={year.id} value={year.id}>{year.name}</option>
+      <Form.Group controlId="formSchoolID" className="mb-3">
+        <Form.Label>School ID</Form.Label>
+        <Form.Control
+          type="text"
+          name="schoolID"
+          value={formData.schoolID}
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+
+      <Form.Group controlId="formEmail" className="mb-3">
+        <Form.Label>Email</Form.Label>
+        <Form.Control
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+      
+      <Form.Group controlId="formPassword" className="mb-3">
+        <Form.Label>Password</Form.Label>
+        <Form.Control
+          type="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+      
+      <Row>
+        <Col md={6} lg={4} className="mb-3">
+          <Form.Group controlId="formDepartment">
+            <Form.Label>Department</Form.Label>
+            <Form.Control
+              as="select"
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Department</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Col>
+
+
+
+
+        
+        
+        
+        <Col md={6} lg={4} className="mb-3">
+          <Form.Group controlId="formCourse">
+            <Form.Label>Course</Form.Label>
+            <Form.Control
+              as="select"
+              name="course"
+              value={formData.course}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Course</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Col>
+        <Col md={6} lg={4} className="mb-3">
+          <Form.Group controlId="formMajor">
+            <Form.Label>Major</Form.Label>
+            <Form.Control
+              as="select"
+              name="major"
+              value={formData.major}
+              onChange={handleChange}
+            >
+              <option value="">Select Major</option>
+              {majors.map((major) => (
+                <option key={major.id} value={major.id}>
+                  {major.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Col>
+      </Row>
+
+
+
+
+<Form.Group controlId="formOrganization" className="mb-3">
+  <Form.Label>Organizations</Form.Label>
+  <div className="organization-checkboxes">
+    {organizations.map((organization) => (
+      <div key={organization.id} className="checkbox-container">
+        <Form.Check
+          type="checkbox"
+          id={`organization-${organization.id}`}
+          name="organization"
+          value={organization.id}
+          label={organization.name}
+          checked={formData.organization.includes(organization.id)}
+          onChange={handleChange}
+          className="custom-checkbox"
+          style={{ display: 'flex', marginRight: '10px',  alignItems: 'center', justifyContent: 'center',  gap: '8px' }}
+        />
+      </div>
     ))}
-  </Form.Control>
+  </div>
 </Form.Group>
 
 
-          {/* Course Dropdown */}
-          <Form.Group controlId="formCourse">
-            <Form.Label>Course</Form.Label>
-            <Form.Control as="select" name="course" value={formData.course} onChange={handleChange} required>
-              <option value="">Select Course</option>
-              {courses.map(course => (
-                <option key={course.id} value={course.id}>{course.name}</option>
-              ))}
-            </Form.Control>
-          </Form.Group>
 
-          {/* Major Dropdown */}
-          <Form.Group controlId="formMajor">
-            <Form.Label>Major</Form.Label>
-            <Form.Control as="select" name="major" value={formData.major} onChange={handleChange} >
-              <option value="">Select Major</option>
-              {majors.map(major => (
-                <option key={major.id} value={major.id}>{major.name}</option>
-              ))}
-            </Form.Control>
-          </Form.Group>
 
-          {/* Organization Checkboxes */}
-          <Form.Group controlId="formOrganization">
-            <Form.Label>Organization</Form.Label>
-            {organizations.map(org => (
-              <Form.Check
-                key={org.id}
-                type="checkbox"
-                label={org.name}
-                name="organization"
-                value={org.id}
-                onChange={handleChange}
-              />
-            ))}
-          </Form.Group>
+      <h3>Capture Front Photo</h3>
+      {isFrontWebcamActive ? (
+        <>
+          <Webcam
+            audio={false}
+            ref={frontWebcamRef}
+            screenshotFormat="image/jpeg"
+            width={300}
+            height={300}
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => capturePhoto("front")}>Capture</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Image
+            src={photos.front}
+            alt="Front view"
+            fluid
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => retakePhoto("front")}>Retake</Button>
+          </div>
+        </>
+      )}
 
-          <Form.Group controlId="formPassword">
-  <Form.Label>Password</Form.Label>
-  <Form.Control 
-    type="password" 
-    name="password" 
-    value={formData.password} 
-    onChange={handleChange} 
-    required 
+<Form.Group controlId="formFrontPhoto" className="mb-3">
+  <Form.Label style={{ marginTop: '20px' }}>Or Upload Front Photo</Form.Label>
+  <div className="d-flex justify-content-center">
+    <Form.Control
+      type="file"
+      name="front"
+      accept="image/*"
+      onChange={handlePhotoChange}
+      style={{ alignItems: 'center' }} // Adjust the width to your preference
+    />
+  </div>
+</Form.Group>
+
+      <h3>Capture Left Photo</h3>
+      {isLeftWebcamActive ? (
+        <>
+          <Webcam
+            audio={false}
+            ref={leftWebcamRef}
+            screenshotFormat="image/jpeg"
+            width={300}
+            height={300}
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => capturePhoto("left")}>Capture</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Image
+            src={photos.left}
+            alt="Front view"
+            fluid
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => retakePhoto("left")}>Retake</Button>
+          </div>
+        </>
+      )}
+
+<Form.Group controlId="formLeftPhoto" className="mb-3">
+  <Form.Label style={{ marginTop: '20px' }}>Or Upload Left Photo</Form.Label>
+  <div className="d-flex justify-content-center">
+    <Form.Control
+      type="file"
+      name="left"
+      accept="image/*"
+      onChange={handlePhotoChange}
+      style={{ alignItems: 'center' }}
+    />
+  </div>
+</Form.Group>
+
+      <h3>Capture Right Photo</h3>
+      {isRightWebcamActive ? (
+        <>
+          <Webcam
+            audio={false}
+            ref={rightWebcamRef}
+            screenshotFormat="image/jpeg"
+            width={300}
+            height={300}
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => capturePhoto("right")}>Capture</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Image
+            src={photos.right}
+            alt="Front view"
+            fluid
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="text-center mt-2">
+            <Button onClick={() => retakePhoto("right")}>Retake</Button>
+          </div>
+        </>
+      )}
+
+<Form.Group controlId="formRightPhoto" className="mb-3">
+  <Form.Label style={{ marginTop: '20px' }}>Or Upload Right Photo</Form.Label>
+  <div className="d-flex justify-content-center">
+    <Form.Control
+      type="file"
+      name="right"
+      accept="image/*"
+      onChange={handlePhotoChange}
+      style={{ alignItems: 'center' }}
+    />
+  </div>
+</Form.Group>
+
+<Form.Group
+  controlId="formIsIP"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '30px',
+  }}
+>
+  <Form.Check
+    type="checkbox"
+    name="isIP"
+    label="Are you an Indigenous Person (IP)?"
+    checked={formData.isIP}
+    onChange={handleChange}
   />
 </Form.Group>
 
 
-        {/* Webcam for Front Photo */}
-        <h3>Capture Front Photo</h3>
-        {isFrontWebcamActive ? (
-          <>
-            <Webcam audio={false} ref={frontWebcamRef} screenshotFormat="image/jpeg" 
-            width={300}
-            height={300}
-            style={{ transform: 'scaleX(-1)' }}/>
-            <Button onClick={() => capturePhoto('front')}>Capture</Button>
-          </>
-        ) : (
-          <>
-            <Image src={photos.front} alt="Front view" fluid
-            style={{ transform: 'scaleX(-1)' }} />
-            <Button onClick={() => retakePhoto('front')}>Retake</Button>
-          </>
-        )}
-        
-        {/* Upload Front Photo */}
-        <Form.Group controlId="formFrontPhoto">
-          <Form.Label>Or Upload Front Photo</Form.Label>
-          <Form.Control type="file" name="front" accept="image/*" onChange={handlePhotoChange} />
-        </Form.Group>
+      <Form.Group controlId="formSubmit" className="mb-3">
+        <Button variant="primary" type="submit">
+          Submit
+        </Button>
+      </Form.Group>
+    </Form>
+  
+  )}
+</Container>
 
-        {/* Webcam for Left Photo */}
-        <h3>Capture Left Photo</h3>
-        {isLeftWebcamActive ? (
-          <>
-            <Webcam audio={false} ref={leftWebcamRef} screenshotFormat="image/jpeg" 
-            width={300}
-            height={300}
-            style={{ transform: 'scaleX(-1)' }}/>
-            <Button onClick={() => capturePhoto('left')}>Capture</Button>
-          </>
-        ) : (
-          <>
-            <Image src={photos.left} alt="Front view" fluid
-            style={{ transform: 'scaleX(-1)' }} />
-            <Button onClick={() => retakePhoto('left')}>Retake</Button>
-          </>
-        )}
-        
-        {/* Upload Left Photo */}
-        <Form.Group controlId="formLeftPhoto">
-          <Form.Label>Or Upload Left Photo</Form.Label>
-          <Form.Control type="file" name="left" accept="image/*" onChange={handlePhotoChange} />
-        </Form.Group>
-
-        {/* Webcam for Right Photo */}
-        <h3>Capture Right Photo</h3>
-        {isRightWebcamActive ? (
-          <>
-            <Webcam audio={false} ref={rightWebcamRef} screenshotFormat="image/jpeg" 
-            width={300}
-            height={300}
-            style={{ transform: 'scaleX(-1)' }}/>
-            <Button onClick={() => capturePhoto('right')}>Capture</Button>
-          </>
-        ) : (
-          <>
-            <Image src={photos.right} alt="Front view" fluid 
-            style={{ transform: 'scaleX(-1)' }}/>
-            <Button onClick={() => retakePhoto('right')}>Retake</Button>
-          </>
-        )}
-        
-        {/* Upload Right Photo */}
-        <Form.Group controlId="formRightPhoto">
-          <Form.Label>Or Upload Right Photo</Form.Label>
-          <Form.Control type="file" name="right" accept="image/*" onChange={handlePhotoChange} />
-        </Form.Group>
-
-          <Button variant="primary" type="submit">Register</Button>
-        </Form>
-      )}
-    </div>
   );
 };
 

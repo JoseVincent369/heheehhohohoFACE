@@ -100,12 +100,13 @@ p {
 .main-content {
     flex: 1;
     margin-left: 250px; /* Adjusted for open sidebar */
-    margin-top: 60px;
+    margin-top: 30px;
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 8px;
     transition: margin-left 0.3s ease;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    
 }
 
 .moderator-layout.sidebar-closed .main-content {
@@ -127,13 +128,6 @@ p {
     }
 }
 
-.main-content {
-
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
 
 
 

@@ -323,8 +323,6 @@ const handleSearchUsers = (value) => {
   setFilteredStudents(filtered); // Update state with filtered results
 };
 
-
-
   return (
     <div className="event-management">
       <div className="main-content">

@@ -1,14 +1,6 @@
 
 /* General Styling */
-body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+
 
 form {
     max-width: 1000px;
@@ -86,32 +78,6 @@ button[type="submit"] {
 button[type="submit"]:hover {
     background-color: blue;
 }
-
-/* Table Styling */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-th {
-    background-color: #007bff;
-    color: #fff;
-}
-
-td a {
-    color: #007bff;
-    text-decoration: none;
-}
-
 td a:hover {
     text-decoration: underline;
 }
@@ -155,59 +121,53 @@ button.delete:hover {
 
 /* Specific Component Styling */
 
-/* Login Component */
-.login-container {
-    display: flex;
-    flex-direction: column;
-    height: 500px;
-    width: 400px;
- /* border: 1px solid black; */
-    align-items: center;
-    margin: auto;
-    margin-top: 50px;
-    background-color:white;
-    box-shadow: blue;
-    border-radius: 25px;
-    color:black;
-}
-
-.login-container h2 {
-    display: flex;
-    flex-direction: column;
-    height: 500px;
-    width: 400px;
- /* border: 1px solid black; */
-    align-items: center;
-    margin: auto;
-    margin-top: 50px;
-    background-color:white;
-    box-shadow: blue;
-    border-radius: 25px;
-    color:black;
-}
-
-.login-container .form-control {
-    padding: 10px;
-    margin: 20px;
-    height: 20px;
-    width: 65%;
-    color: black;
-    border: none;
-    outline: none;
-    border-radius: 200px;
-    background-color: royalblue;
-    box-shadow: blue;
-    font-size: 1rem;
-}
-.login-container-background {
-    background: url('src/assets/background/background.jpg') no-repeat center center/cover;
-    background-size: cover;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
+/* Ensure the tab container is responsive */
+.custom-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* Adjust tab headers for mobile */
+  @media (max-width: 768px) {
+    .custom-tabs .nav-tabs {
+      flex-direction: column; /* Stack the tabs vertically on smaller screens */
+      padding-left: 0;
+      padding-right: 0;
+    }
+  
+    .custom-tabs .nav-item {
+      width: 100%;
+    }
+  
+    .custom-tabs .nav-link {
+      text-align: center; /* Center text in tab links */
+    }
+  }
+  
+  /* Ensure the tables are responsive */
+  @media (max-width: 768px) {
+    .ant-table {
+      width: 100%;
+      overflow-x: auto;
+    }
+  
+    .ant-table-cell {
+      font-size: 12px; /* Reduce font size on small screens */
+    }
+  
+    .ant-table-container {
+      padding: 0; /* Remove unnecessary padding */
+    }
+  }
+  
+  /* Modify button layout in Modal */
+  @media (max-width: 768px) {
+    .ant-btn {
+      width: 100%; /* Ensure the button takes full width on smaller screens */
+      margin-top: 20px; /* Add spacing between button and content */
+    }
+  }
+  
 /* Event Management */
 .event-management {
     display: flex;
@@ -490,45 +450,6 @@ input[type="file" i] {
     color: black;
 }
 
-.student-table {
-    table-layout: auto;
-    width: 90%;
-    border-collapse: collapse;
-    margin-left: 60%;
-    transform: scale(0.9); /* Slight zoom-out */
-    transform-origin: top left;
-}
-
-
-
-.student-table th, .student-table td {
-    padding: 8px 10px; /* Adjusted padding */
-    font-size: 14px; /* Font size for readability */
-    text-align: left; /* Align text to the left */
-    overflow: hidden; /* Prevent text overflow */
-    text-overflow: ellipsis; /* Show ellipsis for overflowed text */
-    white-space: nowrap; /* Prevent text wrapping */
-    border: 1px solid #ddd; /* Add border for visibility */
-}
-
-.student-table th {
-    font-size: 15px; /* Slightly larger for headers */
-    background-color: #4CAF50; /* Header background color */
-    color: white; /* Header text color */
-}
-
-.student-table tr:hover {
-    background-color: #f1f1f1; /* Highlight on hover */
-}
-
-/* Specific column widths */
-.student-table th:first-child, .student-table td:first-child {
-    width: 120px; /* Adjust width for First Name */
-}
-
-.student-table th:nth-child(2), .student-table td:nth-child(2) {
-    width: 120px; /* Adjust width for Middle Name */
-}
 
 
 
@@ -540,16 +461,6 @@ input[type="text"] {
 input[type="file"] {
     width: auto; /* Keep file input width manageable */
 }
-
-
-/* Make the table responsive on smaller screens */
-@media (max-width: 768px) {
-    .student-table th, .student-table td {
-        font-size: 12px; /* Reduce font size for smaller screens */
-    }
-}
-
-/* Add this to your localstyles.css or equivalent stylesheet */
 
 /* Age Input Group */
 .age-group {
@@ -577,17 +488,29 @@ input[type="file"] {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
+@media (max-width: 576px) {
+    .p-4 {
+      padding: 1rem !important; /* Reduces padding on small screens */
+    }
+    h2 {
+      font-size: 1.5rem; /* Adjust font size for mobile */
+    }
+  }
+  
+  .login-container {
+    background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow */
+    border-radius: 8px; /* Rounded corners */
+  }
 
-
-
+  
 /* depmartment  */
 .container {
     padding: 20px;
     width: 950px;
     height: 600px;
     margin: 0 auto;
-    border: 1px solid #ccc;
-    border-radius: 10px;
+    box-shadow: #333;
   }
   
   .step-indicator {
@@ -693,39 +616,6 @@ input[type="file"] {
     margin-bottom: 20px;
   }
   
-  .stats {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  
-  .stat {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    flex: 1;
-    margin-right: 10px;
-    text-align: center;
-  }
-  
-  .stat:last-child {
-    margin-right: 0;
-  }
-  
-  .badge {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 10px 15px;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: #fff;
-    font-weight: bold;
-  }
-  
-  .table {
-    margin-top: 20px;
-  }
   
   .table .ant-table {
     background-color: #fff;
