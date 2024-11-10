@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef  } from 'react';
 import { Container, Row, Col, Button, Form, Alert, Image } from 'react-bootstrap';
+import { Select } from 'antd'; 
 import Webcam from 'react-webcam'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; 
@@ -8,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
 import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
 import './generalstyles.css';
+
+const { Option } = Select;
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -84,7 +87,6 @@ const SignUp = () => {
     const majorsData = majorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setMajors(majorsData.sort((a, b) => a.name.localeCompare(b.name)));
   };
-
 
 
   useEffect(() => {
@@ -211,7 +213,12 @@ const SignUp = () => {
     return photoURLs;
   };
   
-  
+  const handleOrganizationChange = (selectedOrgs) => {
+    setFormData({
+      ...formData,
+      organization: selectedOrgs,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -296,8 +303,8 @@ const SignUp = () => {
   
   
   return (
-<Container fluid="md">
-  <h2 className="my-4 text-center">Sign Up</h2>
+<Container fluid="md" style={{ marginTop: '40px' }}>
+  <h2 className="my-4 text-center" >Sign Up</h2>
   {error && <Alert variant="danger">{error}</Alert>}
   {success && <Alert variant="success">{success}</Alert>}
   {loading ? (
@@ -423,6 +430,24 @@ const SignUp = () => {
           required
         />
       </Form.Group>
+
+      
+      <Form.Group controlId="formOrganization" className="mb-3">
+            <Form.Label>Organization</Form.Label>
+            <Select
+              mode="multiple" // Enables multi-select
+              placeholder="Select organization(s)"
+              value={formData.organization}
+              onChange={handleOrganizationChange}
+              style={{ width: '100%' }}
+            >
+              {organizations.map((org) => (
+                <Option key={org.id} value={org.id}>
+                  {org.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Group>
       
       <Row>
         <Col md={6} lg={4} className="mb-3">
@@ -471,64 +496,46 @@ const SignUp = () => {
           </Form.Group>
         </Col>
         <Col md={6} lg={4} className="mb-3">
-          <Form.Group controlId="formMajor">
-            <Form.Label>Major</Form.Label>
-            <Form.Control
-              as="select"
-              name="major"
-              value={formData.major}
-              onChange={handleChange}
-            >
-              <option value="">Select Major</option>
-              {majors.map((major) => (
-                <option key={major.id} value={major.id}>
-                  {major.name}
-                </option>
-              ))}
-            </Form.Control>
-          </Form.Group>
+        <Form.Group controlId="formMajor">
+          <Form.Label>Major</Form.Label>
+          <Form.Control
+            as="select"
+            name="major"
+            value={formData.major}
+            onChange={(e) => setFormData({ ...formData, major: e.target.value })}
+            required
+          >
+            <option value="">Select Major</option>
+            {majors.map(major => (
+              <option key={major.id} value={major.id}>{major.name}</option>
+            ))}
+          </Form.Control>
+        </Form.Group>
         </Col>
       </Row>
 
 
 
 
-<Form.Group controlId="formOrganization" className="mb-3">
-  <Form.Label>Organizations</Form.Label>
-  <div className="organization-checkboxes">
-    {organizations.map((organization) => (
-      <div key={organization.id} className="checkbox-container">
-        <Form.Check
-          type="checkbox"
-          id={`organization-${organization.id}`}
-          name="organization"
-          value={organization.id}
-          label={organization.name}
-          checked={formData.organization.includes(organization.id)}
-          onChange={handleChange}
-          className="custom-checkbox"
-          style={{ display: 'flex', marginRight: '10px',  alignItems: 'center', justifyContent: 'center',  gap: '8px' }}
-        />
-      </div>
-    ))}
-  </div>
-</Form.Group>
 
 
 
 
-      <h3>Capture Front Photo</h3>
+      <h3 style={{ marginTop: "100px" }}>Capture Front Photo</h3>
       {isFrontWebcamActive ? (
         <>
           <Webcam
             audio={false}
             ref={frontWebcamRef}
             screenshotFormat="image/jpeg"
-            width={300}
-            height={300}
-            style={{ transform: "scaleX(-1)" }}
+            style={{
+              width: "100%",
+              maxWidth: "700px", // Adjust max width as needed
+              aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
+              transform: "scaleX(-1)"
+            }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => capturePhoto("front")}>Capture</Button>
           </div>
         </>
@@ -540,7 +547,7 @@ const SignUp = () => {
             fluid
             style={{ transform: "scaleX(-1)" }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => retakePhoto("front")}>Retake</Button>
           </div>
         </>
@@ -566,11 +573,14 @@ const SignUp = () => {
             audio={false}
             ref={leftWebcamRef}
             screenshotFormat="image/jpeg"
-            width={300}
-            height={300}
-            style={{ transform: "scaleX(-1)" }}
+            style={{
+              width: "100%",
+              maxWidth: "700px", // Adjust max width as needed
+              aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
+              transform: "scaleX(-1)"
+            }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => capturePhoto("left")}>Capture</Button>
           </div>
         </>
@@ -582,7 +592,7 @@ const SignUp = () => {
             fluid
             style={{ transform: "scaleX(-1)" }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => retakePhoto("left")}>Retake</Button>
           </div>
         </>
@@ -608,11 +618,14 @@ const SignUp = () => {
             audio={false}
             ref={rightWebcamRef}
             screenshotFormat="image/jpeg"
-            width={300}
-            height={300}
-            style={{ transform: "scaleX(-1)" }}
+            style={{
+              width: "100%",
+              maxWidth: "700px", // Adjust max width as needed
+              aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
+              transform: "scaleX(-1)"
+            }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => capturePhoto("right")}>Capture</Button>
           </div>
         </>
@@ -624,7 +637,7 @@ const SignUp = () => {
             fluid
             style={{ transform: "scaleX(-1)" }}
           />
-          <div className="text-center mt-2">
+          <div className="text-center mt-5">
             <Button onClick={() => retakePhoto("right")}>Retake</Button>
           </div>
         </>

@@ -4,7 +4,6 @@ import { collection, getDocs, addDoc, query, where, getDoc, doc } from 'firebase
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth'; // Import to track authentication state
 import { Form, Input, DatePicker, Checkbox, Button, Select, Spin } from 'antd'; // Importing Ant Design components
-import LoadingScreen from '../components/LoadingScreen'; 
 import './localstyles.css'; // Import the CSS file
 
 const { TextArea } = Input;
@@ -271,76 +270,83 @@ console.log('Admin Departments:', departments); // Check admin departments
   );
 
   return (
-    
-    <div className="main-content">
-    <div className="event-creation">
-          
-      <h1>Create Event</h1>
+    <div className="container my-4">
+      <h1 className="text-center mb-4">Create Event</h1>
       <form onSubmit={handleEventCreation} className="event-form">
-        <div className="form-group">
-          <label>Event Name:</label>
-          <input
-            type="text"
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            required
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
+        <div className="row">
+          {/* Event Name */}
+          <div className="col-md-6 mb-3">
+            <label>Event Name:</label>
+            <input
+              type="text"
+              value={eventName}
+              onChange={(e) => setEventName(e.target.value)}
+              required
+              className="form-control"
+            />
+          </div>
+
+          {/* Venue */}
+          <div className="col-md-6 mb-3">
+            <label>Venue:</label>
+            <input
+              type="text"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
+              required
+              className="form-control"
+            />
+          </div>
+
+
+        </div >
+        <div className="mb-3">
           <label>Description:</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="form-textarea"
+            className="form-control"
+            rows="4"
           />
         </div>
-        <div className="form-group">
-          <label>Start Date:</label>
-          <input
-            type="datetime-local"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>End Date:</label>
-          <input
-            type="datetime-local"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            required
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Venue:</label>
-          <input
-            type="text"
-            value={venue}
-            onChange={(e) => setVenue(e.target.value)}
-            required
-            className="form-input"
-          />
+        <div className="row">
+          {/* Start Date */}
+          <div className="col-md-6 mb-3">
+            <label>Start Date:</label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+              className="form-control"
+            />
+          </div>
+
+          {/* End Date */}
+          <div className="col-md-6 mb-3">
+            <label>End Date:</label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+              className="form-control"
+            />
+          </div>
         </div>
 
         {/* Organizations Checkbox */}
-        <Form.Item label="Organizations">
-  <Select
-    mode="multiple"
-    showSearch
-    placeholder="Search and select organizations"
-    value={selectedOrganizations} // State to store selected organizations
-    onChange={setSelectedOrganizations} // Handler for selection changes
-    filterOption={(input, option) => {
-      // Match only when the first letter of the organization name matches the input
-      return option.label.toLowerCase().startsWith(input.toLowerCase());
-    }}
-    style={{ width: '100%' }}
-    optionLabelProp="label"
-  >
+        <Form.Item label="Organizations" className="mb-3" style={{  marginTop: '30px' }}>
+          <Select
+            mode="multiple"
+            showSearch
+            placeholder="Search and select organizations"
+            value={selectedOrganizations}
+            onChange={setSelectedOrganizations}
+            style={{ width: '100%'  }}
+            optionLabelProp="label"
+          >
+
     {filteredOrganizations.map((organization) => (
       <Option 
         key={organization.id} 
@@ -360,7 +366,7 @@ console.log('Admin Departments:', departments); // Check admin departments
 
 {/*Department*/}
 {departments.map((dept) => (
-  <fieldset key={dept.id} className="nested-fieldset">
+  <fieldset key={dept.id} className="nested-fieldset" style={{  marginTop: '30px' }}>
     <legend>{dept.name}</legend>
     <div className="checkbox-group">
       <input
@@ -417,7 +423,7 @@ console.log('Admin Departments:', departments); // Check admin departments
 
          {/* Year Levels Checkbox */}
          
-          <Form.Item label="Year Levels"style={{ marginTop: '20px' }}>
+          <Form.Item label="Year Levels" style={{  marginTop: '50px' }}>
             <Select
               mode="multiple"
               placeholder="Select year levels"
@@ -430,7 +436,7 @@ console.log('Admin Departments:', departments); // Check admin departments
               ))}
             </Select>
           </Form.Item>
-          <Form.Item label="Moderators">
+          <Form.Item label="Moderators" style={{  marginTop: '30px' }}>
   <Select
     mode="multiple"
     showSearch
@@ -461,13 +467,15 @@ console.log('Admin Departments:', departments); // Check admin departments
 </Form.Item>
 
 
+<div className="button-container">
+  <Button type="primary" htmlType="submit" className="submit-button">
+    Submit
+  </Button>
+</div>
 
-
-
-        <button type="submit" className="submit-button">Create Event</button>
       </form>
     </div>
-    </div>
+
   );
 };
 

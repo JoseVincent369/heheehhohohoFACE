@@ -140,45 +140,61 @@ const ManageModerators = () => {
   ];
 
   return (
-    <div className="main-content">
-    <div className="organization-management">
-              {/* Title */}
-              <Title level={2}>Your Moderators</Title>
-        
-        {/* Button */}
-        <Button type="primary" onClick={handleOpenModal} style={{ marginBottom: '20px' }}>
-          Create Moderator
-        </Button>
-
-        {/* Error Alert */}
-        {error && <Alert message={error} type="error" style={{ marginBottom: '20px' }} />}
-
-      
-
-        {/* Table */}
-        {moderators.length > 0 ? (
-          <Table
-            dataSource={moderators}
-            columns={columns}
-            rowKey="id"
-            pagination={false}
-          />
-        ) : (
-          <p>No moderators created by you.</p>
-        )}
-
-        {/* Modal for creating/editing moderators */}
-        {currentAdmin && ( // Ensure currentAdmin is defined before rendering modal
-          <CreateModeratorModal
-            showModal={showModal}
-            handleClose={handleCloseModal}
-            currentAdmin={currentAdmin}
-            fetchModerators={() => setModerators(moderators)} // Refresh the list of moderators
-            editModerator={editModerator} // Pass the moderator to be edited
-            setEditModerator={setEditModerator} // To update state when modal is closed
-          />
-        )}
+    <div className="container my-4">
+      {/* Title */}
+      <div className="row">
+        <div className="col">
+          <Title level={2} className="text-center">Your Moderators</Title>
+        </div>
       </div>
+
+      {/* Button */}
+      <div className="row mb-3">
+        <div className="col text-center">
+          <Button type="primary" onClick={handleOpenModal} className="mb-3">
+            Create Moderator
+          </Button>
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="row mb-3">
+          <div className="col">
+            <Alert message={error} type="error" showIcon />
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="row">
+        <div className="col">
+          {moderators.length > 0 ? (
+            <Table
+              dataSource={moderators}
+              columns={columns}
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              className="table-responsive"
+
+            />
+          ) : (
+            <p className="text-center">No moderators created by you.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Modal for creating/editing moderators */}
+      {currentAdmin && (
+        <CreateModeratorModal
+          showModal={showModal}
+          handleClose={handleCloseModal}
+          currentAdmin={currentAdmin}
+          fetchModerators={() => setModerators(moderators)}
+          editModerator={editModerator}
+          setEditModerator={setEditModerator}
+        />
+      )}
     </div>
   );
 };

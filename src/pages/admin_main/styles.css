@@ -48,7 +48,7 @@
     position: fixed; /* Fix the navbar at the top */
     top: 0;
     left: 0;
-    z-index: 1000; /* Ensure it stays above other content */
+    z-index: 6; /* Ensure it stays above other content */
 }
 
 
@@ -125,6 +125,8 @@
   height: 90vh; /* Full height */
   background-color: #ffffff; /* Optional background for main content */
   box-sizing: border-box;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
 /* Optional: Hide sidebar on smaller screens (mobile view) */
@@ -149,11 +151,12 @@
   }
   
   .sidebar.closed {
-    transform: translateX(-100%);
+    transform: translateX(-80%);
   }
   
   .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(80);
+    
   }
   
   .sidebar ul {
@@ -180,6 +183,9 @@
   /* Icon styles for collapsible sidebar */
   .sidebar-icon {
     margin-right: 10px;
+    justify-content: center;
+    display: flex;
+    align-items: center;
   }
   
   .menu-button {
@@ -202,6 +208,7 @@
   @media (max-width: 800px) {
     .sidebar.open {
       transform: translateX(0);
+      width: 70px;
     }
   
     .sidebar.closed {
@@ -538,8 +545,3 @@
     outline: none;
   }
 
-
-  
-
-
-  

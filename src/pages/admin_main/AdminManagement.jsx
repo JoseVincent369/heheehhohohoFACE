@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
-import { Input, Checkbox, Button, Badge } from 'antd';
+import { Input, Checkbox, Button, Badge, Table, Space } from 'antd';
 import './generalstyles.css';
 
 const AdminManagement = () => {
@@ -123,159 +123,104 @@ const AdminManagement = () => {
         }));
     };
 
+    const columns = [
+        { title: 'School ID', dataIndex: 'SchoolID', key: 'SchoolID' },
+        { title: 'First Name', dataIndex: 'fname', key: 'fname' },
+        { title: 'Middle Name', dataIndex: 'mname', key: 'mname', render: mname => mname || 'N/A' },
+        { title: 'Last Name', dataIndex: 'lname', key: 'lname' },
+        { title: 'Email', dataIndex: 'email', key: 'email' },
+        { title: 'Organizations', dataIndex: 'organizations', key: 'organizations', render: orgs => Array.isArray(orgs) ? orgs.join(", ") : 'N/A' },
+        { title: 'Departments', dataIndex: 'departments', key: 'departments', render: deps => Array.isArray(deps) ? deps.join(", ") : 'N/A' },
+    ];
 
 
     return (
-        <div className="main-content" style={{ marginLeft: '-15px' }}>
-            <div className="admin-management">
-            <Button type="primary" onClick={() => setShowModal(true)}>Create Admin</Button>
-
+        <div className="container-fluid mt-4" style={{ marginTop: '40px' }}>
             {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                <div className="modal-overlay d-flex justify-content-center align-items-center">
+                    <div className="modal-content p-4" style={{ maxWidth: '600px', width: '100%' }}>
                         <h2>Create Admin</h2>
-                        <form onSubmit={handleSubmit}>
-                            <input
-                                type="text"
-                                name="SchoolID"
-                                value={adminData.SchoolID}
-                                onChange={handleChange}
-                                placeholder="School ID"
-                                required
-                                autoComplete="off"
-                            />
-                            <input
-                                type="text"
-                                name="fname"
-                                value={adminData.fname}
-                                onChange={handleChange}
-                                placeholder="First Name"
-                                required
-                                autoComplete="off"
-                            />
-                            <input
-                                type="text"
-                                name="mname"
-                                value={adminData.mname}
-                                onChange={handleChange}
-                                placeholder="Middle Name"
-                                autoComplete="off"
-                            />
-                            <input
-                                type="text"
-                                name="lname"
-                                value={adminData.lname}
-                                onChange={handleChange}
-                                placeholder="Last Name"
-                                required
-                                autoComplete="off"
-                            />
-                            <input
-                                type="email"
-                                name="email"
-                                value={adminData.email}
-                                onChange={handleChange}
-                                placeholder="Email"
-                                required
-                                autoComplete="off"
-                            />
-                            <input
-                                type="password"
-                                name="password"
-                                value={adminData.password}
-                                onChange={handleChange}
-                                placeholder="Password"
-                                required
-                                autoComplete="new-password"
-                            />
+                        <form onSubmit={handleSubmit} className="row g-3">
+                            <div className="col-12 col-md-6">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="SchoolID"
+                                    value={adminData.SchoolID}
+                                    onChange={handleChange}
+                                    placeholder="School ID"
+                                    required
+                                />
+                            </div>
+                            <div className="col-12 col-md-6">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="fname"
+                                    value={adminData.fname}
+                                    onChange={handleChange}
+                                    placeholder="First Name"
+                                    required
+                                />
+                            </div>
+                            <div className="col-12 col-md-6">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="mname"
+                                    value={adminData.mname}
+                                    onChange={handleChange}
+                                    placeholder="Middle Name"
+                                />
+                            </div>
+                            <div className="col-12 col-md-6">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="lname"
+                                    value={adminData.lname}
+                                    onChange={handleChange}
+                                    placeholder="Last Name"
+                                    required
+                                />
+                            </div>
+                            <div className="col-12">
+                                <input
+                                    type="email"
+                                    className="form-control"
+                                    name="email"
+                                    value={adminData.email}
+                                    onChange={handleChange}
+                                    placeholder="Email"
+                                    required
+                                />
+                            </div>
+                            <div className="col-12">
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    name="password"
+                                    value={adminData.password}
+                                    onChange={handleChange}
+                                    placeholder="Password"
+                                    required
+                                />
+                            </div>
 
-                            {/* Organizations Dropdown */}
-                            <div>
+                            {/* Organizations and Departments */}
+                            <div className="col-12 d-flex justify-content-center">
                                 <Badge count={adminData.organizations.length}>
                                     <Button onClick={() => toggleDropdown('organizations')}>
                                         Select Organizations
                                     </Button>
                                 </Badge>
-                                {adminData.organizationsOpen && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        backgroundColor: 'white',
-                                        border: '1px solid #ccc',
-                                        zIndex: 10,
-                                        borderRadius: '4px',
-                                        maxHeight: '350px',
-                                        overflowY: 'auto',
-                                        width: '200px',
-                                        padding: '10px',
-                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                                    }}>
-                                        <Search
-                                            placeholder="Search Organizations"
-                                            onChange={(e) => handleSearch(e.target.value, 'organizations')}
-                                        />
-                                        {/* Select All Checkbox for Organizations */}
-                                        <Checkbox
-                                            checked={adminData.organizations.length === organizationsList.length}
-                                            onChange={() => handleSelectAllToggle('organizations')}
-                                        >
-                                            Select All
-                                        </Checkbox>
-                                        <Checkbox.Group
-                                            options={organizationsList}
-                                            value={adminData.organizations}
-                                            onChange={(checkedValues) => handleMultiSelectChange(checkedValues, 'organizations')}
-                                        />
-                                        <Button type="link" onClick={() => setAdminData({ ...adminData, organizationsOpen: false })}>
-                                            Close
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Departments Dropdown */}
-                            <div>
                                 <Badge count={adminData.departments.length}>
                                     <Button onClick={() => toggleDropdown('departments')}>
                                         Select Departments
                                     </Button>
                                 </Badge>
-                                {adminData.departmentsOpen && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        backgroundColor: 'white',
-                                        border: '1px solid #ccc',
-                                        zIndex: 10,
-                                        borderRadius: '4px',
-                                        maxHeight: '350px',
-                                        overflowY: 'auto',
-                                        width: '200px',
-                                        padding: '10px',
-                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                                    }}>
-                                        <Search
-                                            placeholder="Search Departments"
-                                            onChange={(e) => handleSearch(e.target.value, 'departments')}
-                                        />
-                                        {/* Select All Checkbox for Departments */}
-                                        <Checkbox
-                                            checked={adminData.departments.length === departmentsList.length}
-                                            onChange={() => handleSelectAllToggle('departments')}
-                                        >
-                                            Select All
-                                        </Checkbox>
-                                        <Checkbox.Group
-                                            options={departmentsList}
-                                            value={adminData.departments}
-                                            onChange={(checkedValues) => handleMultiSelectChange(checkedValues, 'departments')}
-                                        />
-                                        <Button type="link" onClick={() => setAdminData({ ...adminData, departmentsOpen: false })}>
-                                            Close
-                                        </Button>
-                                    </div>
-                                )}
                             </div>
-                            
-                            <div style={{ marginTop: '16px' }}>
+                            <div className="col-12 d-flex justify-content-center">
                                 <Button type="primary" htmlType="submit">Create Admin</Button>
                                 <Button type="default" onClick={() => setShowModal(false)}>Cancel</Button>
                             </div>
@@ -284,35 +229,22 @@ const AdminManagement = () => {
                 </div>
             )}
 
-            <h2>Existing Admins</h2>
-            <table className="admin-table">
-                <thead>
-                    <tr>
-                        <th>School ID</th>
-                        <th>First Name</th>
-                        <th>Middle Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Organizations</th>
-                        <th>Departments</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {admins.map(admin => (
-                        <tr key={admin.id}>
-                            <td>{admin.SchoolID}</td>
-                            <td>{admin.fname}</td>
-                            <td>{admin.mname || 'N/A'}</td>
-                            <td>{admin.lname}</td>
-                            <td>{admin.email}</td>
-                            <td>{Array.isArray(admin.organizations) ? admin.organizations.join(", ") : 'N/A'}</td>
-                            <td>{Array.isArray(admin.departments) ? admin.departments.join(", ") : 'N/A'}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            </div>
-            </div>
+            <h2 style={{ marginTop: '40px' }}>Existing Admins</h2>
+            <Button
+                type="primary"
+                onClick={() => setShowModal(true)}
+                className="my-3"
+            >
+                Create Admin
+            </Button>
+            <Table
+                columns={columns}
+                dataSource={admins}
+                rowKey="id"
+                pagination={{ pageSize: 5 }}
+                style={{ marginTop: '30px' }}
+            />
+        </div>
     );
 };
 

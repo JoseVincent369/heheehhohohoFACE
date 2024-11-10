@@ -8,7 +8,7 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { FIREBASE_APP  } from '../../firebaseutil/firebase_main';
 import { Timestamp  } from 'firebase/firestore';
-import { Input, Checkbox, Button, Select, Spin } from 'antd';
+import { Input, Checkbox, Button, Select, Spin, Form  } from 'antd';
 import './ModeratorStyles.css';
 
 const { Search } = Input;
@@ -264,7 +264,8 @@ useEffect(() => {
         courses: selectedCourseNames.length > 0 ? selectedCourseNames : null,
         majors: selectedMajorNames.length > 0 ? selectedMajorNames : null,
         userInCharge: mappedUserIds.length > 0 ? mappedUserIds : [], // Use an empty array if no users are selected        // Use null if no users are selected
-        createdBy: user.uid,
+        moderators: [user.uid],
+        moderators: user.uid,
         adminID: adminID,
         status: 'pending',
       };
@@ -323,201 +324,199 @@ const handleSearchUsers = (value) => {
   setFilteredStudents(filtered); // Update state with filtered results
 };
 
-  return (
-    <div className="event-management">
-      <div className="main-content">
-        <div className="content">
-          <h2>Create Event</h2>
-          <form onSubmit={handleCreateEvent}>
-            <input
-              type="text"
-              placeholder="Event Name"
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
-              required
-            />
-            <textarea
-              placeholder="Event Description"
-              value={eventDescription}
-              onChange={(e) => setEventDescription(e.target.value)}
-              required
-            />
-            <input
-              type="datetime-local"
-              value={eventStartDate}
-              onChange={(e) => setEventStartDate(e.target.value)}
-              required
-            />
-            <input
-              type="datetime-local"
-              value={eventEndDate}
-              onChange={(e) => setEventEndDate(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Venue"
-              value={venue}
-              onChange={(e) => setVenue(e.target.value)}
-              required
-            />
-            
+return (
+  <div className="container my-4">
+    <h2 className="text-center mb-4">Create Event</h2>
+    <form onSubmit={handleCreateEvent}>
+      <div className="row">
+        {/* Event Name */}
+        <div className="col-md-6 mb-3">
+          <label>Event Name:</label>
+          <input
+            type="text"
+            placeholder="Event Name"
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+            required
+            className="form-control"
+          />
+        </div>
 
-
-
-           {/* Organization selection */}
-           <fieldset>
-              <legend>Select Organizations</legend>
-              <div>
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll('organizations')}
-                  checked={selectedOrganizations.length === organizations.length && organizations.length > 0}
-                />
-                <label>Select All</label>
-                
-              </div>
-              
-              {organizations.map((org) => (
-                <div key={org.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      value={org.id}
-                      checked={selectedOrganizations.includes(org.id)}
-                      onChange={(e) => {
-                        const { value, checked } = e.target;
-                        setSelectedOrganizations(prev =>
-                          checked ? [...prev, value] : prev.filter(id => id !== value)
-                        );
-                      }}
-                    />
-                    {org.name}
-                  </label>
-                </div>
-              ))}
-            </fieldset>
-
-
-
-{/* Departments with Nested Courses and Majors */}
-{departments.map((dept) => (
-  <fieldset key={dept.id} className="nested-fieldset">
-    <legend>{dept.name}</legend>
-    <div className="checkbox-group">
-      <input
-        type="checkbox"
-        value={dept.id}
-        checked={selectedDepartments.includes(dept.id)}
-        onChange={handleCheckboxChange(setSelectedDepartments)}
-
-      />
-      <span>Select Department</span>
-    </div>
-
-    {/* Nested Courses */}
-    {courses[dept.id] && selectedDepartments.includes(dept.id) && (
-      <div className="nested-checkbox-group">
-        <label>Courses:</label>
-        {courses[dept.id].map((course) => (
-          <fieldset key={course.id} className="nested-fieldset">
-            <legend>{course.name}</legend>
-            <div className="checkbox-group">
-              <input
-                type="checkbox"
-                value={course.id}
-                onChange={handleCheckboxChange(setSelectedCourses)}
-                checked={selectedCourses.includes(course.id)}
-              />
-              <span>Select Course</span>
-            </div>
-
-            {/* Nested Majors */}
-            {majors[course.id] && selectedCourses.includes(course.id) && majors[course.id].length > 0 && (
-              <div className="nested-checkbox-group">
-                <label>Majors:</label>
-                {majors[course.id].map((major) => (
-                  <div key={major.id} className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      value={major.id}
-                      onChange={handleCheckboxChange(setSelectedMajors)}
-                      checked={selectedMajors.includes(major.id)}
-                    />
-                    <span>{major.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </fieldset>
-        ))}
+        {/* Venue */}
+        <div className="col-md-6 mb-3">
+          <label>Venue:</label>
+          <input
+            type="text"
+            placeholder="Venue"
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+            required
+            className="form-control"
+          />
+        </div>
       </div>
-    )}
-  </fieldset>
-))}
 
-{/* Year Levels */}
-<fieldset>
-  <legend>Year Levels</legend>
-  <div className="checkbox-group">
-    <input
-      type="checkbox"
-      checked={selectedYearLevels.length === yearLevels.length}
-      onChange={() => {
-        if (selectedYearLevels.length === yearLevels.length) {
-          setSelectedYearLevels([]); // Deselect all
-        } else {
-          setSelectedYearLevels(yearLevels); // Select all
-        }
-      }}
-    />
-    <span>Select All</span>
-  </div>
-  {yearLevels.map((level) => (
-    <div key={level} className="checkbox-group">
-      <input
-        type="checkbox"
-        value={level}
-        checked={selectedYearLevels.includes(level)}
-        onChange={() => handleYearLevelClick(level)}
-      />
-      <span>{level}</span>
-    </div>
-  ))}
-</fieldset>
+      <div className="mb-3">
+        <label>Description:</label>
+        <textarea
+          placeholder="Event Description"
+          value={eventDescription}
+          onChange={(e) => setEventDescription(e.target.value)}
+          required
+          className="form-control"
+          rows="4"
+        />
+      </div>
 
-     {/* Searchable Select for Users */}
-     <fieldset>
-        <legend>Select Users</legend>
+      <div className="row">
+        {/* Start Date */}
+        <div className="col-md-6 mb-3">
+          <label>Start Date:</label>
+          <input
+            type="datetime-local"
+            value={eventStartDate}
+            onChange={(e) => setEventStartDate(e.target.value)}
+            required
+            className="form-control"
+          />
+        </div>
+
+        {/* End Date */}
+        <div className="col-md-6 mb-3">
+          <label>End Date:</label>
+          <input
+            type="datetime-local"
+            value={eventEndDate}
+            onChange={(e) => setEventEndDate(e.target.value)}
+            required
+            className="form-control"
+          />
+        </div>
+      </div>
+
+      {/* Organization Selection */}
+      <Form.Item label="Organizations" className="mb-3" style={{  marginTop: '40px' }}>
+        <Select
+          mode="multiple"
+          showSearch
+          placeholder="Search and select organizations"
+          value={selectedOrganizations}
+          onChange={setSelectedOrganizations}
+          style={{ width: '100%' }}
+        >
+          {organizations.map((org) => (
+            <Option key={org.id} value={org.id}>
+              <Checkbox
+                checked={selectedOrganizations.includes(org.id)}
+              >
+                {org.name}
+              </Checkbox>
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      {/* Departments and Courses */}
+      {departments.map((dept) => (
+        <fieldset key={dept.id} className="nested-fieldset" style={{  marginTop: '40px' }}>
+          <legend>{dept.name}</legend>
+          <div className="checkbox-group">
+            <input
+              type="checkbox"
+              value={dept.id}
+              checked={selectedDepartments.includes(dept.id)}
+              onChange={handleCheckboxChange(setSelectedDepartments)}
+            />
+            <span>Select Department</span>
+          </div>
+
+          {/* Nested Courses */}
+          {courses[dept.id] &&
+            selectedDepartments.includes(dept.id) &&
+            courses[dept.id].map((course) => (
+              <fieldset key={course.id} className="nested-fieldset">
+                <legend>{course.name}</legend>
+                <div className="checkbox-group">
+                  <input
+                    type="checkbox"
+                    value={course.id}
+                    onChange={handleCheckboxChange(setSelectedCourses)}
+                    checked={selectedCourses.includes(course.id)}
+                  />
+                  <span>Select Course</span>
+
+                  {/* Nested Majors */}
+                  {majors[course.id] &&
+                    selectedCourses.includes(course.id) &&
+                    majors[course.id].length > 0 && (
+                      <div className="nested-checkbox-group">
+                        <label>Majors:</label>
+                        {majors[course.id].map((major) => (
+                          <div key={major.id} className="checkbox-group">
+                            <input
+                              type="checkbox"
+                              value={major.id}
+                              onChange={handleCheckboxChange(setSelectedMajors)}
+                              checked={selectedMajors.includes(major.id)}
+                            />
+                            <span>{major.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              </fieldset>
+            ))}
+        </fieldset>
+      ))}
+
+      {/* Year Levels */}
+      <Form.Item label="Year Levels" style={{  marginTop: '40px' }}>
+        <Select
+          mode="multiple"
+          placeholder="Select Year Levels"
+          value={selectedYearLevels}
+          onChange={setSelectedYearLevels}
+          style={{ width: '100%' }}
+        >
+          {yearLevels.map((level) => (
+            <Option key={level} value={level}>
+              {level}
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+
+      {/* Users (Searchable) */}
+      <Form.Item label="Users" style={{  marginTop: '40px' }}>
         {loading ? (
           <Spin />
         ) : (
           <Select
-    mode="multiple" // Adjust this based on your needs
-    placeholder="Search Users by Email"
-    onSearch={handleSearchUsers}
-    style={{ width: '100%' }}
-    showSearch // Enable search functionality
-  >
-  
+            mode="multiple"
+            placeholder="Search Users by Email"
+            onSearch={handleSearchUsers}
+            style={{ width: '100%' }}
+            showSearch
+          >
             {students.map((student) => (
               <Option key={student.id} value={student.id}>
-              {student.lname} {student.fname} ({student.email})
-            </Option>
+                {student.lname} {student.fname} ({student.email})
+              </Option>
             ))}
           </Select>
         )}
-      </fieldset>
+      </Form.Item>
 
-
-            <button type="submit" disabled={loading}>
-              {loading ? 'Creating Event...' : 'Create Event'}
-            </button>
-          </form>
-        </div>
+      <div className="button-container">
+        <Button type="primary" htmlType="submit" disabled={loading}>
+          {loading ? 'Creating Event...' : 'Create Event'}
+        </Button>
       </div>
-    </div>
-  );
+    </form>
+  </div>
+);
 };
 
 export default EventManagement;

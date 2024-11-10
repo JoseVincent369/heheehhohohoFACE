@@ -66,6 +66,8 @@
     object-fit: cover;
 }
 
+
+
 /* Event Creation */
 .event-creation {
     
@@ -281,6 +283,28 @@ h1 {
     border-radius: 8px;
     max-width: 500px;
     width: 100%;
+  }
+
+  .dropdown-container {
+    width: 100%;
+    max-width: 250px;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    position: absolute;
+    z-index: 10;
+    border-radius: 4px;
+    padding: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    .dropdown-container {
+      width: 90%;
+    }
+  
+    .modal-content {
+      width: 100%;
+      padding: 10px;
+    }
   }
   
   .manage-moderators {

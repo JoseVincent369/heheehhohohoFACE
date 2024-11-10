@@ -122,7 +122,7 @@ const AddOrganization = () => {
   ];
 
   return (
-    <div className="admin-panel">
+    <div className="container" style={{ marginTop: '40px' }}>
       {/* Back Button */}
 
 
@@ -142,20 +142,25 @@ const AddOrganization = () => {
         </Button>
       )}
 
-      <Divider orientation="left">Search Organizations</Divider>
-      <Input
-        placeholder="Search..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={{ marginBottom: '16px' }}
-      />
+<Divider orientation="left">Search Organizations</Divider>
+<div className="row justify-content-left">
+  <div className="col-12 col-md-6 col-lg-4">
+    <Input
+      placeholder="Search..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      style={{ marginBottom: '16px' }}
+    />
+  </div>
+</div>
+
 
       <Divider orientation="left">Existing Organizations</Divider>
       <Table
         columns={columns}
         dataSource={filteredOrganizations}
         rowKey="id"
-        pagination={false}
+        pagination={{ pageSize: 10 }}
       />
     </div>
   );

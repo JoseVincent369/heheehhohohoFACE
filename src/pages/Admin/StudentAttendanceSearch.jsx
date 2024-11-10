@@ -195,7 +195,7 @@ const StudentAttendanceSearch = () => {
   };
 
   return (
-    <div className="main-content">
+    <div className="container" style={{ marginTop: '30px' }}>
     <div className="student-attendance-search">
       <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Search Student Attendance</h2>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
@@ -218,35 +218,40 @@ const StudentAttendanceSearch = () => {
 
 
 <Modal
-        title={<span style={{ color: '#ff5733' }}>Events for {selectedStudent}</span>}
-          open={modalVisible}
-          onCancel={handleModalClose}
-          footer={[
-            <Button key="print" onClick={generatePDF}>
-              Print as PDF
-            </Button>
-          ]}
-        >
-          <Table
-            dataSource={studentEventList}
-            rowKey="eventName"
-            columns={[
-              { title: 'Event Name', dataIndex: 'eventName', key: 'eventName' },
-              {
+    title={<span style={{ color: '#ff5733' }}>Events for {selectedStudent}</span>}
+    open={modalVisible}
+    onCancel={handleModalClose}
+    footer={[
+        <Button key="print" onClick={generatePDF}>
+            Print as PDF
+        </Button>
+    ]}
+    width="80%" // Adjust width to occupy 80% of the screen for better fit
+    bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }} // Limit modal height and enable vertical scrolling
+>
+    <Table
+        dataSource={studentEventList}
+        rowKey="eventName"
+        columns={[
+            { title: 'Event Name', dataIndex: 'eventName', key: 'eventName' },
+            {
                 title: 'Start Date',
                 dataIndex: 'startDate',
                 key: 'startDate',
                 render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
-              },
-              {
+            },
+            {
                 title: 'End Date',
                 dataIndex: 'endDate',
                 key: 'endDate',
                 render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
-              },
-            ]}
-          />
-        </Modal>
+            },
+        ]}
+        pagination={false} // Disable pagination if all rows need to be displayed in the modal
+        scroll={{ x: '100%' }} // Enable horizontal scroll within the table if content overflows
+    />
+</Modal>
+
     </div>
     </div>
   );

@@ -3,7 +3,8 @@ import { getFirestore, collection, query, onSnapshot, where, doc, getDocs, updat
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import LoadingScreen from '../components/LoadingScreen';
+import { Tabs, Tab, Table, Button } from 'react-bootstrap';
+import { Pagination } from 'antd';
 import Modal from '../components/Modal'; 
 import './localstyles.css';
 
@@ -20,6 +21,7 @@ const LocalAdminDashboard = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [rejectedEvents, setRejectedEvents] = useState([]);
     const [moderators, setModerators] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const auth = getAuth(FIREBASE_APP);
     const db = getFirestore(FIREBASE_APP);
@@ -201,236 +203,170 @@ const LocalAdminDashboard = () => {
             }
         }
     };
-    
-    if (loading) {
-        return <LoadingScreen />; // Show loading screen for authentication
-    }
-    
-    if (eventsLoading) {
-        return <LoadingScreen />; // Show loading screen for events
-    }
 
+    const onPaginationChange = (page) => {
+        setCurrentPage(page);
+    };
 
     return (
-        <div className="admin-dashboard">
-            <div className="main-content">
-                <div className="content">
-                    {error && <p className="error-message">{error}</p>}
-
-                    <div className="event-stats">
-                        <div className="stat ongoing-events">
-                            <span>Total Events</span>
-                            <div className="badge">{events.length}</div>
-                        </div>
-                        <div className="stat pending-events">
-                            <span>Pending Events</span>
-                            <div className="badge">{pendingEvents.length}</div>
-                        </div>
-                        <div className="stat approved-events">
-                            <span>Approved Events</span>
-                            <div className="badge">{approvedEvents.length}</div>
-                        </div>
-                    </div>
-
-                    {/* Pending Events Table */}
-<h5>Pending Events</h5>
-{eventsLoading ? (
-    <p>Loading Pending events...</p>
-) : pendingEvents.length === 0 ? (
-    <p>No Pending events at the moment.</p>
-) : (
-    <table>
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Venue</th>
-                <th>Status</th>
-                <th>Event Action Phase</th>
-                <th>View Details</th>
-            </tr>
-        </thead>
-        <tbody>
-    {pendingEvents.map((event) => {
-        const currentTime = Date.now();
-        const startTime = new Date(event.startDate?.seconds * 1000).getTime();
-        const endTime = new Date(event.endDate?.seconds * 1000).getTime();
-        const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
-
-        return (
-            <tr key={event.id} onClick={() => handleEventClick(event)}>
-                <td>{event.name}</td>
-                <td>{event.description || 'N/A'}</td>
-                <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                <td>{event.venue || 'N/A'}</td>
-                <td>{event.status || 'N/A'}</td>
-                <td>{eventPhase}</td>
-                <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-            </tr>
-        );
-    })}
-</tbody>
-
-    </table>
-)}
-
-
-
-
-
-
-                    {/* Moderator Events */}
-
-<h5>Moderator Events</h5>
-{eventsLoading ? (
-    <p>Loading Moderator events...</p>
-) : moderatorEvents.length === 0 ? (
-    <p>No Moderator events at the moment.</p>
-) : (
-    <table>
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Venue</th>
-                <th>Status</th>
-                <th>Event Action Phase</th>
-                <th>View Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {moderatorEvents.map((event, index) => {
-                const currentTime = Date.now();
-                const startTime = new Date(event.startDate?.seconds * 1000).getTime();
-                const endTime = new Date(event.endDate?.seconds * 1000).getTime();
-                const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
-
-                return (
-                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
-                        <td>{event.name}</td>
-                        <td>{event.description || 'N/A'}</td>
-                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{event.venue || 'N/A'}</td>
-                        <td>{event.status || 'N/A'}</td>
-                        <td>{eventPhase}</td>
-                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                    </tr>
-                );
-            })}
-        </tbody>
-    </table>
-)}
-
-
-{/* Approved Events Table */}
-<h5>Approved Events</h5>
-{eventsLoading ? (
-    <p>Loading approved events...</p>
-) : approvedEvents.length === 0 ? (
-    <p>No approved events at the moment.</p>
-) : (
-    <table>
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Venue</th>
-                <th>Status</th>
-                <th>Event Action Phase</th>
-                <th>View Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {approvedEvents.map((event, index) => {
-                const currentTime = Date.now();
-                const startTime = new Date(event.startDate?.seconds * 1000).getTime();
-                const endTime = new Date(event.endDate?.seconds * 1000).getTime();
-                const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
-
-                return (
-                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
-                        <td>{event.name}</td>
-                        <td>{event.description || 'N/A'}</td>
-                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{event.venue || 'N/A'}</td>
-                        <td>{event.status || 'N/A'}</td>
-                        <td>{eventPhase}</td>
-                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                    </tr>
-                );
-            })}
-        </tbody>
-    </table>
-)}
-
-
-
-
-{/* Rejected Events Table */}
-<h5>Rejected Events</h5>
-{eventsLoading ? (
-    <p>Loading Rejected events...</p>
-) : rejectedEvents.length === 0 ? (
-    <p>No approved events at the moment.</p>
-) : (
-    <table>
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Venue</th>
-                <th>Status</th>
-                <th>Event Action Phase</th>
-                <th>View Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {rejectedEvents.map((event, index) => {
-                const currentTime = Date.now();
-                const startTime = new Date(event.startDate?.seconds * 1000).getTime();
-                const endTime = new Date(event.endDate?.seconds * 1000).getTime();
-                const eventPhase = (currentTime >= startTime && currentTime <= endTime) ? 'Ongoing' : 'Ended';
-
-                return (
-                    <tr key={`${event.id}-${index}`} onClick={() => handleEventClick(event)}>
-                        <td>{event.name}</td>
-                        <td>{event.description || 'N/A'}</td>
-                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                        <td>{event.venue || 'N/A'}</td>
-                        <td>{event.status || 'N/A'}</td>
-                        <td>{eventPhase}</td>
-                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                    </tr>
-                );
-            })}
-        </tbody>
-    </table>
-)}
-
-
-                    <Modal 
-                        isOpen={isModalOpen} 
-                        onClose={handleModalClose} 
-                        event={selectedEvent} 
-                        onChangeStatus={handleChangeStatus} 
-                        
+        <div className="container">
+            {error && <p className="error-message">{error}</p>}
+            {/* Tabs for Event Categories */}
+            <Tabs
+                defaultActiveKey="pending"
+                id="event-status-tabs"
+                className="mb-3"
+                style={{ width: '100%' }}
+            >
+                <Tab eventKey="pending" title="Pending Events">
+                    <Table bordered striped hover responsive>
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Description</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Venue</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pendingEvents.map((event) => (
+                                <tr key={event.id} onClick={() => handleEventClick(event)}>
+                                    <td>{event.name}</td>
+                                    <td>{event.description || 'N/A'}</td>
+                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{event.venue || 'N/A'}</td>
+                                    <td>{event.status || 'N/A'}</td>
+                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={5}
+                        total={pendingEvents.length }
+                        onChange={onPaginationChange}
                     />
-                </div>
-            </div>
+                </Tab>
+
+                <Tab eventKey="accepted" title="Accepted Events">
+                    <Table bordered striped hover responsive>
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Description</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Venue</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {approvedEvents.map((event) => (
+                                <tr key={event.id} onClick={() => handleEventClick(event)}>
+                                    <td>{event.name}</td>
+                                    <td>{event.description || 'N/A'}</td>
+                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{event.venue || 'N/A'}</td>
+                                    <td>{event.status || 'N/A'}</td>
+                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={5}
+                        total={approvedEvents.length }
+                        onChange={onPaginationChange}
+                    />
+                </Tab>
+
+                <Tab eventKey="rejected" title="Rejected Events">
+                    <Table bordered striped hover responsive>
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Description</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Venue</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rejectedEvents.map((event) => (
+                                <tr key={event.id} onClick={() => handleEventClick(event)}>
+                                    <td>{event.name}</td>
+                                    <td>{event.description || 'N/A'}</td>
+                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{event.venue || 'N/A'}</td>
+                                    <td>{event.status || 'N/A'}</td>
+                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={5}
+                        total={rejectedEvents.length }
+                        onChange={onPaginationChange}
+                    />
+                </Tab>
+
+                <Tab eventKey="moderators" title="Moderators Events">
+                    <Table bordered striped hover responsive >
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Description</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Venue</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {moderatorEvents.map((event) => (
+                                <tr key={event.id} onClick={() => handleEventClick(event)}>
+                                    <td>{event.name}</td>
+                                    <td>{event.description || 'N/A'}</td>
+                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                    <td>{event.venue || 'N/A'}</td>
+                                    <td>{event.status || 'N/A'}</td>
+                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={5}
+                        total={moderatorEvents.length }
+                        onChange={onPaginationChange}
+                    />
+                </Tab>
+            </Tabs>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                event={selectedEvent}
+                onChangeStatus={handleChangeStatus}
+            />
         </div>
     );
 };
 
 export default LocalAdminDashboard;
+

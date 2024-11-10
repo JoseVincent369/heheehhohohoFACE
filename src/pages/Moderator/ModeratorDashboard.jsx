@@ -4,7 +4,7 @@ import { getFirestore, collection, query, onSnapshot,
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import LoadingScreen from '../components/LoadingScreen';
+import { Tabs, Tab, Table, Modal, Button } from 'react-bootstrap';
 import './moderatorStyles.css';
 
 import { Select } from 'antd';
@@ -200,131 +200,130 @@ useEffect(() => {
 
 
 
-    if (loading) {
-        return <LoadingScreen />; // Show loading screen for authentication
-    }
 
-    if (eventsLoading) {
-        return <LoadingScreen />; // Show loading screen for events
-    }
 
     return (
-        <div className="moderator-dashboard">
-            <div className="main-content">
-                <div className="content"style={{ maxHeight: '190vh', overflowY: 'auto'  }}>
-                    {error && <p className="error-message">{error}</p>}
+        <div className="container">
+            <div className="content" style={{ maxHeight: '190vh', overflowY: 'auto' }}>
+                {error && <p className="error-message">{error}</p>}
 
-                    {/* Approved Events Table */}
-                    <h5>Approved Events</h5>
-                    {approvedEvents.length === 0 ? (
-                        <p>No approved events at the moment.</p>
-                    ) : (
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Event Name</th>
-                                    <th>Description</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Venue</th>
-                                    <th>Status</th>
-                                    <th>View Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {approvedEvents.map((event, index) => (
-                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                        <td>{event.name}</td>
-                                        <td>{event.description || 'N/A'}</td>
-                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{event.venue || 'N/A'}</td>
-                                        <td>{event.status || 'N/A'}</td>
-                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                <Tabs defaultActiveKey="approved" id="event-tabs" className="mb-3">
+                    {/* Approved Events Tab */}
+                    <Tab eventKey="approved" title="Approved Events">
+                        {approvedEvents.length === 0 ? (
+                            <p>No approved events at the moment.</p>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Event Name</th>
+                                        <th>Description</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Venue</th>
+                                        <th>Status</th>
+                                        <th>View Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                </thead>
+                                <tbody>
+                                    {approvedEvents.map((event, index) => (
+                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                            <td>{event.name}</td>
+                                            <td>{event.description || 'N/A'}</td>
+                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{event.venue || 'N/A'}</td>
+                                            <td>{event.status || 'N/A'}</td>
+                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </Tab>
 
-                    {/* Rejected Events Table */}
-                    <h5>Rejected Events</h5>
-                    {rejectedEvents.length === 0 ? (
-                        <p>No rejected events at the moment.</p>
-                    ) : (
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Event Name</th>
-                                    <th>Description</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Venue</th>
-                                    <th>Status</th>
-                                    <th>View Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rejectedEvents.map((event, index) => (
-                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                        <td>{event.name}</td>
-                                        <td>{event.description || 'N/A'}</td>
-                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{event.venue || 'N/A'}</td>
-                                        <td>{event.status || 'N/A'}</td>
-                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                    {/* Rejected Events Tab */}
+                    <Tab eventKey="rejected" title="Rejected Events">
+                        {rejectedEvents.length === 0 ? (
+                            <p>No rejected events at the moment.</p>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Event Name</th>
+                                        <th>Description</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Venue</th>
+                                        <th>Status</th>
+                                        <th>View Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                </thead>
+                                <tbody>
+                                    {rejectedEvents.map((event, index) => (
+                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                            <td>{event.name}</td>
+                                            <td>{event.description || 'N/A'}</td>
+                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{event.venue || 'N/A'}</td>
+                                            <td>{event.status || 'N/A'}</td>
+                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </Tab>
 
-                    {/* Pending Events Table */}
-                    <h5>Pending Events</h5>
-                    {pendingEvents.length === 0 ? (
-                        <p>No pending events at the moment.</p>
-                    ) : (
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Event Name</th>
-                                    <th>Description</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Venue</th>
-                                    <th>Status</th>
-                                    <th>View Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendingEvents.map((event, index) => (
-                                    <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                        <td>{event.name}</td>
-                                        <td>{event.description || 'N/A'}</td>
-                                        <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                        <td>{event.venue || 'N/A'}</td>
-                                        <td>{event.status || 'N/A'}</td>
-                                        <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                    {/* Pending Events Tab */}
+                    <Tab eventKey="pending" title="Pending Events">
+                        
+                        {pendingEvents.length === 0 ? (
+                            <p>No pending events at the moment.</p>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Event Name</th>
+                                        <th>Description</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Venue</th>
+                                        <th>Status</th>
+                                        <th>View Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                </thead>
+                                <tbody>
+                                    {pendingEvents.map((event, index) => (
+                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                                            <td>{event.name}</td>
+                                            <td>{event.description || 'N/A'}</td>
+                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
+                                            <td>{event.venue || 'N/A'}</td>
+                                            <td>{event.status || 'N/A'}</td>
+                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </Tab>
+                </Tabs>
 
-                    {/* Modal for Event Details */}
-{isModalOpen && selectedEvent && (
-    <div className="modal">
-        <div className="modal-content">
-            <h3>{selectedEvent.name}</h3>
-            <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
-            <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-            <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-            <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
-            <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
+                {/* Modal for Event Details */}
+                {isModalOpen && selectedEvent && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <h3>{selectedEvent.name}</h3>
+                            <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
+                            <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+                            <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
+                            <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
+                            <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
 
-            <h4>Assign User in Charge</h4>
+                            <h5>Assign Users In Charge</h5>
             <Select
                 style={{ width: '100%' }}
                 mode="multiple"
@@ -350,14 +349,10 @@ useEffect(() => {
             {selectedEvent.status === 'accepted' && (
                 <button onClick={assignUserInCharge}>Assign</button>
             )}
-
-            <button onClick={handleModalClose}>Close</button>
-        </div>
-    </div>
-)}
-
-
-                </div>
+                            <button onClick={handleModalClose}>Close</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -15,10 +15,7 @@ const Sidebar = () => {
 
   return (
     <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-      {/* Button to toggle the sidebar */}
-      <button className="menu-button d-md-none" onClick={toggleSidebar}>
-        {isOpen ? '✖' : '☰'}
-      </button>
+
       {/* Conditionally render the list based on the sidebar state */}
       <ul className={isOpen ? '' : 'd-none'}>
         <li>

@@ -71,7 +71,7 @@ button[type="submit"] {
     box-shadow: blue;
     border: white;
     outline: none;
-    border-radius: 20px;
+
     font-size: 1rem;
 }
 
@@ -164,7 +164,8 @@ button.delete:hover {
   @media (max-width: 768px) {
     .ant-btn {
       width: 100%; /* Ensure the button takes full width on smaller screens */
-      margin-top: 20px; /* Add spacing between button and content */
+      margin-top: 20px;
+
     }
   }
   
@@ -251,206 +252,55 @@ button.delete:hover {
   }
   
 
-/* Organization Management */
-.admin-panel {
+
+
+.student-table th, .student-table td {
+    padding: 8px 10px; /* Adjusted padding */
+    font-size: 14px; /* Font size for readability */
+    text-align: left; /* Align text to the left */
+    overflow: hidden; /* Prevent text overflow */
+    text-overflow: ellipsis; /* Show ellipsis for overflowed text */
+    white-space: nowrap; /* Prevent text wrapping */
+    border: 1px solid #ddd; /* Add border for visibility */
+}
+
+.student-table th {
+    font-size: 15px; /* Slightly larger for headers */
+    background-color: #4CAF50; /* Header background color */
+    color: white; /* Header text color */
+}
+
+.student-table tr:hover {
+    background-color: #f1f1f1; /* Highlight on hover */
+}
+
+/* Specific column widths */
+.student-table th:first-child, .student-table td:first-child {
+    width: 120px; /* Adjust width for First Name */
+}
+
+.student-table th:nth-child(2), .student-table td:nth-child(2) {
+    width: 120px; /* Adjust width for Middle Name */
+}
+
+/* Make the table responsive on smaller screens */
+@media (max-width: 768px) {
+    .student-table th, .student-table td {
+        font-size: 12px; /* Reduce font size for smaller screens */
+    }
+}
+
+.custom-search-input .ant-input {
+    height: 40px; /* Set a consistent height */
+}
+
+.custom-search-input .ant-input-group-addon {
+    height: 40px; /* Match the height of the input */
     display: flex;
-    flex-direction: column;
-    background: white;
-    padding: 20px;
-    border-radius: 1%;
-    box-shadow: blue;
-    width: 73vw;
-    height: 100vh;
     align-items: center;
-    margin: auto;
-    margin-top: 50px;
-    border-radius: 25px;
-    color: black;
+    padding: 0 10px; /* Adjust padding as needed */
+    font-size: 16px; /* Make the icon size consistent */
 }
-
-.admin-panel h2 {
-    font-size: 22px;
-    margin-bottom: 20px;
-}
-
-.admin-panel form {
-    margin-bottom: 20px;
-}
-
-.admin-panel input[type="text"],
-.admin-panel input[type="email"],
-.admin-panel input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.admin-panel button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    margin-right: 10px;
-}
-
-.admin-panel button:hover {
-    background-color: #0056b3;
-}
-
-.admin-panel button.cancel {
-    background-color: blue;
-}
-
-.admin-panel button.cancel:hover {
-    background-color: #0f0f83;
-}
-
-.organization-list {
-    margin-top: 20px;
-}
-
-.organization-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #ddd;
-}
-
-.organization-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.organization-item span {
-    font-size: 16px;
-    color: #333;
-}
-
-.organization-actions button {
-    padding: 5px 10px;
-    font-size: 14px;
-}
-
-
-/* Organization Management */
-
-.admin-panel h2 {
-    font-size: 22px;
-    margin-bottom: 20px;
-}
-
-.admin-panel form {
-    margin-bottom: 20px;
-}
-
-.admin-panel input {
-    padding: 10px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.admin-panel button {
-    padding: 10px 15px;
-    margin-right: 10px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: #fff;
-    cursor: pointer;
-}
-
-.admin-panel button:hover {
-    background-color: #0056b3;
-}
-
-.admin-panel .organization-list {
-    margin-top: 20px;
-    max-height: calc(100vh - 150px); /* Adjust based on header and form height */
-    overflow-y: auto; /* Allow vertical scrolling */
-}
-
-.admin-panel .organization-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-.admin-panel .organization-item span {
-    font-size: 16px;
-}
-
-.admin-panel .organization-item button {
-    padding: 5px 10px;
-    font-size: 14px;
-    background-color: #dc3545;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    margin-left: 5px;
-}
-
-.admin-panel .organization-item button:hover {
-    background-color: #c82333;
-}
-
-.admin-panel .organization-item button:nth-of-type(1) {
-    background-color: #28a745;
-}
-
-.admin-panel .organization-item button:nth-of-type(1):hover {
-    background-color: #218838;
-}
-/* Search Container */
-.search-container {
-    margin-bottom: 20px;
-}
-
-.search-container input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 100%;
-    max-width: 300px;
-}
-/* General Container for the Signup Form */
-.signup-container {
-    width: 400px;
-    margin-top: 800px;
-    padding: 90px;
-    text-align: center;
-    background-color: #f7f7f7;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-input[type="file" i] {
-    margin-top: 12px;
-}
-.student-manage {
-    display: flex;
-    flex-direction: column;
-    background: white;
-    padding: 20px;
-    border-radius: 1%;
-    box-shadow: blue;
-    width: 73vw;
-    height: 100vh;
-    align-items: center;
-    margin: auto;
-    margin-top: 50px;
-    border-radius: 25px;
-    color: black;
-}
-
-
 
 
 input[type="text"] {
@@ -583,7 +433,10 @@ input[type="file"] {
 .modal-content button {
     margin-top: 10px;
 }
-
+.select-department .ant-select-selection-placeholder {
+    color: red !important;
+  }
+  
 
 .department-container {
     display: flex;
@@ -625,4 +478,6 @@ input[type="file"] {
   .ant-modal {
     padding: 20px;
   }
+
+  
   

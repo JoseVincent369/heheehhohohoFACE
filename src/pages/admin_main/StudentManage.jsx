@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, query, onSnapshot, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Table, Input, Button, Modal, Upload, message } from 'antd';
-import LoadingScreen from '../components/LoadingScreen';
+
 
 const StudentManage = () => {
     const [students, setStudents] = useState([]);
@@ -86,9 +86,6 @@ const StudentManage = () => {
         );
     });
 
-    if (loading) {
-        return <LoadingScreen />;
-    }
 
     const columns = [
         { title: 'First Name', dataIndex: 'fname' },
@@ -128,23 +125,30 @@ const StudentManage = () => {
     ];
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className='container-fluid' style={{ marginTop: '50px' }}>
             <h2>Manage Students</h2>
             <Input.Search
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={handleSearch}
-                style={{ marginBottom: '20px' }}
+                style={{ marginBottom: '40px', width: '100%', maxWidth: '400px' }}
             />
-            <Table dataSource={filteredStudents} columns={columns} rowKey="id" />
+            <Table
+                dataSource={filteredStudents}
+                columns={columns}
+                rowKey="id"
+                scroll={{ x: 800 }}
+                pagination={{ pageSize: 5 }}
+            />
 
             <Modal
-                visible={!!editingStudent}
+                open={!!editingStudent}
                 title="Edit Student Information"
                 onCancel={() => setEditingStudent(null)}
                 footer={null}
+                className='edit-student-modal'
             >
-                <div>
+                <div className='modal-content'>
                     <Input placeholder="First Name" value={editingStudent?.fname} onChange={(e) => setEditingStudent({ ...editingStudent, fname: e.target.value })} />
                     <Input placeholder="Middle Name" value={editingStudent?.mname} onChange={(e) => setEditingStudent({ ...editingStudent, mname: e.target.value })} />
                     <Input placeholder="Last Name" value={editingStudent?.lname} onChange={(e) => setEditingStudent({ ...editingStudent, lname: e.target.value })} />
@@ -186,3 +190,4 @@ const StudentManage = () => {
 };
 
 export default StudentManage;
+

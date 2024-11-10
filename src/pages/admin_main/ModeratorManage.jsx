@@ -36,7 +36,7 @@ const ModeratorManagement = () => {
       try {
         const departmentsSnapshot = await getDocs(collection(db, 'departments'));
         const departmentsList = departmentsSnapshot.docs.map((doc) => ({
-          value: doc.id,
+          value: doc.data().name, // Use the name, not doc.id
           label: doc.data().name,
         }));
         setDepartments(departmentsList);
@@ -50,7 +50,7 @@ const ModeratorManagement = () => {
       try {
         const organizationsSnapshot = await getDocs(collection(db, 'organizations'));
         const organizationsList = organizationsSnapshot.docs.map((doc) => ({
-          value: doc.id,
+          value: doc.data().name, // Use the name, not doc.id
           label: doc.data().name,
         }));
         setOrganizations(organizationsList);
@@ -68,24 +68,31 @@ const ModeratorManagement = () => {
   const handleSaveModerator = async (values) => {
     setLoading(true);
     try {
+      const { department, organization, ...restValues } = values; // Extracting selected department and organization
+
+      // Modify department and organization to store their names
+      const newValues = {
+        ...restValues,
+        role: 'moderator',
+        createdBy: auth.currentUser.uid,
+        department: department,  // Store the names of selected departments
+        organization: organization,  // Store the name of the selected organization
+      };
+
       if (selectedModerator?.id) {
         // Update existing moderator
         const moderatorRef = doc(db, 'users', selectedModerator.id);
-        await updateDoc(moderatorRef, values);
+        await updateDoc(moderatorRef, newValues);
         setModerators(
           moderators.map((moderator) =>
-            moderator.id === selectedModerator.id ? { ...moderator, ...values } : moderator
+            moderator.id === selectedModerator.id ? { ...moderator, ...newValues } : moderator
           )
         );
       } else {
         // Add new moderator
         const newModeratorRef = doc(collection(db, 'users'));
-        await setDoc(newModeratorRef, {
-          ...values,
-          role: 'moderator',
-          createdBy: auth.currentUser.uid,
-        });
-        setModerators([...moderators, { id: newModeratorRef.id, ...values }]);
+        await setDoc(newModeratorRef, newValues);
+        setModerators([...moderators, { id: newModeratorRef.id, ...newValues }]);
       }
       setSelectedModerator(null);
     } catch (error) {
@@ -117,7 +124,7 @@ const ModeratorManagement = () => {
     },
     {
       title: 'Department',
-      render: (text, record) => record.department.join(', '),
+      render: (text, record) => record.department.join(', '), // Display department names
     },
     {
       title: 'Organization',
@@ -138,7 +145,7 @@ const ModeratorManagement = () => {
   ];
 
   return (
-    <div>
+    <div className='container' style={{ marginTop: '40px' }}>
       <h2>Moderator Management</h2>
       <Button
         type="primary"
@@ -151,6 +158,7 @@ const ModeratorManagement = () => {
         dataSource={moderators}
         rowKey="id"
         loading={loading}
+        style={{ marginTop: '40px' }}
       />
 
       {/* Modal for Adding/Editing Moderator */}
@@ -185,7 +193,7 @@ const ModeratorManagement = () => {
           >
             <Select
               mode="multiple"
-              options={departments}
+              options={departments}  // Display department names in the dropdown
             />
           </Form.Item>
           <Form.Item
@@ -193,7 +201,9 @@ const ModeratorManagement = () => {
             name="organization"
             rules={[{ required: true, message: 'Please select the organization' }]}
           >
-            <Select options={organizations} />
+            <Select 
+            mode="multiple"
+            options={organizations} />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={loading}>
             {selectedModerator?.id ? 'Update' : 'Add'} Moderator

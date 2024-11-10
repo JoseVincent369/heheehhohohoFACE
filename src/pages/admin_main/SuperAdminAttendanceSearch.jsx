@@ -160,9 +160,9 @@ const SuperAdminAttendanceSearch = () => {
   };
 
   return (
-    <div className="main-content">
+    <div className="container">
       <div className="student-attendance-search">
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Search Student Attendance</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px', marginTop: '40px' }}>Search Student Attendance</h2>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
           <Search
             placeholder="Search the student name you want to Search"
@@ -177,7 +177,7 @@ const SuperAdminAttendanceSearch = () => {
           dataSource={studentEvents}
           rowKey={(record) => `${record.studentName}-${record.eventName}`}
           onRow={(record) => ({
-            onClick: () => handleRowClick(record), // Click on row to open modal
+            onClick: () => handleRowClick(record),
           })}
         />
 
@@ -187,29 +187,35 @@ const SuperAdminAttendanceSearch = () => {
           onCancel={handleModalClose}
           footer={[
             <Button key="print" onClick={generatePDF}>
-              Print as PDF
+              Download as PDF
             </Button>
           ]}
+          width="80%"
+          centered
+          className="modal-lg"
         >
-          <Table
-            dataSource={studentEventList}
-            rowKey="eventName"
-            columns={[
-              { title: 'Event Name', dataIndex: 'eventName', key: 'eventName' },
-              {
-                title: 'Start Date',
-                dataIndex: 'startDate',
-                key: 'startDate',
-                render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
-              },
-              {
-                title: 'End Date',
-                dataIndex: 'endDate',
-                key: 'endDate',
-                render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
-              },
-            ]}
-          />
+          <div className="container-fluid">
+            <Table
+              dataSource={studentEventList}
+              rowKey="eventName"
+              pagination={{ pageSize: 5 }}
+              columns={[
+                { title: 'Event Name', dataIndex: 'eventName', key: 'eventName' },
+                {
+                  title: 'Start Date',
+                  dataIndex: 'startDate',
+                  key: 'startDate',
+                  render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
+                },
+                {
+                  title: 'End Date',
+                  dataIndex: 'endDate',
+                  key: 'endDate',
+                  render: (timestamp) => (timestamp && timestamp.seconds ? new Date(timestamp.seconds * 1000).toLocaleString() : 'Invalid Date'),
+                },
+              ]}
+            />
+          </div>
         </Modal>
       </div>
     </div>
@@ -217,3 +223,4 @@ const SuperAdminAttendanceSearch = () => {
 };
 
 export default SuperAdminAttendanceSearch;
+

@@ -495,9 +495,6 @@ return (
 
     {!showPopup && eventConfirmed && (
       <div className="main-container">
-<div className="logout-button-container">
-          <Logout />
-        </div>
         <h1>
   " {events.find(e => e.id === selectedEvent)?.name} "
   <span style={{ fontSize: '0.6em', color: 'gray' }}>

@@ -22,6 +22,7 @@ import {
 } from 'antd';
 import './generalstyles.css';
 
+
 const { Option } = Select;
 const { Step } = Steps;
 
@@ -261,11 +262,11 @@ const DepartmentCourseMajorManager = () => {
   ];
 
   return (
-    <div className="department-container">
+    <div className="container" style={{ marginTop: '40px' }}>
       <h2>Manage Departments, Courses, and Majors</h2>
 
       {/* Step Indicator */}
-      <Steps current={activeStep}>
+      <Steps current={activeStep} >
         {steps.map((step) => (
           <Step key={step} title={step} />
         ))}
@@ -303,7 +304,7 @@ const DepartmentCourseMajorManager = () => {
               dataSource={departments}
               columns={departmentColumns}
               rowKey="id"
-              pagination={false}
+              pagination={{ pageSize: 3 }}
             />
           </div>
         )}
@@ -312,10 +313,12 @@ const DepartmentCourseMajorManager = () => {
           <div>
             <h3>Add Course to Department</h3>
             <Select
-              placeholder="Select Department"
+              placeholder="Select Department First"
               value={selectedDepartment?.id}
               onChange={(value) => handleDepartmentSelect(departments.find((dept) => dept.id === value))}
-              style={{ width: '200px', marginBottom: '10px' }}
+              style={{ width: '400px', marginBottom: '10px' }}
+              className="select-department"
+
             >
               {departments.map((dept) => (
                 <Option key={dept.id} value={dept.id}>
@@ -369,10 +372,11 @@ const DepartmentCourseMajorManager = () => {
           <div>
             <h3>Add Major to Course</h3>
             <Select
-              placeholder="Select Course"
+              placeholder="Select Course First"
               value={selectedCourse?.id}
               onChange={(value) => setSelectedCourse(courses.find((course) => course.id === value))}
-              style={{ width: '200px', marginBottom: '10px' }}
+              style={{ width: '400px', marginBottom: '10px' }}
+              className="select-department"
             >
               {courses.map((course) => (
                 <Option key={course.id} value={course.id}>

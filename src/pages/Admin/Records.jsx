@@ -230,86 +230,111 @@ const handlePrint = (event) => {
   ];
 
   return (
-    <div className="main-content">
+    <div className="container py-4" style={{ padding: '15px', marginTop: '30px' }}>
+      
       <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
         <h2>Attendance Record</h2>
 
         <Search
           placeholder="Search by event name"
           onSearch={(value) => {
-            const filtered = events.filter(event => 
+            const filtered = events.filter(event =>
               event.name.toLowerCase().includes(value.toLowerCase())
             );
             setFilteredEvents(filtered);
           }}
           enterButton
-          style={{ width: 300, marginBottom: 20 }}
+          style={{ width: '100%', marginBottom: '10px' }}
         />
 
-        <div style={{ marginTop: 20 }}>
-        <Select
-  placeholder="Select Starting Year"
-  onChange={(value) => setStartYear(value)}
-  style={{ width: 150, marginRight: 10 }}
->
-  {[...Array(10).keys()].map(i => (
-    <Option key={i} value={2024 - i}>{2024 - i}</Option>
-  ))}
-</Select>
-<Select
-  placeholder="Select Ending Year"
-  onChange={(value) => setEndYear(value)}
-  style={{ width: 150, marginRight: 10 }}
->
-  {[...Array(10).keys()].map(i => (
-    <Option key={i} value={2024 - i}>{2024 - i}</Option>
-  ))}
-</Select>
-<Button onClick={handleFilterByYear}>Apply Year Filter</Button>
-<span style={{ marginLeft: 10, color: 'red' }}>
-  {(!startYear || !endYear) && ''}
-</span>
+<div className="filter-container d-flex justify-content-center mb-3">
+  <Select
+    placeholder="Select Year"
+    onChange={(value) => setEndYear(value)}
+    style={{ marginTop: '10px', width: '100%' }}
+    className="w-50"
+  >
+    {[...Array(10).keys()].map(i => {
+      const year = new Date().getFullYear() - i;
+      return <Option key={year} value={year}>{year}</Option>;
+    })}
+  </Select>
+  <Button 
+    onClick={handleFilterByYear} 
+    style={{ marginTop: '10px', width: '20%' }} 
+    className="w-auto">
+    Apply Year Filter
+  </Button>
+</div>
 
-        </div>
 
-        <Table style={{ marginTop: 30 }}
+
+        <Table
           loading={loading}
-          columns={[
-            { title: 'Event Name', dataIndex: 'name', key: 'name' },
-            { title: 'Attendees Count', dataIndex: 'attendeesCount', key: 'attendeesCount' },
-            { title: 'Start Date', dataIndex: 'startDate', key: 'startDate', render: (startDate) => new Date(startDate.seconds * 1000).toLocaleDateString() },
-            { title: 'End Date', dataIndex: 'endDate', key: 'endDate', render: (endDate) => endDate ? new Date(endDate.seconds * 1000).toLocaleDateString() : 'N/A' },
-            { title: 'Moderator', dataIndex: 'moderatorName', key: 'moderatorName' },
-            { title: 'Participants', dataIndex: 'attendance', key: 'attendance', render: (attendance) => <Button onClick={() => showParticipants(attendance)}>View Participants</Button> },
-            { title: 'Print', key: 'print', render: (text, record) => <Button onClick={() => handlePrint(record)}>Print</Button> },
-          ]}
+          columns={columns}
           dataSource={filteredEvents}
           rowKey={(record) => record.id}
+          style={{ marginTop: '20px' }}
+          scroll={{ x: 800 }}
+          pagination={{ pageSize: 5 }}
         />
 
-        <Modal
-          title="Participants List"
-          open={visible}
-          onCancel={() => setVisible(false)}
-          footer={null}
-          width={800}
-        >
-          <Table
-            columns={[
-              { title: 'First Name', dataIndex: ['studentInfo', 'fname'], key: 'fname' },
-              { title: 'Last Name', dataIndex: ['studentInfo', 'lname'], key: 'lname' },
-              { title: 'School ID', dataIndex: 'schoolID', key: 'schoolID' },
-              { title: 'Course', dataIndex: ['studentInfo', 'course'], key: 'course' },
-              { title: 'Year Level', dataIndex: ['studentInfo', 'yearLevel'], key: 'yearLevel' },
-              { title: 'Time Out', dataIndex: 'timeOut', key: 'timeOut' },
-              { title: 'Time In', dataIndex: 'timeIn', key: 'timeIn' },
-            ]}
-            dataSource={selectedParticipants}
-            rowKey={(record) => record.schoolID}
-            pagination={false}
-          />
-        </Modal>
+<Modal
+  title="Participants List"
+  open={visible}
+  onCancel={handleCancel}
+  footer={null}
+  width="80%" // Dynamic width based on screen size
+  style={{ maxWidth: '600px' }} // Max width for larger screens
+>
+  <Table
+    columns={[
+      { title: 'First Name', dataIndex: ['studentInfo', 'fname'], key: 'fname' },
+      { title: 'Last Name', dataIndex: ['studentInfo', 'lname'], key: 'lname' },
+      { title: 'School ID', dataIndex: 'schoolID', key: 'schoolID' },
+      { title: 'Course', dataIndex: ['studentInfo', 'course'], key: 'course' },
+      { title: 'Year Level', dataIndex: ['studentInfo', 'yearLevel'], key: 'yearLevel' },
+    ]}
+    dataSource={selectedParticipants}
+    rowKey={(record) => record.schoolID}
+    pagination={false}
+    scroll={{ x: 400 }}
+  />
+</Modal>
+
       </div>
+
+      <style jsx>{`
+  .filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 768px) {
+    .filter-container, .ant-select {
+      flex: 1 1 100%;
+      margin-bottom: 10px;
+    }
+    .container {
+      padding: 10px;
+    }
+    .ant-table {
+      font-size: 12px;
+    }
+    .ant-modal {
+      width: 90% !important; // Adjust modal width on smaller screens
+    }
+  }
+
+  @media (max-width: 480px) {
+    .ant-modal {
+      width: 95% !important; // Even smaller modal on very small screens
+    }
+  }
+`}</style>
+
     </div>
   );
 };

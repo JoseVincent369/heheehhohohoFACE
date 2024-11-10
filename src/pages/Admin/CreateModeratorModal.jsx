@@ -160,139 +160,37 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
           <div className="modal-content">
             <h2>Create Moderator</h2>
             <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                name="firstName"
-                value={moderatorData.firstName}
-                onChange={handleChange}
-                placeholder="First Name"
-                required
-                autoComplete="off"
-              />
-              <input
-                type="text"
-                name="middleName"
-                value={moderatorData.middleName}
-                onChange={handleChange}
-                placeholder="Middle Name"
-                autoComplete="off"
-              />
-              <input
-                type="text"
-                name="lastName"
-                value={moderatorData.lastName}
-                onChange={handleChange}
-                placeholder="Last Name"
-                required
-                autoComplete="off"
-              />
-              <input
-                type="email"
-                name="email"
-                value={moderatorData.email}
-                onChange={handleChange}
-                placeholder="Email"
-                required
-                autoComplete="off"
-              />
-              <input
-                type="password"
-                name="password"
-                value={moderatorData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                required
-                autoComplete="new-password"
-              />
+              <input type="text" name="firstName" placeholder="First Name" required value={moderatorData.firstName} onChange={handleChange} />
+              <input type="text" name="middleName" placeholder="Middle Name" value={moderatorData.middleName} onChange={handleChange} />
+              <input type="text" name="lastName" placeholder="Last Name" required value={moderatorData.lastName} onChange={handleChange} />
+              <input type="email" name="email" placeholder="Email" required value={moderatorData.email} onChange={handleChange} />
+              <input type="password" name="password" placeholder="Password" required value={moderatorData.password} onChange={handleChange} />
 
-              {/* Organization Checkbox Dropdown */}
-              <Badge count={moderatorData.organization.length}>
-                <Button onClick={toggleOrgDropdown}>Select Organizations</Button>
-              </Badge>
-              {dropdownStatus.orgOpen && (
-                <div
-                  style={{
-                    width: '200px',
-                    maxHeight: '350px',
-                    backgroundColor: 'white',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                    position: 'absolute',
-                    zIndex: 10,
-                    borderRadius: '4px',
-                    padding: '10px',
-                  }}
-                >
-                  <Search
-                    placeholder="Search Organizations"
-                    value={searchTerm}
-                    onChange={handleSearch}
-                  />
-                  <div style={{ overflow: 'auto', maxHeight: '300px' }}>
-                    <Checkbox
-                      indeterminate={moderatorData.organization.length > 0 && moderatorData.organization.length < organizationsList.length}
-                      onChange={(e) => handleOrgChange(e.target.checked ? organizationsList : [])}
-                      checked={moderatorData.organization.length === organizationsList.length}
-                    >
-                      Select All
-                    </Checkbox>
-                    <Checkbox.Group
-                      options={organizationsList}
-                      value={moderatorData.organization}
-                      onChange={handleOrgChange}
-                    />
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
+                {/* Organization Dropdown */}
+                <Badge count={moderatorData.organization.length}>
+                  <Button id="orgButton" onClick={toggleOrgDropdown}>Select Organizations</Button>
+                </Badge>
+                {dropdownStatus.orgOpen && (
+                  <div className={`dropdown-container ${dropdownStatus.orgDropUp ? 'drop-up' : ''}`}>
+                    <Search placeholder="Search Organizations" onChange={handleOrgChange} />
+                    <Checkbox.Group options={organizationsList} value={moderatorData.organization} onChange={handleOrgChange} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', width: '50%' }}>
-                    <Button type="link" onClick={() => setDropdownStatus({ ...dropdownStatus, orgOpen: false })}>Ok</Button>
-                    <Button type="link" onClick={() => setDropdownStatus({ ...dropdownStatus, orgOpen: false })}>Cancel</Button>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Department Checkbox Dropdown */}
-              <Badge count={moderatorData.department.length}>
-                <Button onClick={toggleDeptDropdown}>Select Departments</Button>
-              </Badge>
-              {dropdownStatus.deptOpen && (
-                <div
-                  style={{
-                    width: '200px',
-                    maxHeight: '350px',
-                    backgroundColor: 'white',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                    position: 'absolute',
-                    zIndex: 10,
-                    borderRadius: '4px',
-                    padding: '10px',
-                    overflow: 'auto',
-                  }}
-                >
-                  <Search
-                    placeholder="Search Department"
-                    value={searchTerm}
-                    onChange={handleSearch}
-                  />
-                  <div style={{ overflow: 'auto', maxHeight: '300px' }}>
-                    <Checkbox
-                      indeterminate={moderatorData.department.length > 0 && moderatorData.department.length < departmentsList.length}
-                      onChange={(e) => handleDeptChange(e.target.checked ? departmentsList : [])}
-                      checked={moderatorData.department.length === departmentsList.length}
-                    >
-                      Select All
-                    </Checkbox>
-                    <Checkbox.Group
-                      options={departmentsList}
-                      value={moderatorData.department}
-                      onChange={handleDeptChange}
-                    />
+                {/* Department Dropdown */}
+                <Badge count={moderatorData.department.length}>
+                  <Button id="deptButton" onClick={toggleDeptDropdown}>Select Departments</Button>
+                </Badge>
+                {dropdownStatus.deptOpen && (
+                  <div className={`dropdown-container ${dropdownStatus.deptDropUp ? 'drop-up' : ''}`}>
+                    <Search placeholder="Search Departments" onChange={handleDeptChange} />
+                    <Checkbox.Group options={departmentsList} value={moderatorData.department} onChange={handleDeptChange} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', width: '50%' }}>
-                    <Button type="link" onClick={() => setDropdownStatus({ ...dropdownStatus, deptOpen: false })}>Ok</Button>
-                    <Button type="link" onClick={() => setDropdownStatus({ ...dropdownStatus, deptOpen: false })}>Cancel</Button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              <div style={{ marginTop: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
                 <Button type="primary" htmlType="submit">Create Moderator</Button>
                 <Button type="default" onClick={handleClose}>Cancel</Button>
               </div>
@@ -306,3 +204,4 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
 };
 
 export default CreateModeratorModal;
+

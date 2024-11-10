@@ -252,7 +252,7 @@ const ModeratorsRecord = () => {
   
 
   return (
-    <div className="main-content">
+    <div className="container">
       <div>
         <h2>Moderators Record</h2>
         <Table
@@ -260,6 +260,7 @@ const ModeratorsRecord = () => {
           columns={columns}
           dataSource={events}
           rowKey={(record) => record.id}
+          
         />
       </div>
 

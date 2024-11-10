@@ -257,12 +257,12 @@ const attendanceColumns = [
 
 
   return (
-    <div className="admin-dashboard">
+    <div className="container">
       {/* Tabs for Event Categories */}
       <Tabs
   defaultActiveKey="admin"
   id="admin-moderator-events"
-  className="mb-3 custom-tabs"
+  className="mb-3"
   style={{ width: '100%', padding: 0, margin: 0 }} // Ensure full width, no padding/margin
 >
   <Tab eventKey="admin" title="Admin Events">
