@@ -278,7 +278,6 @@ useEffect(() => {
 
                     {/* Pending Events Tab */}
                     <Tab eventKey="pending" title="Pending Events">
-                        
                         {pendingEvents.length === 0 ? (
                             <p>No pending events at the moment.</p>
                         ) : (

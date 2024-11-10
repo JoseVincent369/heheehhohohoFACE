@@ -265,7 +265,6 @@ useEffect(() => {
         majors: selectedMajorNames.length > 0 ? selectedMajorNames : null,
         userInCharge: mappedUserIds.length > 0 ? mappedUserIds : [], // Use an empty array if no users are selected        // Use null if no users are selected
         moderators: [user.uid],
-        moderators: user.uid,
         adminID: adminID,
         status: 'pending',
       };
