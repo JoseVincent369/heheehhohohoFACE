@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef  } from 'react';
 import { Container, Row, Col, Button, Form, Alert, Image } from 'react-bootstrap';
 import { Select } from 'antd'; 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
 import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
-import { FIREBASE_AUTH, FIRESTORE_DB, STORAGE } from '../../firebaseutil/firebase_main';
 import './generalstyles.css';
 
 const { Option } = Select;
@@ -28,6 +30,8 @@ const SignUp = () => {
     organization: [], 
     department: "", 
     isIP: false,
+    gender: "" ,
+    preferredTitle: "Single",
   });
 
   const [photos, setPhotos] = useState({
@@ -53,6 +57,7 @@ const SignUp = () => {
   const [departments, setDepartments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [majors, setMajors] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
   const yearLevels = [
     { id: "1st", name: "1st Year" },
     { id: "2nd", name: "2nd Year" },
@@ -93,6 +98,11 @@ const SignUp = () => {
     fetchOrganizations();
     fetchDepartments();
   }, []);
+
+
+  const handlePasswordToggle = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -220,6 +230,13 @@ const SignUp = () => {
     });
   };
 
+  const handleTitleChange = (value) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      preferredTitle: value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -284,6 +301,7 @@ const SignUp = () => {
         role: "user",
         photos: photoURLs,
         isIP: formData.isIP,
+        gender: formData.gender
       });
   
       setSuccess("User registered successfully!");
@@ -390,6 +408,8 @@ const SignUp = () => {
         </Col>
 
 
+
+
         <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formYearLevel">
             <Form.Label>Year Level</Form.Label>
@@ -410,8 +430,7 @@ const SignUp = () => {
             </Form.Control>
           </Form.Group>
         </Col>
-      </Row>
-
+        <Col md={6} lg={4} className="mb-3">
       <Form.Group controlId="formSchoolID" className="mb-3">
         <Form.Label>School ID</Form.Label>
         <Form.Control
@@ -422,7 +441,9 @@ const SignUp = () => {
           required
         />
       </Form.Group>
+      </Col>
 
+      <Col md={6} lg={4} className="mb-3">
       <Form.Group controlId="formEmail" className="mb-3">
         <Form.Label>Email</Form.Label>
         <Form.Control
@@ -433,20 +454,72 @@ const SignUp = () => {
           required
         />
       </Form.Group>
-      
-      <Form.Group controlId="formPassword" className="mb-3">
-        <Form.Label>Password</Form.Label>
-        <Form.Control
-          type="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-      </Form.Group>
+        </Col>
 
+        
+        <Col md={6} lg={4} className="mb-3">
+  <Form.Group controlId="formGender">
+    <Form.Label>Gender</Form.Label>
+    <Form.Control
+      as="select"
+      name="gender"
+      value={formData.gender}
+      onChange={handleChange}
+      required
+      style={{ marginTop: '15px' }}
+    >
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </Form.Control>
+  </Form.Group>
+</Col>
+        </Row>
+
+
+            <Form.Group controlId="formPassword">
+              <Form.Label>Password</Form.Label>
+              <div className="password-input-container" style={{ position: 'relative' }}>
+                <Form.Control
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingRight: '40px' }} // add space for icon
+                />
+                <FontAwesomeIcon
+                  icon={showPassword ? faEyeSlash : faEye}
+                  onClick={handlePasswordToggle}
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '10px',
+                    transform: 'translateY(-50%)',
+                    cursor: 'pointer',
+                  }}
+                />
+              </div>
+            </Form.Group>
+    
+            <Form.Group controlId="formPreferredTitle" style={{ marginTop: '30px' }}>
+              <Form.Label>Preferred Title</Form.Label>
+              <Select
+                defaultValue="Single" // Default title
+                value={formData.preferredTitle}
+                onChange={handleTitleChange}
+                style={{ width: '100%' }}
+              >
+                <Select.Option value="Mr.">Mr.</Select.Option>
+                <Select.Option value="Ms.">Ms.</Select.Option>
+                <Select.Option value="Mrs.">Mrs.</Select.Option>
+                <Select.Option value="Single">Single</Select.Option>
+                <Select.Option value="Others.">Others.</Select.Option>
+              </Select>
+            </Form.Group>
       
-      <Form.Group controlId="formOrganization" className="mb-3">
+      <Form.Group controlId="formOrganization" className="mb-3" style={{ marginTop: '30px' }}>
             <Form.Label>Organization</Form.Label>
             <Select
               mode="multiple" // Enables multi-select
@@ -464,7 +537,7 @@ const SignUp = () => {
           </Form.Group>
       
       <Row>
-        <Col md={6} lg={4} className="mb-3">
+        <Col md={6} lg={4} className="mb-3" style={{ marginTop: '30px' }}>
           <Form.Group controlId="formDepartment">
             <Form.Label>Department</Form.Label>
             <Form.Control
@@ -490,7 +563,7 @@ const SignUp = () => {
         
         
         
-        <Col md={6} lg={4} className="mb-3">
+        <Col md={6} lg={4} className="mb-3" style={{ marginTop: '30px' }}>
           <Form.Group controlId="formCourse">
             <Form.Label>Course</Form.Label>
             <Form.Control
@@ -509,7 +582,7 @@ const SignUp = () => {
             </Form.Control>
           </Form.Group>
         </Col>
-        <Col md={6} lg={4} className="mb-3">
+        <Col md={6} lg={4} className="mb-3" style={{ marginTop: '30px' }}>
         <Form.Group controlId="formMajor">
           <Form.Label>Major</Form.Label>
           <Form.Control

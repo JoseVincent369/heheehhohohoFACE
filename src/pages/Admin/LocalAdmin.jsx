@@ -3,8 +3,8 @@ import { getFirestore, collection, query, onSnapshot, where, doc, getDocs, updat
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import { Tabs, Tab, Table, Button } from 'react-bootstrap';
-import { Pagination } from 'antd';
+import { Tabs, Tab, Button } from 'react-bootstrap';
+import { Table, Pagination } from 'antd';
 import Modal from '../components/Modal'; 
 import './localstyles.css';
 
@@ -208,6 +208,20 @@ const LocalAdminDashboard = () => {
         setCurrentPage(page);
     };
 
+    const columns = [
+        { title: 'Event Name', dataIndex: 'name', key: 'name' },
+        { title: 'Description', dataIndex: 'description', key: 'description' },
+        { title: 'Start Date', dataIndex: 'startDate', key: 'startDate', render: (text) => new Date(text?.seconds * 1000).toLocaleString() },
+        { title: 'End Date', dataIndex: 'endDate', key: 'endDate', render: (text) => new Date(text?.seconds * 1000).toLocaleString() },
+        { title: 'Venue', dataIndex: 'venue', key: 'venue' },
+        { title: 'Status', dataIndex: 'status', key: 'status' },
+        {
+            title: 'Action', key: 'action', render: (_, event) => (
+                <Button onClick={() => handleEventClick(event)}>View Details</Button>
+            ),
+        },
+    ];
+
     return (
         <div className="container">
             {error && <p className="error-message">{error}</p>}
@@ -216,157 +230,78 @@ const LocalAdminDashboard = () => {
                 defaultActiveKey="pending"
                 id="event-status-tabs"
                 className="mb-3"
-                style={{ width: '100%' }}
+                style={{ width: '100%', padding: 0, margin: 0 }} // Ensure full width, no padding/margin
             >
                 <Tab eventKey="pending" title="Pending Events">
-                    <Table bordered striped hover responsive>
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Description</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Venue</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {pendingEvents.map((event) => (
-                                <tr key={event.id} onClick={() => handleEventClick(event)}>
-                                    <td>{event.name}</td>
-                                    <td>{event.description || 'N/A'}</td>
-                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{event.venue || 'N/A'}</td>
-                                    <td>{event.status || 'N/A'}</td>
-                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    <Pagination
-                        current={currentPage}
-                        pageSize={5}
-                        total={pendingEvents.length }
-                        onChange={onPaginationChange}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Table
+                            columns={columns}
+                            dataSource={pendingEvents}
+                            rowKey="id"
+                            size="small"
+                            bordered
+                            pagination={{ pageSize: 5 }}
+                            style={{ tableLayout: 'auto', width: '70vw' }}
+                        />
+                    </div>
                 </Tab>
-
+    
                 <Tab eventKey="accepted" title="Accepted Events">
-                    <Table bordered striped hover responsive>
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Description</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Venue</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {approvedEvents.map((event) => (
-                                <tr key={event.id} onClick={() => handleEventClick(event)}>
-                                    <td>{event.name}</td>
-                                    <td>{event.description || 'N/A'}</td>
-                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{event.venue || 'N/A'}</td>
-                                    <td>{event.status || 'N/A'}</td>
-                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    <Pagination
-                        current={currentPage}
-                        pageSize={5}
-                        total={approvedEvents.length }
-                        onChange={onPaginationChange}
-                    />
-                </Tab>
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Table
+                            columns={columns}
+                            dataSource={approvedEvents}
+                            rowKey="id"
+                            size="small"
+                            bordered
+                            pagination={{ pageSize: 5 }}
+                            style={{ tableLayout: 'auto', width: '70vw' }}
+                        />
 
+                    </div>
+                </Tab>
+    
                 <Tab eventKey="rejected" title="Rejected Events">
-                    <Table bordered striped hover responsive>
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Description</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Venue</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rejectedEvents.map((event) => (
-                                <tr key={event.id} onClick={() => handleEventClick(event)}>
-                                    <td>{event.name}</td>
-                                    <td>{event.description || 'N/A'}</td>
-                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{event.venue || 'N/A'}</td>
-                                    <td>{event.status || 'N/A'}</td>
-                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    <Pagination
-                        current={currentPage}
-                        pageSize={5}
-                        total={rejectedEvents.length }
-                        onChange={onPaginationChange}
-                    />
-                </Tab>
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Table
+                            columns={columns}
+                            dataSource={rejectedEvents}
+                            rowKey="id"
+                            size="small"
+                            bordered
+                            pagination={{ pageSize: 5 }}
+                            style={{ tableLayout: 'auto', width: '70vw' }}
+                        />
 
+                    </div>
+                </Tab>
+    
                 <Tab eventKey="moderators" title="Moderators Events">
-                    <Table bordered striped hover responsive >
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Description</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Venue</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {moderatorEvents.map((event) => (
-                                <tr key={event.id} onClick={() => handleEventClick(event)}>
-                                    <td>{event.name}</td>
-                                    <td>{event.description || 'N/A'}</td>
-                                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                    <td>{event.venue || 'N/A'}</td>
-                                    <td>{event.status || 'N/A'}</td>
-                                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    <Pagination
-                        current={currentPage}
-                        pageSize={5}
-                        total={moderatorEvents.length }
-                        onChange={onPaginationChange}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Table
+                            columns={columns}
+                            dataSource={moderatorEvents}
+                            rowKey="id"
+                            size="small"
+                            bordered
+                            pagination={{ pageSize: 5 }}
+                            style={{ tableLayout: 'auto', width: '70vw' }}
+                        />
+
+                    </div>
                 </Tab>
             </Tabs>
-
+    
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
                 event={selectedEvent}
                 onChangeStatus={handleChangeStatus}
             />
+            
         </div>
     );
+    
 };
 
 export default LocalAdminDashboard;
-

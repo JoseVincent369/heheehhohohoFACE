@@ -116,66 +116,145 @@ const AdminDashboard = () => {
 
 
   const printEvent = () => {
-    if (!selectedEvent || attendanceData.length === 0) return; // Ensure event and attendance data are available
-
-    console.log('Printing event:', selectedEvent);
-    console.log('Attendance Data:', attendanceData);  // Debugging line
-
-    const details = getFormattedDetails(selectedEvent);
-    const printWindow = window.open('', '', 'height=600,width=800');
-
-    // Add styles for better presentation
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Event Details</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #4CAF50; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
-            th { background-color: #f2f2f2; }
-            p { margin: 5px 0; }
-          </style>
-        </head>
-        <body>
-          <h1>Event Details: ${selectedEvent.name}</h1>
-          <h2>Event Information</h2>
-          <p><strong>Description:</strong> ${details.description || 'N/A'}</p>
-          <p><strong>Start Date:</strong> ${details.startDate || 'N/A'}</p>
-          <p><strong>End Date:</strong> ${details.endDate || 'N/A'}</p>
-          <p><strong>Status:</strong> ${details.status || 'N/A'}</p>
-          <p><strong>Venue:</strong> ${details.venue || 'N/A'}</p>
-
-          <h2>Attendees:</h2>
-    `);
-
-    if (attendanceData && attendanceData.length > 0) {
-      printWindow.document.write('<table><tr><th>First Name</th><th>Last Name</th><th>School ID</th><th>Time In</th><th>Time Out</th></tr>');
-      
-      attendanceData.forEach((attendee) => {
-        printWindow.document.write('<tr>');
-        printWindow.document.write(`<td>${attendee.studentInfo?.fname || 'N/A'}</td>`);
-        printWindow.document.write(`<td>${attendee.studentInfo?.lname || 'N/A'}</td>`);
-        printWindow.document.write(`<td>${attendee.schoolID || 'N/A'}</td>`);
-        printWindow.document.write(`<td>${attendee.timeIn || 'N/A'}</td>`);
-        printWindow.document.write(`<td>${attendee.timeOut || 'N/A'}</td>`);
-        printWindow.document.write('</tr>');
-      });
-      
-      printWindow.document.write('</table>');
-    } else {
-      printWindow.document.write('<p>No attendees registered for this event.</p>');
-    }
-
-    printWindow.document.write('</body></html>');
+    if (!selectedEvent) return;
+  
+    const startDate = new Date(selectedEvent.startDate.seconds * 1000).toLocaleString();
+    const endDate = selectedEvent.endDate ? new Date(selectedEvent.endDate.seconds * 1000).toLocaleString() : 'N/A';
+    const currentDate = new Date().toLocaleDateString('en-GB', {
+      weekday: 'long', // Day of the week
+      year: 'numeric', // Full year
+      month: 'long', // Full month name
+      day: 'numeric', // Day of the month
+    });
+  
+    const printContent = `
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+        }
+        .header {
+          text-align: center;
+          font-weight: bold;
+          font-size: 12px;
+          line-height: 0.5;
+          margin-bottom: 10px;
+        }
+        .header img {
+          width: 20px;
+          height: auto;
+          display: block;
+          margin: 0 auto 10px;
+        }
+        .header-line {
+          border-top: 2px solid black;
+          margin: 10px 0;
+          margin-bottom: 10px;
+        }
+        h2 {
+          font-size: 20px;
+          text-align: center;
+          color: #4169e1;
+          margin: 20px 0;
+          font-weight: bold;
+        }
+        .info-table, .attendance-sheet {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .info-table th, .info-table td, .attendance-sheet th, .attendance-sheet td {
+          padding: 8px;
+          font-size: 14px;
+          border: 1px solid black;
+        }
+        .info-table th {
+          text-align: left;
+          font-weight: bold;
+          width: 21%;
+        }
+        .attendance-sheet th {
+          background-color: #f0f0f0;
+          font-weight: bold;
+        }
+        .footer {
+          text-align: left;
+          font-size: 6px;
+        }
+      </style>
+  
+      <div class="header">
+        <img src="nbsc_logo.png" alt="NBSC Logo">
+        <p>Republic of the Philippines</p>
+        <p><strong>NORTHERN BUKIDNON STATE COLLEGE</strong></p>
+        <p>(Formerly Northern Bukidnon Community College) RA11284</p>
+        <p>Manolo Fortich, 8703 Bukidnon * 535-3873 * nbscadmin@nbsc.edu.ph</p>
+        <p>Creando futura . Transformationis vitae . Ductae a Deo</p>
+      </div>
+      <div class="header-line"></div>
+  
+      <h2>ATTENDANCE SHEET</h2>
+  
+      <!-- Information Table for Name of Activity, Date and Time, Venue -->
+      <table class="info-table">
+        <tr>
+          <th>Name of Activity:</th>
+          <td>${selectedEvent.name || ''}</td>
+        </tr>
+        <tr>
+          <th>Date and Time:</th>
+          <td>${startDate} to ${endDate}</td>
+        </tr>
+        <tr>
+          <th>Venue:</th>
+          <td>${selectedEvent.venue || ''}</td>
+        </tr>
+      </table>
+  
+      <!-- Attendance Table -->
+      <table class="attendance-sheet">
+        <thead>
+          <tr>
+            <th>NO.</th>
+            <th>NAME (Last, First, MI)</th>
+            <th>IN</th>
+            <th>OUT</th>
+            <th>Picture and Video taking Consent</th>
+            <th>Sex (M/F)</th>
+            <th>Preferred Title (Mr., Ms., etc.)</th>
+            <th>IP (Tribe)</th>
+            <th>SIGNATURE</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${attendanceData.map((attendee, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${attendee.studentInfo.lname}, ${attendee.studentInfo.fname}</td>
+              <td>${attendee.timeIn || 'N/A'}</td>
+              <td>${attendee.timeOut || 'N/A'}</td>
+              <td>${attendee.pictureConsent ? 'Yes' : 'No'}</td>
+              <td>${attendee.studentInfo.gender}</td>
+              <td>${attendee.studentInfo.title}</td>
+              <td>${attendee.studentInfo.IP || 'N/A'}</td>
+              <td></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+  
+      <div class="footer">
+        <p>Date Revised: ${currentDate}</p>
+      </div>
+    `;
+  
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(printContent);
     printWindow.document.close();
-
-    // Wait for the window to load before printing
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
+  
 
 
 
@@ -198,9 +277,21 @@ const AdminDashboard = () => {
     },
     {
       title: 'Status',
-      render: (text, record) => (
-        new Date(record.startDate) <= new Date() && new Date(record.endDate) >= new Date() ? 'Ongoing' : 'Upcoming'
-      ),
+      render: (text, record) => {
+        const currentDate = new Date();
+        const startDate = new Date(record.startDate.seconds * 1000);
+        const endDate = record.endDate ? new Date(record.endDate.seconds * 1000) : null;
+  
+        if (endDate && currentDate > endDate) {
+          return 'Ended'; // Event is in the past
+        } else if (startDate && currentDate < startDate) {
+          return 'Upcoming'; // Event has not started yet
+        } else if (startDate && currentDate >= startDate && (!endDate || currentDate <= endDate)) {
+          return 'Ongoing'; // Event is currently ongoing
+        } else {
+          return 'Pending'; // Default status if none of the above
+        }
+      },
     },
     {
       title: 'More Details',

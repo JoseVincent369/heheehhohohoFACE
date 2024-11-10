@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { Modal, Table, Button, Input, Form, Select } from 'antd';
+import { Modal, Table, Button, Input, Form, Select, Row, Col } from 'antd';
 
 const ModeratorManagement = () => {
   const [moderators, setModerators] = useState([]);
@@ -134,14 +134,23 @@ const ModeratorManagement = () => {
     {
       title: 'Actions',
       render: (text, record) => (
-        <>
-          <Button onClick={() => setSelectedModerator(record)}>Edit</Button>
-          <Button danger onClick={() => handleDeleteModerator(record.id)}>
+        <div style={{ textAlign: 'center' }}> {/* This div centers the buttons */}
+          <Button
+            onClick={() => setSelectedModerator(record)}
+            style={{ marginRight: '10px', marginTop: '10px' }} // Margin to the right of the Edit button
+          >
+            Edit
+          </Button>
+          <Button
+            danger
+            onClick={() => handleDeleteModerator(record.id)}
+            style={{ marginLeft: '10px', marginTop: '10px' }} // Margin to the left of the Delete button
+          >
             Delete
           </Button>
-        </>
+        </div>
       ),
-    },
+    }    
   ];
 
   return (
@@ -167,48 +176,65 @@ const ModeratorManagement = () => {
         open={selectedModerator !== null}
         onCancel={() => setSelectedModerator(null)}
         footer={null}
+        width={600} // Adjust modal width if necessary
       >
-        <Form
-          onFinish={handleSaveModerator}
-          initialValues={selectedModerator || {}}
-        >
-          <Form.Item
-            label="Full Name"
-            name="fullName"
-            rules={[{ required: true, message: 'Please input the full name' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ required: true, message: 'Please input the email' }]}
-          >
-            <Input type="email" />
-          </Form.Item>
-          <Form.Item
-            label="Department"
-            name="department"
-            rules={[{ required: true, message: 'Please select the department' }]}
-          >
-            <Select
-              mode="multiple"
-              options={departments}  // Display department names in the dropdown
-            />
-          </Form.Item>
-          <Form.Item
-            label="Organization"
-            name="organization"
-            rules={[{ required: true, message: 'Please select the organization' }]}
-          >
-            <Select 
-            mode="multiple"
-            options={organizations} />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            {selectedModerator?.id ? 'Update' : 'Add'} Moderator
-          </Button>
-        </Form>
+<Form
+  onFinish={handleSaveModerator}
+  initialValues={selectedModerator || {}}
+  labelCol={{ span: 8 }}  // Adjust label width
+  wrapperCol={{ span: 16 }} // Adjust input width
+  layout="horizontal" // Ensures elements are in horizontal layout
+>
+  <Form.Item
+    label="Full Name"
+    name="fullName"
+    rules={[{ required: true, message: 'Please input the full name' }]}
+  >
+    <Input />
+  </Form.Item>
+  <Form.Item
+    label="Email"
+    name="email"
+    rules={[{ required: true, message: 'Please input the email' }]}
+  >
+    <Input type="email" />
+  </Form.Item>
+  <Form.Item
+    label="Department"
+    name="department"
+    rules={[{ required: true, message: 'Please select the department' }]}
+  >
+    <Select
+      mode="multiple"
+      options={departments}  // Display department names in the dropdown
+      placeholder="Select Departments"
+    />
+  </Form.Item>
+  <Form.Item
+    label="Organization"
+    name="organization"
+    rules={[{ required: true, message: 'Please select the organization' }]}
+  >
+    <Select
+      mode="multiple"
+      options={organizations}
+      placeholder="Select Organizations"
+    />
+  </Form.Item>
+
+  {/* Center the Add Moderator button */}
+  <div style={{ textAlign: 'center' }}>
+    <Button
+      type="primary"
+      htmlType="submit"
+      style={{
+        marginTop: '20px', // Optional, for some spacing
+      }}
+    >
+      {selectedModerator?.id ? 'Save Moderator' : 'Add Moderator'}
+    </Button>
+  </div>
+</Form>
       </Modal>
     </div>
   );

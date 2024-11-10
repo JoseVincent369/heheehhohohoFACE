@@ -66,6 +66,17 @@
     object-fit: cover;
 }
 
+.table td {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+@media (max-width: 576px) {
+    .table th, .table td {
+        font-size: 12px;  /* Reduce font size */
+        padding: 5px;     /* Reduce padding */
+    }
+}
 
 
 /* Event Creation */

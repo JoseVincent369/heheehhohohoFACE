@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
-import { Input, Checkbox, Button, Badge, Table, Space } from 'antd';
+import { Input, Checkbox, Button, Badge, Table, Space, Select  } from 'antd';
 import './generalstyles.css';
 
 const AdminManagement = () => {
@@ -207,19 +207,33 @@ const AdminManagement = () => {
                                 />
                             </div>
 
-                            {/* Organizations and Departments */}
+                            {/* Organizations and Departments Dropdowns */}
                             <div className="col-12 d-flex justify-content-center">
-                                <Badge count={adminData.organizations.length}>
-                                    <Button onClick={() => toggleDropdown('organizations')}>
-                                        Select Organizations
-                                    </Button>
-                                </Badge>
-                                <Badge count={adminData.departments.length}>
-                                    <Button onClick={() => toggleDropdown('departments')}>
-                                        Select Departments
-                                    </Button>
-                                </Badge>
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Select Organizations"
+                                    value={adminData.organizations}
+                                    onChange={(value) => handleMultiSelectChange(value, 'organizations')}
+                                    style={{ width: '200px', marginRight: '10px' }}
+                                >
+                                    {organizationsList.map((org, index) => (
+                                        <Select.Option key={index} value={org}>{org}</Select.Option>
+                                    ))}
+                                </Select>
+
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Select Departments"
+                                    value={adminData.departments}
+                                    onChange={(value) => handleMultiSelectChange(value, 'departments')}
+                                    style={{ width: '200px' }}
+                                >
+                                    {departmentsList.map((dep, index) => (
+                                        <Select.Option key={index} value={dep}>{dep}</Select.Option>
+                                    ))}
+                                </Select>
                             </div>
+
                             <div className="col-12 d-flex justify-content-center">
                                 <Button type="primary" htmlType="submit">Create Admin</Button>
                                 <Button type="default" onClick={() => setShowModal(false)}>Cancel</Button>
