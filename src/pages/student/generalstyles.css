@@ -1,0 +1,12 @@
+@media (max-width: 768px) {
+    .alert {
+      padding: 10px;
+      font-size: 14px;
+      width: 100%;
+    }
+  }
+  .alert-success {
+    z-index: 9999;
+    position: relative;
+  }
+    

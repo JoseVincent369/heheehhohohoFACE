@@ -11,6 +11,7 @@ import LoadingScreen from './pages/components/LoadingScreen'; // Import the Load
 import Login_main from './pages/admin_main/login_main';
 import Home_main from './pages/Home/Home_main';
 import SignUp from './pages/student/Signup';
+import Register from './pages/student/Register';
 import NotFound from './pages/components/NotFount';
 import Layout from './pages/components/Layout';
 import AdminLayout from './pages/components/LayoutAdmin';
@@ -61,7 +62,7 @@ function MainApp() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Login_main />} />
-          
+          <Route path="/Register" element={<Register />} />
 
           {/* CAMERA Routes */}
           <Route path="/home" element={<Home_main />} />
@@ -73,9 +74,9 @@ function MainApp() {
             <Route path="/admin/addOrg" element={<AddOrganization />} />
             <Route path="/admin/StudentManage" element={<StudentManage />} />
             <Route path="/admin/department" element={<Department />} />
-            <Route path="/signup" element={<SignUp />} />
             <Route path="/admin/SuperAdminAttendanceSearch" element={<SuperAdminAttendanceSearch />} />
             <Route path="/admin/ModeratorManage" element={<ModeratorManage />} />
+            <Route path="/signup" element={<SignUp />} />
           </Route>
           
            {/* Super Admin Change */}
