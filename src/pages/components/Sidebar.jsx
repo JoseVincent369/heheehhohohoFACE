@@ -25,7 +25,7 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/signup">
+          <Link to="/Register">
             <FontAwesomeIcon icon={faUserPlus} className="sidebar-icon" />
             <span className={isOpen ? '' : 'd-none'}> Student Registration</span>
           </Link>

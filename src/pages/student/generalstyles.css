@@ -9,4 +9,18 @@
     z-index: 9999;
     position: relative;
   }
-    
+
+
+  .signin-container {
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+.signin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef  } from 'react';
-import { Container, Row, Col, Button, Form, Alert, Image } from 'react-bootstrap';
+import { Container, Row, Col, Button, Form, Alert, Image, Modal  } from 'react-bootstrap';
 import { Select } from 'antd'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
@@ -11,6 +11,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
 import './generalstyles.css';
+import Terms from './Terms';
 
 const { Option } = Select;
 
@@ -31,7 +32,7 @@ const SignUp = () => {
     department: "", 
     isIP: false,
     gender: "" ,
-    preferredTitle: "Single",
+    preferredTitle: "Mr.",
   });
 
   const [photos, setPhotos] = useState({
@@ -66,6 +67,15 @@ const SignUp = () => {
   ];
   
 
+  const [showTerms, setShowTerms] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+
+  const handleTermsClose = () => setShowTerms(false);
+  const handleTermsShow = () => setShowTerms(true);
+
+  const handleCheckboxChange = (e) => {
+    setAgreeToTerms(e.target.checked);
+  };
 
   const navigate = useNavigate();
 
@@ -239,6 +249,10 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!agreeToTerms) {
+      alert('Please agree to the Terms and Conditions.');
+      return;
+    }
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -302,6 +316,7 @@ const SignUp = () => {
         photos: photoURLs,
         isIP: formData.isIP,
         gender: formData.gender
+        
       });
   
       setSuccess("User registered successfully!");
@@ -506,7 +521,7 @@ const SignUp = () => {
             <Form.Group controlId="formPreferredTitle" style={{ marginTop: '30px' }}>
               <Form.Label>Preferred Title</Form.Label>
               <Select
-                defaultValue="Single" // Default title
+                defaultValue="Mr." // Default title
                 value={formData.preferredTitle}
                 onChange={handleTitleChange}
                 style={{ width: '100%' }}
@@ -514,8 +529,6 @@ const SignUp = () => {
                 <Select.Option value="Mr.">Mr.</Select.Option>
                 <Select.Option value="Ms.">Ms.</Select.Option>
                 <Select.Option value="Mrs.">Mrs.</Select.Option>
-                <Select.Option value="Single">Single</Select.Option>
-                <Select.Option value="Others.">Others.</Select.Option>
               </Select>
             </Form.Group>
       
@@ -571,7 +584,7 @@ const SignUp = () => {
               name="course"
               value={formData.course}
               onChange={handleChange}
-              required
+              
             >
               <option value="">Select Course</option>
               {courses.map((course) => (
@@ -590,7 +603,7 @@ const SignUp = () => {
             name="major"
             value={formData.major}
             onChange={(e) => setFormData({ ...formData, major: e.target.value })}
-            required
+            
           >
             <option value="">Select Major</option>
             {majors.map(major => (
@@ -761,6 +774,46 @@ const SignUp = () => {
   />
 </Form.Group>
 
+          {/* Terms and Conditions Checkbox with Link */}
+          <Form.Group controlId="formTerms" style={{ marginTop: '20px' }}>
+            <Form.Check
+              type="checkbox"
+              label={<span>I agree to the <a href="#" onClick={handleTermsShow}>Terms and Conditions</a></span>}
+              checked={agreeToTerms}
+              onChange={handleCheckboxChange}
+              required
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: '30px',
+              }}
+            />
+          </Form.Group>
+
+          <Modal
+  show={showTerms}
+  onHide={handleTermsClose}
+  size="lg"
+  aria-labelledby="terms-modal-title"
+  centered
+  backdrop={false}  // Removes the gray backdrop
+  keyboard={true}   // Allows closing the modal with the Escape key (optional)
+>
+  <Modal.Header closeButton>
+    <Modal.Title id="terms-modal-title">Terms and Conditions</Modal.Title>
+  </Modal.Header>
+  <Modal.Body style={{ maxHeight: '60vh', overflowY: 'auto' }}> {/* Enable scrolling */}
+    <Terms />
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={handleTermsClose}>
+      Close
+    </Button>
+  </Modal.Footer>
+</Modal>
+
+
 
       <Form.Group controlId="formSubmit" className="mb-3">
         <Button variant="primary" type="submit">
@@ -768,6 +821,8 @@ const SignUp = () => {
         </Button>
       </Form.Group>
     </Form>
+
+    
   
   )}
 </Container>

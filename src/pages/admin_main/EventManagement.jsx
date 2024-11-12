@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { DatePicker  } from 'antd';
+import moment from 'moment';
 import './generalstyles.css';
 
 const EventManagement = () => {
@@ -59,11 +61,17 @@ const EventManagement = () => {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEventData({
-      ...eventData,
-      [name]: value,
-    });
+    if (e && e.target) {
+      const { name, value } = e.target;
+      setEventData(prevData => ({ ...prevData, [name]: value }));
+    }
+  };
+  
+  const handleDateChange = (date, dateString, field) => {
+    setEventData(prevData => ({
+      ...prevData,
+      [field]: date ? moment(date).format("YYYY-MM-DD h:mm A") : "",
+    }));
   };
 
   const handleOrganizationChange = (e) => {
@@ -236,18 +244,24 @@ const EventManagement = () => {
           onChange={handleChange}
           required
         ></textarea>
-        <input
-          type="datetime-local"
-          name="startDate"
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="datetime-local"
-          name="endDate"
-          onChange={handleChange}
-          required
-        />
+<DatePicker
+  showTime={{ format: 'h:mm A', use12Hours: true }}
+  format="YYYY-MM-DD h:mm A"
+  inputReadOnly // Prevents manual typing
+  name="startDate"
+  onChange={(date, dateString) => handleDateChange(date, dateString, 'startDate')}
+  required
+/>
+<DatePicker
+  showTime={{ format: 'h:mm A', use12Hours: true }}
+  format="YYYY-MM-DD h:mm A"
+  inputReadOnly // Prevents manual typing
+  name="endDate"
+  onChange={(date, dateString) => handleDateChange(date, dateString, 'endDate')}
+  required
+/>
+
+
         <input
           type="text"
           name="venue"

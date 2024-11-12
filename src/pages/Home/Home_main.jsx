@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, getDocs, query, where, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import './homestyles.css';
-import Logout from '../components/Logout';
 
 
 function Home_main() {
@@ -21,6 +21,7 @@ function Home_main() {
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
   
+  const navigate = useNavigate();
 
   // Fetch events from Firestore
   useEffect(() => {
@@ -218,7 +219,6 @@ function Home_main() {
   const attendanceUpdatesMap = {
     timeIn: 'timeIn',
     timeOut: 'timeOut',
-    lateIn: 'lateIn',
   };
 
 
@@ -317,6 +317,7 @@ function Home_main() {
         }
 
         const isUserEligible =
+        (event.organizations.length === 0 || event.organizations.includes(user.organization)) &&
           (event.courses.length === 0 || event.courses.includes(user.course)) &&
           (event.majors.length === 0 || event.majors.includes(user.major)) &&
           (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
@@ -441,7 +442,6 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
               <th>Course</th>
               <th>Year Level</th>
               <th>Time-In</th>
-              <th>Late</th>
               <th>Time-Out</th>
             </tr>
           </thead>
@@ -453,7 +453,6 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
                 <td>{record.studentInfo.course}</td>
                 <td>{record.studentInfo.yearLevel}</td>
                 <td>{record.timeIn}</td>
-                <td>{record.lateIn}</td>
                 <td>{record.timeOut}</td>
               </tr>
             ))}
@@ -467,126 +466,136 @@ const AttendanceModal = ({ isOpen, onClose, records }) => {
 
 return (
   <>
-    {showPopup && !eventConfirmed && (
-      <div className="popup">
-        <h2>Select Event</h2>
-        <select
-          onChange={(e) => setSelectedEvent(e.target.value)}
-          value={selectedEvent}
-        >
-          <option value="">Select an event</option>
-          {events.map(event => (
-            <option key={event.id} value={event.id}>{event.name}</option>
-          ))}
-          
-        </select>
-        <select value={attendanceType} onChange={(e) => setAttendanceType(e.target.value)}>
-  <option value="timeIn">Time In</option>
-  <option value="timeOut">Time Out</option>
-  <option value="lateIn">Late In</option>
-</select>
-
-        <button onClick={handleConfirmEvent} disabled={!selectedEvent}>
-          Confirm
-        </button>
-        <button onClick={() => setShowPopup(false)}>Close</button>
-      </div>
-    )}
-
-    {!showPopup && eventConfirmed && (
-      <div className="main-container">
-        <h1>
-  " {events.find(e => e.id === selectedEvent)?.name} "
-  <span style={{ fontSize: '0.6em', color: 'gray' }}>
-   - ({attendanceType})
-  </span>
-</h1>
-
-
-        <div className="attendance-actions">
-          <div className="button-att">
-            <button onClick={handleViewAttendance}>
-              Attendance Records
-            </button>
-          </div>
-  
-<div className="manual-input">
-  <input
-    type="text"
-    value={manualSchoolID}
-    onChange={(e) => setManualSchoolID(e.target.value)}
-    onKeyPress={(e) => {
-      if (e.key === 'Enter') {
-        handleAttendanceSubmit();
-      }
-    }}
-    placeholder="Enter School ID"
-  />
-
-  {/* Hiding the select dropdown */}
-  <select
-    value={attendanceType}
-    onChange={(e) => setAttendanceType(e.target.value)}
-    style={{ display: 'none' }} // This hides the dropdown
-  >
-    <option value="timeIn">Time In</option>
-    <option value="timeOut">Time Out</option>
-    <option value="lateIn">Late In</option>
-  </select>
-
-  <button onClick={handleAttendanceSubmit}>
-    Submit
-  </button>
-</div>
+      {showPopup && !eventConfirmed && (
+        <div className="popup">
+          <h2>Select Event</h2>
+          <select
+            onChange={(e) => setSelectedEvent(e.target.value)}
+            value={selectedEvent}
+            className="form-select mb-2"
+          >
+            <option value="">Select an event</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={attendanceType}
+            onChange={(e) => setAttendanceType(e.target.value)}
+            className="form-select mb-2"
+          >
+            <option value="timeIn">Time In</option>
+            <option value="timeOut">Time Out</option>
+          </select>
+          <button
+            onClick={handleConfirmEvent}
+            disabled={!selectedEvent}
+            className="btn btn-primary mb-2"
+          >
+            Confirm
+          </button>
+          <button onClick={() => navigate('/')} className="btn btn-secondary">
+            Close
+          </button>
         </div>
-        <h3 className='jj'>Student Information:</h3>
-        <div className="video-section">
-        <div className="user-info">
-        {attendingUser ? (
-          <div>
-            <p><strong>Name:</strong> {attendingUser.fname} {attendingUser.lname}</p>
-            <p><strong>ID:</strong> {attendingUser.schoolID}</p>
-            <p><strong>Age:</strong> {attendingUser.age}</p>
-            <p><strong>Year Level:</strong> {attendingUser.yearLevel}</p>
-            <p><strong>Course:</strong> {attendingUser.course}</p>
+      )}
+
+      {!showPopup && eventConfirmed && (
+        <div className="main-container">
+          <h1>
+            "{events.find(e => e.id === selectedEvent)?.name}"
+            <span style={{ fontSize: '0.6em', color: 'gray' }}>
+              - ({attendanceType})
+            </span>
+          </h1>
+
+          <div className="attendance-actions">
+            <div className="button-att">
+              <button onClick={handleViewAttendance}>
+                Attendance Records
+              </button>
+            </div>
+  
+            <div className="manual-input">
+              <input
+                type="text"
+                value={manualSchoolID}
+                onChange={(e) => setManualSchoolID(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAttendanceSubmit();
+                  }
+                }}
+                placeholder="Enter School ID"
+              />
+
+              {/* Hiding the select dropdown */}
+              <select
+                value={attendanceType}
+                onChange={(e) => setAttendanceType(e.target.value)}
+                style={{ display: 'none' }} // This hides the dropdown
+              >
+                <option value="timeIn">Time In</option>
+                <option value="timeOut">Time Out</option>
+              </select>
+
+              <button onClick={handleAttendanceSubmit}>
+                Submit
+              </button>
+            </div>
           </div>
-        ) : (
-      <p className='jojo'>No user currently attending.</p>
-    )}
-  </div>
-  <div className="video-container">
-    <video
-      ref={videoRef}
-      width={760}
-      height={570}
-      autoPlay
-      muted
-      style={{ transform: 'scaleX(-1)' }}
-    />
-    <canvas
-      ref={canvasRef}
-      className="video-canvas"
-    />
-  </div>
-  <div className="attendance-messages">
-  <h3>Attendance Notifications: </h3>
-  {attendanceMessages.slice(-7).map((message, index) => (
-    <p key={index}>{message}</p>
-  ))}
-</div>
 
-</div>
+          <h3 className='jj'>Student Information:</h3>
+          <div className="video-section">
+            <div className="user-info">
+              {attendingUser ? (
+                <div>
+                  <p><strong>Name:</strong> {attendingUser.fname} {attendingUser.lname}</p>
+                  <p><strong>ID:</strong> {attendingUser.schoolID}</p>
+                  <p><strong>Age:</strong> {attendingUser.age}</p>
+                  <p><strong>Year Level:</strong> {attendingUser.yearLevel}</p>
+                  <p><strong>Course:</strong> {attendingUser.course}</p>
+                </div>
+              ) : (
+                <p>No user currently attending.</p>
+              )}
+            </div>
 
+            <div className="video-container">
+              <video
+                ref={videoRef}
+                width={760}
+                height={570}
+                autoPlay
+                muted
+                style={{ transform: 'scaleX(-1)' }}
+              />
+              <canvas
+                ref={canvasRef}
+                className="video-canvas"
+              />
+            </div>
 
-        <AttendanceModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          records={attendanceRecords}
-        />
-      </div>
-    )}
+            <div className="attendance-messages">
+              <h3>Attendance Notifications: </h3>
+              {attendanceMessages.slice(-7).map((message, index) => (
+                <p key={index}>{message}</p>
+              ))}
+            </div>
+          </div>
+
+          <AttendanceModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            records={attendanceRecords}
+          />
+        </div>
+      )}
   </>
 );
+
 
 }
 

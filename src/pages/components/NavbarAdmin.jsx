@@ -19,7 +19,14 @@ const NavbarAdmin = ({ user }) => {
 
   return (
     <header style={{ position: 'relative' }}>
-      <Navbar bg="light" expand="lg">
+      <Navbar
+  bg="dark" // Bootstrap predefined dark background
+  variant="dark" // Ensures text and icon colors are light in dark theme
+  expand="lg"
+  style={{
+    backgroundColor: '#002d54', // Dark color for navbar background
+  }}
+>
         <Container fluid className="position-relative">
           {/* Logo */}
           <Navbar.Brand

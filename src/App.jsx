@@ -62,7 +62,7 @@ function MainApp() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Login_main />} />
-          <Route path="/Register" element={<Register />} />
+
 
           {/* CAMERA Routes */}
           <Route path="/home" element={<Home_main />} />
@@ -77,6 +77,7 @@ function MainApp() {
             <Route path="/admin/SuperAdminAttendanceSearch" element={<SuperAdminAttendanceSearch />} />
             <Route path="/admin/ModeratorManage" element={<ModeratorManage />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/Register" element={<Register />} />
           </Route>
           
            {/* Super Admin Change */}

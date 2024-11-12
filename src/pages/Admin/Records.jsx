@@ -198,6 +198,7 @@ const AttendanceRecord = () => {
       </style>
       
       <div class="header">
+          <img src={logo} alt="NBSC Logo" style={{ width: '50px', height: 'auto' }} />
       <img src="nbsc_logo.png" alt="NBSC Logo">
         <p>Republic of the Philippines</p>
         <p><strong>NORTHERN BUKIDNON STATE COLLEGE</strong></p>
@@ -424,7 +425,7 @@ const AttendanceRecord = () => {
     }
   }
 `}</style>
-            <img src={logo} alt="NBSC Logo" style={{ width: '50px', height: 'auto' }} />
+        
     </div>
   );
 };

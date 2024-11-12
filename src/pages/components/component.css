@@ -172,3 +172,29 @@ ul {
     margin: 0; /* Removes default margin */
     list-style-type: disc; /* Bulleted list */
 }
+
+
+
+/* Center main-content when sidebar is removed */
+.dashboard-content.center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Center vertically */
+}
+
+/* Default: Full width for larger screens */
+.main-content.signin-centered {
+  width: 100%;
+  max-width: 100vw; /* Adjust width for larger screens */
+  margin: auto;
+  padding: 20px; /* Optional padding for a cleaner look */
+}
+
+/* Mobile styling */
+@media (max-width: 768px) {
+  .main-content.signin-centered {
+    max-width: 90%; /* Keep it narrower on small screens */
+    margin: 0 auto;
+  }
+}
