@@ -40,18 +40,14 @@ const LocalAdminDashboard = () => {
         return () => unsubscribe();
     }, [auth]);
     
-    setPersistence(auth, browserSessionPersistence).then(() => {
-        // Now any authentication state will persist only for the session
-    }).catch((error) => {
-        console.error("Error setting persistence:", error);
-    });
+
     // Fetch Admin Events
     useEffect(() => {
         if (!user) return;
 
         const fetchAdminEvents = query(
             collection(db, 'events'),
-            where('createdBy', '==', user.uid)
+            where('adminID', '==', user.uid)
         );
 
         const unsubscribeAdminEvents = onSnapshot(

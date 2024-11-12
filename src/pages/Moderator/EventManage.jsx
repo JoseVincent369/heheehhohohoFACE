@@ -8,8 +8,7 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { FIREBASE_APP  } from '../../firebaseutil/firebase_main';
 import { Timestamp  } from 'firebase/firestore';
-import { Input, Checkbox, Button, Select, Spin, Form, DatePicker  } from 'antd';
-import moment from 'moment';
+import { Input, Checkbox, Button, Select, Spin, Form  } from 'antd';
 import './ModeratorStyles.css';
 
 const { Search } = Input;
@@ -227,8 +226,8 @@ useEffect(() => {
     setLoading(true);
     try {
       // Convert start and end dates to Firestore Timestamp
-      const startDateTimestamp = Timestamp.fromDate(eventStartDate.toDate());
-      const endDateTimestamp = Timestamp.fromDate(eventEndDate.toDate());
+      const startDateTimestamp = Timestamp.fromDate(new Date(eventStartDate));
+      const endDateTimestamp = Timestamp.fromDate(new Date(eventEndDate));
   
       // Fetch the adminID from the createdBy field
       const userSnapshot = await getDocs(collection(db, 'users'));
@@ -268,6 +267,7 @@ useEffect(() => {
         moderators: [user.uid],
         adminID: adminID,
         status: 'pending',
+        createdBy: user.uid,
       };
   
       // Log the event data to check for undefined values
@@ -367,33 +367,33 @@ return (
           rows="4"
         />
       </div>
+      <div className="row">
 
-      
-      <div className="row" style={{ marginTop: '40px' }}> 
-  <div className="col-md-12 mb-3">
-    <label>Start Date:</label>
-    <DatePicker
-      showTime={{ format: 'h:mm A', use12Hours: true }}
-      format="YYYY-MM-DD h:mm A"
-      value={eventStartDate ? moment(eventStartDate) : null}
-      onChange={(date) => setEventStartDate(date)}
-      style={{ width: '100%' }}
-      required
-    />
-  </div>
-  <div className="col-md-12 mb-3">
-    <label>End Date:</label>
-    <DatePicker
-      showTime={{ format: 'h:mm A', use12Hours: true }}
-      format="YYYY-MM-DD h:mm A"
-      value={eventEndDate ? moment(eventEndDate) : null}
-      onChange={(date) => setEventEndDate(date)}
-      style={{ width: '100%' }}
-      required
-    />
-  </div>
-</div>
-
+        
+        {/* Start Date */}
+        <div className="col-md-6 mb-3">
+          <label>Start Date:</label>
+<input
+  type="datetime-local"
+  value={eventStartDate}
+  onChange={(e) => setEventStartDate(e.target.value)}
+  required
+  className="form-control"
+/>
+        </div>
+ 
+        {/* End Date */}
+        <div className="col-md-6 mb-3">
+          <label>End Date:</label>
+          <input
+            type="datetime-local"
+            value={eventEndDate}
+            onChange={(e) => setEventEndDate(e.target.value)}
+            required
+            className="form-control"
+          />
+        </div>
+      </div>
 
       {/* Organization Selection */}
       <Form.Item label="Organizations" className="mb-3" style={{  marginTop: '40px' }}>
@@ -417,62 +417,59 @@ return (
         </Select>
       </Form.Item>
 
-   
-{/* Departments with Nested Courses and Majors */}
-{departments.map((dept) => (
-  <fieldset key={dept.id} className="nested-fieldset">
-    <legend>{dept.name}</legend>
-    <div className="checkbox-group">
-      <input
-        type="checkbox"
-        value={dept.id}
-        checked={selectedDepartments.includes(dept.id)}
-        onChange={handleCheckboxChange(setSelectedDepartments)}
+      {/* Departments and Courses */}
+      {departments.map((dept) => (
+        <fieldset key={dept.id} className="nested-fieldset" style={{  marginTop: '40px' }}>
+          <legend>{dept.name}</legend>
+          <div className="checkbox-group">
+            <input
+              type="checkbox"
+              value={dept.id}
+              checked={selectedDepartments.includes(dept.id)}
+              onChange={handleCheckboxChange(setSelectedDepartments)}
+            />
+            <span>Select Department</span>
+          </div>
 
-      />
-      <span>Select Department</span>
-    </div>
+          {/* Nested Courses */}
+          {courses[dept.id] &&
+            selectedDepartments.includes(dept.id) &&
+            courses[dept.id].map((course) => (
+              <fieldset key={course.id} className="nested-fieldset">
+                <legend>{course.name}</legend>
+                <div className="checkbox-group">
+                  <input
+                    type="checkbox"
+                    value={course.id}
+                    onChange={handleCheckboxChange(setSelectedCourses)}
+                    checked={selectedCourses.includes(course.id)}
+                  />
+                  <span>Select Course</span>
 
-    {/* Nested Courses */}
-    {courses[dept.id] && selectedDepartments.includes(dept.id) && (
-      <div className="nested-checkbox-group">
-        <label>Courses:</label>
-        {courses[dept.id].map((course) => (
-          <fieldset key={course.id} className="nested-fieldset">
-            <legend>{course.name}</legend>
-            <div className="checkbox-group">
-              <input
-                type="checkbox"
-                value={course.id}
-                onChange={handleCheckboxChange(setSelectedCourses)}
-                checked={selectedCourses.includes(course.id)}
-              />
-              <span>Select Course</span>
-            </div>
-
-            {/* Nested Majors */}
-            {majors[course.id] && selectedCourses.includes(course.id) && majors[course.id].length > 0 && (
-              <div className="nested-checkbox-group">
-                <label>Majors:</label>
-                {majors[course.id].map((major) => (
-                  <div key={major.id} className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      value={major.id}
-                      onChange={handleCheckboxChange(setSelectedMajors)}
-                      checked={selectedMajors.includes(major.id)}
-                    />
-                    <span>{major.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </fieldset>
-        ))}
-      </div>
-    )}
-  </fieldset>
-))}
+                  {/* Nested Majors */}
+                  {majors[course.id] &&
+                    selectedCourses.includes(course.id) &&
+                    majors[course.id].length > 0 && (
+                      <div className="nested-checkbox-group">
+                        <label>Majors:</label>
+                        {majors[course.id].map((major) => (
+                          <div key={major.id} className="checkbox-group">
+                            <input
+                              type="checkbox"
+                              value={major.id}
+                              onChange={handleCheckboxChange(setSelectedMajors)}
+                              checked={selectedMajors.includes(major.id)}
+                            />
+                            <span>{major.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              </fieldset>
+            ))}
+        </fieldset>
+      ))}
 
       {/* Year Levels */}
       <Form.Item label="Year Levels" style={{  marginTop: '40px' }}>

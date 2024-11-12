@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, getDocs, query, where, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
+import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main';
+import { Toast, ToastContainer } from 'react-bootstrap';
 import './homestyles.css';
 
 
@@ -18,22 +19,37 @@ function Home_main() {
   const [attendanceRecords, setAttendanceRecords] = useState([]); // Attendance data state
   const [attendanceType, setAttendanceType] = useState('timeIn');
   const [attendingUser, setAttendingUser] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
   
   const navigate = useNavigate();
 
-  // Fetch events from Firestore
   useEffect(() => {
     const loadEvents = async () => {
-      const eventsCollection = collection(FIRESTORE_DB, 'events');
-      const eventsSnapshot = await getDocs(eventsCollection);
-      const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEvents(eventsList);
+      const currentUser = FIREBASE_AUTH.currentUser;
+
+      if (currentUser) {
+        const eventsCollection = collection(FIRESTORE_DB, 'events');
+        // Query for events where 'userInCharge' matches current user ID and 'status' is 'accepted'
+        const eventsQuery = query(
+          eventsCollection,
+          where('userInCharge', 'array-contains', currentUser.uid),
+          where('status', '==', 'accepted')
+        );
+
+        const eventsSnapshot = await getDocs(eventsQuery);
+        const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEvents(eventsList);
+      } else {
+        console.log("No user is logged in.");
+      }
     };
 
     loadEvents();
   }, []);
+
 
   const fetchAttendanceRecords = async () => {
     try {
@@ -232,13 +248,16 @@ function Home_main() {
         const event = events.find(e => e.id === selectedEvent);
 
         const isUserEligible =
+        (event.organizations.length === 0 || event.organizations.includes(user.organization)) &&
           (event.courses.length === 0 || event.courses.includes(user.course)) &&
           (event.majors.length === 0 || event.majors.includes(user.major)) &&
           (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
+          
 
         if (!isUserEligible) {
           const message = `${user.fname} ${user.lname} is not eligible to join the event.`;
-          alert(message);
+          setToastMessage(message);
+          setShowToast(true); 
           addAttendanceMessage(message);
           tempAttendance.current.delete(label);
           return;
@@ -324,7 +343,8 @@ function Home_main() {
 
         if (!isUserEligible) {
           const message = `User ${user.fname} ${user.lname} is not eligible to join the event.`;
-          alert(message);
+          setToastMessage(message);
+      setShowToast(true); // Show the toast
           addAttendanceMessage(message);
           return;
         }
@@ -585,6 +605,15 @@ return (
               ))}
             </div>
           </div>
+
+          <ToastContainer position="top-end" className="p-3">
+        <Toast onClose={() => setShowToast(false)} show={showToast} delay={3000} autohide>
+          <Toast.Header>
+            <strong className="me-auto">Eligibility Check</strong>
+          </Toast.Header>
+          <Toast.Body>{toastMessage}</Toast.Body>
+        </Toast>
+      </ToastContainer>
 
           <AttendanceModal
             isOpen={isModalOpen}

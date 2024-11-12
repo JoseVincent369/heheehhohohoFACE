@@ -298,7 +298,7 @@ const AttendanceRecord = () => {
       render: (endDate) => endDate ? new Date(endDate.seconds * 1000).toLocaleDateString() : 'N/A', // Convert Firestore timestamp to date or handle null
     },
     {
-      title: 'Moderator',
+      title: 'Created By',
       dataIndex: 'moderatorName',
       key: 'moderatorName',
     },
