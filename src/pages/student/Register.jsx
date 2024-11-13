@@ -11,7 +11,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
 import './generalstyles.css';
-import Terms from './Terms';
+
 
 const { Option } = Select;
 
@@ -65,17 +65,6 @@ const SignUp = () => {
     { id: "3rd", name: "3rd Year" },
     { id: "4th", name: "4th Year" }
   ];
-  
-
-  const [showTerms, setShowTerms] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-
-  const handleTermsClose = () => setShowTerms(false);
-  const handleTermsShow = () => setShowTerms(true);
-
-  const handleCheckboxChange = (e) => {
-    setAgreeToTerms(e.target.checked);
-  };
 
   const navigate = useNavigate();
 
@@ -249,10 +238,6 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!agreeToTerms) {
-      alert('Please agree to the Terms and Conditions.');
-      return;
-    }
     setError(null);
     setSuccess(null);
     setLoading(true);
