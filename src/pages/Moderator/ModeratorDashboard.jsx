@@ -1,360 +1,642 @@
-import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, 
-    where, getDoc, doc, getDocs, updateDoc  } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
+import React, { useState, useEffect } from "react";
+import {
+  getFirestore,
+  collection,
+  query,
+  onSnapshot,
+  where,
+  getDoc,
+  doc,
+  getDocs,
+  updateDoc,
+  setDoc,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { FIREBASE_APP, FIRESTORE_DB } from "../../firebaseutil/firebase_main";
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import { Tabs, Tab, Table, Modal, Button } from 'react-bootstrap';
-import './moderatorStyles.css';
+import { Tabs, Tab, Table, Modal, Button, Spinner } from "react-bootstrap";
+import "./moderatorStyles.css";
 
-import { Select } from 'antd';
+import { Select } from "antd";
 const { Option } = Select; // Destructure Option from Select
 
-
 const ModeratorDashboard = () => {
-    const [approvedEvents, setApprovedEvents] = useState([]);
-    const [rejectedEvents, setRejectedEvents] = useState([]);
-    const [pendingEvents, setPendingEvents] = useState([]);
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [eventsLoading, setEventsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState(null);
-    const [adminId, setAdminId] = useState(null);
-    const [usersInCharge, setUsersInCharge] = useState([]);
-    const [selectedUserInChargeId, setSelectedUserInChargeId] = useState('');
-    const [selectedUsersInCharge, setSelectedUsersInCharge] = useState([]);
-    const [userInCharge, setUserInCharge] = useState(null); 
-    
-    const auth = getAuth(FIREBASE_APP);
-    const db = getFirestore(FIREBASE_APP);
-    
+  const faceapi = window.faceapi;
+  const [approvedEvents, setApprovedEvents] = useState([]);
+  const [rejectedEvents, setRejectedEvents] = useState([]);
+  const [pendingEvents, setPendingEvents] = useState([]);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [isListTrained, setIsListTrained] = useState(false);
+  const [isLoadTrained, setIsLoadTrained] = useState(false);
+  const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [adminId, setAdminId] = useState(null);
+  const [usersInCharge, setUsersInCharge] = useState([]);
+  const [selectedUserInChargeId, setSelectedUserInChargeId] = useState("");
+  const [selectedUsersInCharge, setSelectedUsersInCharge] = useState([]);
+  const [userInCharge, setUserInCharge] = useState(null);
 
-    // Authentication
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-            if (currentUser) {
-                setUser(currentUser); // Set the logged-in user
-                setLoading(false);
-            } else {
-                setUser(null); // Handle logged-out state
-                setLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, [auth]);
+  const auth = getAuth(FIREBASE_APP);
+  const db = getFirestore(FIREBASE_APP);
 
-    setPersistence(auth, browserSessionPersistence)
-        .then(() => {
-            // Now any authentication state will persist only for the session
-        })
-        .catch((error) => {
-            console.error("Error setting persistence:", error);
-        });
+  // Authentication
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        setUser(currentUser); // Set the logged-in user
+        setLoading(false);
+      } else {
+        setUser(null); // Handle logged-out state
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [auth]);
 
-    // Fetch Approved, Rejected, and Pending Events
-    useEffect(() => {
-        if (!user) return;
-    
-        const fetchEvents = query(
-            collection(db, 'events'),
-            where('createdBy', '==', user.uid)  // Check if the event was created by the current user
+  setPersistence(auth, browserSessionPersistence)
+    .then(() => {
+      // Now any authentication state will persist only for the session
+    })
+    .catch((error) => {
+      console.error("Error setting persistence:", error);
+    });
+
+  // Fetch Approved, Rejected, and Pending Events
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchEvents = query(
+      collection(db, "events"),
+      where("createdBy", "==", user.uid) // Check if the event was created by the current user
+      
+    );
+
+    const unsubscribeEvents = onSnapshot(
+      fetchEvents,
+      (querySnapshot) => {
+        const eventsData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        /// console.log("Fetched Events Data:", eventsData); // Debugging line
+        setApprovedEvents(
+          eventsData.filter((event) => event.status === "accepted")
         );
-    
-        const unsubscribeEvents = onSnapshot(
-            fetchEvents,
-            (querySnapshot) => {
-                const eventsData = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-    
-                console.log("Fetched Events Data:", eventsData); // Debugging line
-                setApprovedEvents(eventsData.filter((event) => event.status === 'accepted'));
-                setRejectedEvents(eventsData.filter((event) => event.status === 'rejected'));
-                setPendingEvents(eventsData.filter((event) => event.status === 'pending'));
-                setEventsLoading(false);
-            },
-            (error) => {
-                console.error('Error fetching events:', error);
-                setError('Error fetching events.');
-                setEventsLoading(false);
-            }
+        setRejectedEvents(
+          eventsData.filter((event) => event.status === "rejected")
         );
-    
-        return () => unsubscribeEvents();
-    }, [db, user]);
-    
+        setPendingEvents(
+          eventsData.filter((event) => event.status === "pending")
+        );
+        setEventsLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching events:", error);
+        setError("Error fetching events.");
+        setEventsLoading(false);
+      }
+    );
 
-    const fetchEligibleUsers = async () => {
-        try {
-            // Ensure user is authenticated and available
-            if (!user) {
-                console.error("No user is logged in.");
-                return; // Exit if no user is authenticated
-            }
-    
-            // Get the current moderator's information
-            const moderatorRef = doc(db, "users", user.uid);
-            const moderatorSnapshot = await getDoc(moderatorRef);
-    
-            // Check if moderator data exists
-            if (!moderatorSnapshot.exists()) {
-                console.error("Moderator data not found");
-                return; // Exit if moderator data is not found
-            }
-    
-            const moderatorData = moderatorSnapshot.data();
-            console.log("Moderator's data:", moderatorData); // Optional: Log moderator's data for debugging
-    
-            // Define the base query to filter by 'user' role
-            const q = query(collection(db, "users"), where("role", "==", "user"));
-    
-            // Fetch matching users
-            const snapshot = await getDocs(q);
-            const eligibleUsers = snapshot.docs.map(doc => ({
-                value: doc.id, // Set the value to user ID
-                label: `${doc.data().fname} ${doc.data().lname}`, // Full name for the dropdown label
-                ...doc.data()
-            }));
-    
-            // Set eligible users to the state
-            setUsersInCharge(eligibleUsers);
-    
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        }
-    };
-    
-    
-    
-    
-    
+    return () => unsubscribeEvents();
+  }, [db, user]);
 
-    
-// Fetch users based on userInCharge criteria
-useEffect(() => {
+  const fetchEligibleUsers = async () => {
+    try {
+      // Ensure user is authenticated and available
+      if (!user) {
+        console.error("No user is logged in.");
+        return; // Exit if no user is authenticated
+      }
+
+      // Get the current moderator's information
+      const moderatorRef = doc(db, "users", user.uid);
+      const moderatorSnapshot = await getDoc(moderatorRef);
+
+      // Check if moderator data exists
+      if (!moderatorSnapshot.exists()) {
+        console.error("Moderator data not found");
+        return; // Exit if moderator data is not found
+      }
+
+      const moderatorData = moderatorSnapshot.data();
+      console.log("Moderator's data:", moderatorData); // Optional: Log moderator's data for debugging
+
+      // Define the base query to filter by 'user' role
+      const q = query(collection(db, "users"), where("role", "==", "user"));
+
+      // Fetch matching users
+      const snapshot = await getDocs(q);
+      const eligibleUsers = snapshot.docs.map((doc) => ({
+        value: doc.id, // Set the value to user ID
+        label: `${doc.data().fname} ${doc.data().lname}`, // Full name for the dropdown label
+        ...doc.data(),
+      }));
+
+      // Set eligible users to the state
+      setUsersInCharge(eligibleUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  // Fetch users based on userInCharge criteria
+  useEffect(() => {
     const fetchUsersInCharge = async () => {
-        if (!user) return;
+      if (!user) return;
 
-        try {
-            const usersSnapshot = await getDocs(collection(db, 'users'));
-            const filteredUsers = usersSnapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(user => 
-                    user.role === 'user' &&
-                    user.department === userInCharge.department &&
-                    user.organization && 
-                    user.organization.some(org => userInCharge.organization.includes(org))
-                );
+      try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const filteredUsers = usersSnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter(
+            (user) =>
+              user.role === "user" &&
+              user.department === userInCharge.department &&
+              user.organization &&
+              user.organization.some((org) =>
+                userInCharge.organization.includes(org)
+              )
+          );
 
-            setUsersInCharge(filteredUsers);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            
-        }
+        setUsersInCharge(filteredUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
     };
 
     fetchUsersInCharge();
-}, [userInCharge]); 
-  
-    
-    
-    const assignUserInCharge = async () => {
+  }, [userInCharge]);
+
+  const assignUserInCharge = async () => {
     // Check if both selectedEvent and selectedUserInChargeId are defined
     if (selectedEvent && selectedUsersInCharge) {
-        try {
-            console.log("Assigning user in charge:", selectedUsersInCharge, "to event:", selectedEvent.id); // Debugging line
-            
-            // Update the event document in Firestore
-            await updateDoc(doc(db, 'events', selectedEvent.id), {
-                userInCharge: selectedUsersInCharge, // Assuming this is where the user in charge should be stored
-            });
-    
-            alert('User in charge assigned successfully!');
-            handleModalClose(); // Close modal after assignment
-        } catch (error) {
-            console.error('Error assigning user in charge:', error);
-            alert('Error assigning user in charge.');
-        }
+      try {
+        console.log(
+          "Assigning user in charge:",
+          selectedUsersInCharge,
+          "to event:",
+          selectedEvent.id
+        ); // Debugging line
+
+        // Update the event document in Firestore
+        await updateDoc(doc(db, "events", selectedEvent.id), {
+          userInCharge: selectedUsersInCharge, // Assuming this is where the user in charge should be stored
+        });
+
+        alert("User in charge assigned successfully!");
+        handleModalClose(); // Close modal after assignment
+      } catch (error) {
+        console.error("Error assigning user in charge:", error);
+        alert("Error assigning user in charge.");
+      }
     } else {
-        console.error("Either selectedEvent or selectedUserInChargeId is not defined.");
-        alert('Please select an event and a user to assign.');
+      console.error(
+        "Either selectedEvent or selectedUserInChargeId is not defined."
+      );
+      alert("Please select an event and a user to assign.");
     }
-};
+  };
 
-    
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    fetchEligibleUsers();
+    setIsModalOpen(true);
+    setIsListTrained(event.isTrained);
+  };
+  // Fetch image URL for a user from Firestore
+  const fetchImageUrl = async (user, imageType) => {
+    try {
+      return user.photos[imageType] || null;
+    } catch (error) {
+      console.error(`Error fetching image URL for ${user.schoolID}:`, error);
+    }
+    return null;
+  };
 
-    const handleEventClick = (event) => {
-        setSelectedEvent(event);
-        fetchEligibleUsers();
-        setIsModalOpen(true);
+  const handleTrainedData = async (trainedData) => {
+    // Check if both selectedEvent and selectedUserInChargeId are defined
+
+    try {
+      // Update the event document in Firestore
+      await setDoc(
+        doc(db, "events", selectedEvent.id),
+        {
+          trainedData: JSON.stringify(trainedData), // Assuming this is where the user in charge should be stored
+          isTrained: true,
+        },
+        {
+          merge: true,
+        }
+      );
+
+      // Close modal after assignment
+    } catch (error) {
+      console.error("Error assigning user in charge:", error);
+      alert("Error assigning user in charge.");
+    }
+  };
+
+  const fetchUsersWithRole = async (selectedEvent) => {
+    try {
+      const usersCollection = collection(FIRESTORE_DB, "users");
+      let q = null;
+      if (selectedEvent.organizations.length > 0) {
+        q = query(
+          usersCollection,
+          where("course", "in", selectedEvent.courses),
+          where(
+            "organizations",
+            "array-contains-any",
+            selectedEvent.organizations
+          )
+        );
+      } else {
+        q = query(
+          usersCollection,
+          where("course", "in", selectedEvent.courses)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+
+      return querySnapshot.docs.map((item) => item.data());
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const loadModelsAndStartVideo = async () => {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
+        faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
+        faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
+        faceapi.nets.faceExpressionNet.loadFromUri("/models"),
+        faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
+      ]);
     };
+    loadModelsAndStartVideo();
+    return () => {};
+  }, []);
 
-    const handleModalClose = () => {
-        setIsModalOpen(false);
-        setSelectedEvent(null);
-        setSelectedUsersInCharge([]);
-    };
+  const loadLabeledImages = async () => {
+    try {
+      const users = await fetchUsersWithRole(selectedEvent);
+      const labeledFaceDescriptors = [];
 
+      for (const user of users) {
+        const descriptors = [];
+        for (const imageType of ["front", "left", "right"]) {
+          const imageUrl = await fetchImageUrl(user, imageType);
+          if (imageUrl) {
+            const img = await faceapi.fetchImage(imageUrl);
+            const detections = await faceapi
+              .detectSingleFace(img)
+              .withFaceLandmarks()
+              .withFaceDescriptor();
+            if (detections) {
+              descriptors.push(detections.descriptor);
+            }
+          }
+        }
+        if (descriptors.length > 0) {
+          const faceDescriptor = new faceapi.LabeledFaceDescriptors(
+            user.schoolID,
+            descriptors
+          );
+          labeledFaceDescriptors.push(faceDescriptor);
+        }
+      }
+      setIsLoadTrained(false);
+      setIsListTrained(!isListTrained);
+      console.log(labeledFaceDescriptors);
+      let trainedData = labeledFaceDescriptors.map(data => ({
+        _label: data._label,
+        _descriptors: data._descriptors.map(desc => Array.from(desc)), // Convert Float32Array to Array
+      }));
+      handleTrainedData(trainedData);
+    } catch (error) {
+      console.error("Error loading labeled images:", error);
+      return [];
+    }
+  };
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+    setIsListTrained(false);
+    setIsLoadTrained(false);
+    setSelectedUsersInCharge([]);
+  };
+  const itemList = (list) => {
+    return list
+      ? list.map((item, index) => {
+          return (
+            <li key={index} className="m-0 p-0 list-group-item ">
+              {item}
+            </li>
+          );
+        })
+      : null;
+  };
+  return (
+    <div className="container">
+      <div
+        className="content"
+        style={{ maxHeight: "190vh", overflowY: "auto" }}
+      >
+        {error && <p className="error-message">{error}</p>}
 
+        <Tabs defaultActiveKey="approved" id="event-tabs" className="mb-3">
+          {/* Approved Events Tab */}
+          <Tab eventKey="approved" title="Approved Events">
+            {approvedEvents.length === 0 ? (
+              <p>No approved events at the moment.</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Description</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Venue</th>
+                    <th>Status</th>
+                    <th>View Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvedEvents.map((event, index) => (
+                    <tr
+                      key={event.id || index}
+                      onClick={() => handleEventClick(event)}
+                    >
+                      <td>{event.name}</td>
+                      <td>{event.description || "N/A"}</td>
+                      <td>
+                        {new Date(
+                          event.startDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>
+                        {new Date(
+                          event.endDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>{event.venue || "N/A"}</td>
+                      <td>{event.status || "N/A"}</td>
+                      <td>
+                        <button onClick={() => handleEventClick(event)}>
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Tab>
 
+          {/* Rejected Events Tab */}
+          <Tab eventKey="rejected" title="Rejected Events">
+            {rejectedEvents.length === 0 ? (
+              <p>No rejected events at the moment.</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Description</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Venue</th>
+                    <th>Status</th>
+                    <th>View Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rejectedEvents.map((event, index) => (
+                    <tr
+                      key={event.id || index}
+                      onClick={() => handleEventClick(event)}
+                    >
+                      <td>{event.name}</td>
+                      <td>{event.description || "N/A"}</td>
+                      <td>
+                        {new Date(
+                          event.startDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>
+                        {new Date(
+                          event.endDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>{event.venue || "N/A"}</td>
+                      <td>{event.status || "N/A"}</td>
+                      <td>
+                        <button onClick={() => handleEventClick(event)}>
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Tab>
 
+          {/* Pending Events Tab */}
+          <Tab eventKey="pending" title="Pending Events">
+            {pendingEvents.length === 0 ? (
+              <p>No pending events at the moment.</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Description</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Venue</th>
+                    <th>Status</th>
+                    <th>View Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingEvents.map((event, index) => (
+                    <tr
+                      key={event.id || index}
+                      onClick={() => handleEventClick(event)}
+                    >
+                      <td>{event.name}</td>
+                      <td>{event.description || "N/A"}</td>
+                      <td>
+                        {new Date(
+                          event.startDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>
+                        {new Date(
+                          event.endDate?.seconds * 1000
+                        ).toLocaleString() || "N/A"}
+                      </td>
+                      <td>{event.venue || "N/A"}</td>
+                      <td>{event.status || "N/A"}</td>
+                      <td>
+                        <button onClick={() => handleEventClick(event)}>
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Tab>
+        </Tabs>
 
-    return (
-        <div className="container">
-            <div className="content" style={{ maxHeight: '190vh', overflowY: 'auto' }}>
-                {error && <p className="error-message">{error}</p>}
+        {/* Modal for Event Details */}
+        {isModalOpen && selectedEvent && (
+          <div className="modal">
+            <div className="modal-content">
+              <h3>{selectedEvent.name}</h3>
+              <strong>Description:</strong>{" "}
+              <textarea disabled className="form-control">
+                {selectedEvent.description || "N/A"}
+              </textarea>
+              <div className="row">
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  {" "}
+                  <p>
+                    <strong>Start Date:</strong>{" "}
+                    {new Date(
+                      selectedEvent.startDate?.seconds * 1000
+                    ).toLocaleString() || "N/A"}
+                  </p>
+                </div>
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  {" "}
+                  <p>
+                    <strong>End Date:</strong>{" "}
+                    {new Date(
+                      selectedEvent.endDate?.seconds * 1000
+                    ).toLocaleString() || "N/A"}
+                  </p>
+                </div>
+              </div>
+              <div className="row">
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  {" "}
+                  <p>
+                    <strong>Venue:</strong> {selectedEvent.venue || "N/A"}
+                  </p>
+                </div>
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  {" "}
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {selectedEvent.status.toUpperCase(0) || "N/A"}
+                  </p>
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  <h5>Department</h5>
+                  <ol className="list-group list-group-numbered">
+                    {itemList(selectedEvent.courses)}
+                  </ol>
+                </div>
+                <div className="col-sm-12 col-md-6 col-lg-6">
+                  <h5>Organization</h5>
+                  {itemList(selectedEvent.organizations)}
+                </div>
+              </div>
+              <h5 className="mb-2 p-0  ">
+                STEP 1: Load and Train Student Images
+              </h5>
+              {selectedEvent.isTrained ? (
+                <p className="alert alert-success">Images already trained.</p>
+              ) : (
+                <button
+                  disabled={isListTrained}
+                  onClick={() => {
+                    loadLabeledImages();
+                    setIsLoadTrained(!isLoadTrained);
+                  }}
+                  className="btn "
+                >
+                  Load Student Images
+                </button>
+              )}
+              {isListTrained && !selectedEvent.isTrained  ? (
+                <p className="alert alert-success text-center">
+                  Images trained and saved successfully!
+                </p>
+              ) : null}
+              {isLoadTrained ? (
+                <div className="d-flex justify-content-center">
+                  <Spinner></Spinner>{" "}
+                  <span className="mx-2">Training Image</span>
+                </div>
+              ) : null}
 
-                <Tabs defaultActiveKey="approved" id="event-tabs" className="mb-3">
-                    {/* Approved Events Tab */}
-                    <Tab eventKey="approved" title="Approved Events">
-                        {approvedEvents.length === 0 ? (
-                            <p>No approved events at the moment.</p>
-                        ) : (
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Description</th>
-                                        <th>Start Date</th>
-                                        <th>End Date</th>
-                                        <th>Venue</th>
-                                        <th>Status</th>
-                                        <th>View Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {approvedEvents.map((event, index) => (
-                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                            <td>{event.name}</td>
-                                            <td>{event.description || 'N/A'}</td>
-                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{event.venue || 'N/A'}</td>
-                                            <td>{event.status || 'N/A'}</td>
-                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </Tab>
-
-                    {/* Rejected Events Tab */}
-                    <Tab eventKey="rejected" title="Rejected Events">
-                        {rejectedEvents.length === 0 ? (
-                            <p>No rejected events at the moment.</p>
-                        ) : (
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Description</th>
-                                        <th>Start Date</th>
-                                        <th>End Date</th>
-                                        <th>Venue</th>
-                                        <th>Status</th>
-                                        <th>View Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rejectedEvents.map((event, index) => (
-                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                            <td>{event.name}</td>
-                                            <td>{event.description || 'N/A'}</td>
-                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{event.venue || 'N/A'}</td>
-                                            <td>{event.status || 'N/A'}</td>
-                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </Tab>
-
-                    {/* Pending Events Tab */}
-                    <Tab eventKey="pending" title="Pending Events">
-                        {pendingEvents.length === 0 ? (
-                            <p>No pending events at the moment.</p>
-                        ) : (
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Description</th>
-                                        <th>Start Date</th>
-                                        <th>End Date</th>
-                                        <th>Venue</th>
-                                        <th>Status</th>
-                                        <th>View Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {pendingEvents.map((event, index) => (
-                                        <tr key={event.id || index} onClick={() => handleEventClick(event)}>
-                                            <td>{event.name}</td>
-                                            <td>{event.description || 'N/A'}</td>
-                                            <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</td>
-                                            <td>{event.venue || 'N/A'}</td>
-                                            <td>{event.status || 'N/A'}</td>
-                                            <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </Tab>
-                </Tabs>
-
-                {/* Modal for Event Details */}
-                {isModalOpen && selectedEvent && (
-                    <div className="modal">
-                        <div className="modal-content">
-                            <h3>{selectedEvent.name}</h3>
-                            <p><strong>Description:</strong> {selectedEvent.description || 'N/A'}</p>
-                            <p><strong>Start Date:</strong> {new Date(selectedEvent.startDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-                            <p><strong>End Date:</strong> {new Date(selectedEvent.endDate?.seconds * 1000).toLocaleString() || 'N/A'}</p>
-                            <p><strong>Venue:</strong> {selectedEvent.venue || 'N/A'}</p>
-                            <p><strong>Status:</strong> {selectedEvent.status || 'N/A'}</p>
-
-                            <h5>Assign Users In Charge</h5>
-            <Select
-                style={{ width: '100%' }}
+                    {/* Display assigned users */}
+      <h5>Assigned Users in Charge</h5>
+      {selectedEvent.userInCharge && selectedEvent.userInCharge.length > 0 ? (
+        <ul className="list-group">
+          {selectedEvent.userInCharge.map((userId) => {
+            const user = usersInCharge.find((user) => user.value === userId);
+            return (
+              <li key={userId} className="list-group-item">
+                {user ? user.label : "Unknown User"}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>No users assigned yet.</p>
+      )}
+              <h5 className="mb-2 p-0  ">STEP 2: Assign Officer In Charge</h5>
+              <Select
+                style={{ width: "100%" }}
                 mode="multiple"
                 showSearch
                 allowClear
                 placeholder="Select User(s) in Charge"
-                value={selectedUsersInCharge.map(userId => usersInCharge.find(user => user.value === userId))}
+                value={selectedUsersInCharge.map((userId) =>
+                  usersInCharge.find((user) => user.value === userId)
+                )}
                 onChange={(selectedValues) => {
-                    setSelectedUsersInCharge(selectedValues);
+                  setSelectedUsersInCharge(selectedValues);
                 }}
                 filterOption={(input, option) =>
-                    option.label.toLowerCase().includes(input.toLowerCase())
+                  option.label.toLowerCase().includes(input.toLowerCase())
                 }
-            >
-                {usersInCharge.map(user => (
-                    <Option key={user.value} value={user.value}>
-                        {user.label}
-                    </Option>
+              >
+                {usersInCharge.map((user) => (
+                  <Option key={user.value} value={user.value}>
+                    {user.label}
+                  </Option>
                 ))}
-            </Select>
-
-            {/* Conditionally render the assign button */}
-            {selectedEvent.status === 'accepted' && (
-                <button onClick={assignUserInCharge}>Assign</button>
-            )}
-                            <button onClick={handleModalClose}>Close</button>
-                        </div>
-                    </div>
-                )}
+              </Select>
+              {/* Conditionally render the assign button */}
+              {selectedEvent.status === "accepted" && (
+                <button disabled={!isListTrained} onClick={assignUserInCharge}>
+                  Assign
+                </button>
+              )}
+              <button onClick={handleModalClose}>Close</button>
             </div>
-        </div>
-    );
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ModeratorDashboard;

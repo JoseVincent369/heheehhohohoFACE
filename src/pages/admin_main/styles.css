@@ -545,3 +545,12 @@
     outline: none;
   }
 
+  @media (max-width: 768px) {
+    .ant-modal {
+      width: 100% !important; /* Make sure modal width is responsive */
+    }
+    .ant-modal-content {
+      padding: 10px; /* Reduce padding for smaller screens */
+    }
+  }
+  

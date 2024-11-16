@@ -1,176 +1,256 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { collection, getDocs, query, where, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { FIRESTORE_DB, FIREBASE_AUTH } from '../../firebaseutil/firebase_main';
-import { Toast, ToastContainer } from 'react-bootstrap';
-import './homestyles.css';
-
+import React, { useEffect, useRef, useState } from "react";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  addDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { onAuthStateChanged  } from 'firebase/auth';
+import { useNavigate } from "react-router-dom";
+import { FIRESTORE_DB, FIREBASE_AUTH } from "../../firebaseutil/firebase_main"; // Ensure Firebase Storage is imported
+import { Toast, ToastContainer } from "react-bootstrap";
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import "./homestyles.css";
 
 function Home_main() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [attendanceMessages, setAttendanceMessages] = useState([]);
   const [events, setEvents] = useState([]); // State for events
-  const [selectedEvent, setSelectedEvent] = useState(''); // State for selected event
+  const [selectedEvent, setSelectedEvent] = useState(""); // State for selected event
   const [eventConfirmed, setEventConfirmed] = useState(false); // State for event confirmation
   const [showPopup, setShowPopup] = useState(true); // State for popup visibility
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
-  const [manualSchoolID, setManualSchoolID] = useState(''); // State for manual School ID
+  const [manualSchoolID, setManualSchoolID] = useState(""); // State for manual School ID
   const [attendanceRecords, setAttendanceRecords] = useState([]); // Attendance data state
-  const [attendanceType, setAttendanceType] = useState('timeIn');
+  const [attendanceType, setAttendanceType] = useState("timeIn");
   const [attendingUser, setAttendingUser] = useState(null);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
-  
+
   const navigate = useNavigate();
 
+  // Load events and check for preloaded data
   useEffect(() => {
-    const loadEvents = async () => {
-      const currentUser = FIREBASE_AUTH.currentUser;
-
-      if (currentUser) {
-        const eventsCollection = collection(FIRESTORE_DB, 'events');
-        // Query for events where 'userInCharge' matches current user ID and 'status' is 'accepted'
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (user) => {
+      if (user) {
+        // User is logged in
+        const eventsCollection = collection(FIRESTORE_DB, "events");
         const eventsQuery = query(
           eventsCollection,
-          where('userInCharge', 'array-contains', currentUser.uid),
-          where('status', '==', 'accepted')
+          where("userInCharge", "array-contains", user.uid),
+          where("status", "==", "accepted")
         );
 
         const eventsSnapshot = await getDocs(eventsQuery);
-        const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const eventsList = eventsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Optionally handle preloading data if needed
+        // const eventsWithPreloadedData = await Promise.all(
+        //   eventsList.map(async (event) => {
+        //     if (event.preloadDataPath) {
+        //       const preloadedData = await loadPreloadedData(event.preloadDataPath);
+        //       return { ...event, preloadedData };
+        //     }
+        //     return event;
+        //   })
+        // );
+
         setEvents(eventsList);
       } else {
+        // No user is logged in
         console.log("No user is logged in.");
+        setEvents([]); // Clear events if no user is logged in
       }
-    };
+    });
 
-    loadEvents();
+    // Cleanup the listener when the component unmounts
+    return () => unsubscribe();
   }, []);
 
+  // // Function to load preloaded data from Firebase Storage
+  // const loadPreloadedData = async (preloadDataPath) => {
+  //   try {
+  //     const storage = getStorage();
+  //     const dataRef = ref(storage, preloadDataPath); // Reference to the preloaded data path
+  //     const url = await getDownloadURL(dataRef); // Get the URL for the data
+  //     const response = await fetch(url);
+  //     const data = await response.json(); // Assuming the preloaded data is a JSON file
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error loading preloaded data:", error);
+  //     return null; // Return null if there's an error
+  //   }
+  // };
 
   const fetchAttendanceRecords = async () => {
     try {
-      const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
+      const attendanceRef = collection(
+        FIRESTORE_DB,
+        "events",
+        selectedEvent,
+        "attendance"
+      );
       const attendanceSnapshot = await getDocs(attendanceRef);
-      const attendanceList = attendanceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const attendanceList = attendanceSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       return attendanceList;
     } catch (error) {
-      console.error('Error fetching attendance records:', error);
+      console.error("Error fetching attendance records:", error);
       return [];
     }
   };
 
   // Video and face detection setup
   useEffect(() => {
-    const loadModelsAndStartVideo = async () => {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-        faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-      ]);
-      startVideo();
-    };
+    if (eventConfirmed) {
+      const loadModelsAndStartVideo = async () => {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
+          faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
+          faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
+          faceapi.nets.faceExpressionNet.loadFromUri("/models"),
+          faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
+        ]);
+        startVideo();
+      };
 
-    const startVideo = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+      const startVideo = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {},
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error("Error accessing webcam:", error);
         }
-      } catch (error) {
-        console.error('Error accessing webcam:', error);
-      }
-    };
+      };
 
-    const handleVideoPlay = async () => {
-      const labeledFaceDescriptors = await loadLabeledImages();
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+      const handleVideoPlay = async () => {
+        let trained_data = events.filter((item) => {
+          if (item.id === selectedEvent) {
+            return item;
+          }
+        })[0].trainedData;
+       // console.log("Current DATA: ", JSON.parse(trained_data));
+        // Parse the trained data
+        const parsedData = JSON.parse(trained_data);
 
-      alert('Loaded!');
-
-      const canvas = faceapi.createCanvasFromMedia(videoRef.current);
-      document.body.append(canvas);
-      canvasRef.current = canvas;
-
-      const displaySize = { width: videoRef.current.width, height: videoRef.current.height };
-      faceapi.matchDimensions(canvas, displaySize);
-
-      const detectFaces = async () => {
-        const detections = await faceapi
-          .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks()
-          .withFaceDescriptors();
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
-        const context = canvas.getContext('2d');
-        context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
-
-        const results = resizedDetections.map(d =>
-          faceMatcher.findBestMatch(d.descriptor)
+        // Convert parsed data to LabeledFaceDescriptors
+        const labeledFaceDescriptors = parsedData.map(data => {
+          const descriptors = data._descriptors.map(desc => new Float32Array(desc)); // Convert Array back to Float32Array
+          return new faceapi.LabeledFaceDescriptors(data._label, descriptors);
+        });
+              console.log("LABELED TRANSFORMED: ",labeledFaceDescriptors)
+        const faceMatcher = new faceapi.FaceMatcher(
+          labeledFaceDescriptors,
+          0.5
         );
 
-        results.forEach((result, i) => {
-          if (result._label !== 'unknown') {
-            attendance(result._label);
-          }
+        alert("Loaded!");
 
-          const box = resizedDetections[i].detection.box;
+        const canvas = faceapi.createCanvasFromMedia(videoRef.current);
+        document.body.append(canvas);
+        canvasRef.current = canvas;
 
-          // Flip the box horizontally
-          const invertedBox = {
-            x: canvas.width - (box.x + box.width), // Invert the x-coordinate
-            y: box.y,
-            width: box.width,
-            height: box.height
-          };
+        const displaySize = {
+          width: videoRef.current.width,
+          height: videoRef.current.height,
+        };
+        faceapi.matchDimensions(canvas, displaySize);
 
-          const drawBox = new faceapi.draw.DrawBox(invertedBox, {
-            label: result.toString(),
+        const detectFaces = async () => {
+          const detections = await faceapi
+            .detectAllFaces(
+              videoRef.current,
+              new faceapi.TinyFaceDetectorOptions()
+            )
+            .withFaceLandmarks()
+            .withFaceDescriptors();
+          const resizedDetections = faceapi.resizeResults(
+            detections,
+            displaySize
+          );
+
+          const context = canvas.getContext("2d");
+          context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
+          //console.log('Detected Descriptors:', resizedDetections.map(d => d.descriptor));
+
+          const results = resizedDetections.map((d) =>
+            faceMatcher.findBestMatch(d.descriptor)
+          );
+
+          results.forEach((result, i) => {
+            if (result._label !== "unknown") {
+              attendance(result._label);
+            }
+
+            const box = resizedDetections[i].detection.box;
+
+            // Flip the box horizontally
+            const invertedBox = {
+              x: canvas.width - (box.x + box.width), // Invert the x-coordinate
+              y: box.y,
+              width: box.width,
+              height: box.height,
+            };
+
+            const drawBox = new faceapi.draw.DrawBox(invertedBox, {
+              label: result.toString(),
+            });
+            drawBox.draw(canvas);
           });
-          drawBox.draw(canvas);
-        });
+        };
+
+        const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
+
+        return () => {
+          clearInterval(interval);
+          if (videoRef.current) {
+            const stream = videoRef.current.srcObject;
+            if (stream) {
+              const tracks = stream.getTracks();
+              tracks.forEach((track) => track.stop());
+            }
+          }
+        };
       };
 
-      const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
+      if (selectedEvent && eventConfirmed) {
+        loadModelsAndStartVideo();
+        videoRef.current?.addEventListener("play", handleVideoPlay);
+      }
 
       return () => {
-        clearInterval(interval);
         if (videoRef.current) {
-          const stream = videoRef.current.srcObject;
-          if (stream) {
-            const tracks = stream.getTracks();
-            tracks.forEach((track) => track.stop());
-          }
+          videoRef.current.removeEventListener("play", handleVideoPlay);
         }
       };
-    };
-
-    if (selectedEvent && eventConfirmed) {
-      loadModelsAndStartVideo();
-      videoRef.current?.addEventListener('play', handleVideoPlay);
     }
-
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('play', handleVideoPlay);
-      }
-    };
-  }, [selectedEvent, eventConfirmed]);
+  }, [selectedEvent,eventConfirmed]);
 
   // Load labeled images for face recognition
   const loadLabeledImages = async () => {
     try {
-      const users = await fetchUsersWithRole('user');
+      const users = await fetchUsersWithRole("user");
       const labeledFaceDescriptors = [];
 
       for (const user of users) {
         const descriptors = [];
-        for (const imageType of ['front', 'left', 'right']) {
+        for (const imageType of ["front", "left", "right"]) {
           const imageUrl = await fetchImageUrl(user.id, imageType);
           if (imageUrl) {
             const img = await faceapi.fetchImage(imageUrl);
@@ -184,23 +264,46 @@ function Home_main() {
           }
         }
         if (descriptors.length > 0) {
-          const faceDescriptor = new faceapi.LabeledFaceDescriptors(user.schoolID, descriptors);
+          const faceDescriptor = new faceapi.LabeledFaceDescriptors(
+            user.schoolID,
+            descriptors
+          );
           labeledFaceDescriptors.push(faceDescriptor);
         }
       }
 
       return labeledFaceDescriptors;
     } catch (error) {
-      console.error('Error loading labeled images:', error);
+      console.error("Error loading labeled images:", error);
       return [];
     }
   };
 
-  // Fetch users with specific role from Firestore
-  const fetchUsersWithRole = async (role) => {
+  // Fetch users with specific role and filters from Firestore
+  const fetchUsersWithRole = async (
+    role,
+    department,
+    courses,
+    major,
+    organization
+  ) => {
     try {
-      const usersCollection = collection(FIRESTORE_DB, 'users');
-      const q = query(usersCollection, where('role', '==', role));
+      const usersCollection = collection(FIRESTORE_DB, "users");
+      let q = query(usersCollection, where("role", "==", role));
+
+      if (department) {
+        q = query(q, where("department", "==", department));
+      }
+      if (courses) {
+        q = query(q, where("courses", "array-contains-any", courses));
+      }
+      if (major) {
+        q = query(q, where("major", "==", major));
+      }
+      if (organization) {
+        q = query(q, where("organization", "==", organization));
+      }
+
       const querySnapshot = await getDocs(q);
       const users = [];
       querySnapshot.forEach((doc) => {
@@ -208,7 +311,7 @@ function Home_main() {
       });
       return users;
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       return [];
     }
   };
@@ -216,7 +319,7 @@ function Home_main() {
   // Fetch image URL for a user from Firestore
   const fetchImageUrl = async (userId, imageType) => {
     try {
-      const userDoc = doc(FIRESTORE_DB, 'users', userId);
+      const userDoc = doc(FIRESTORE_DB, "users", userId);
       const userSnapshot = await getDoc(userDoc);
       if (userSnapshot.exists()) {
         const userData = userSnapshot.data();
@@ -233,38 +336,47 @@ function Home_main() {
   };
 
   const attendanceUpdatesMap = {
-    timeIn: 'timeIn',
-    timeOut: 'timeOut',
+    timeIn: "timeIn",
+    timeOut: "timeOut",
   };
 
-
-  // Update attendance function
   const attendance = async (label) => {
-    if (label !== 'unknown' && !tempAttendance.current.has(label)) {
+    if (label !== "unknown" && !tempAttendance.current.has(label)) {
       tempAttendance.current.add(label);
 
       try {
         const user = await fetchUserBySchoolID(label);
-        const event = events.find(e => e.id === selectedEvent);
+        const event = events.find((e) => e.id === selectedEvent);
 
-        const isUserEligible =
-        (event.organizations.length === 0 || event.organizations.includes(user.organization)) &&
-          (event.courses.length === 0 || event.courses.includes(user.course)) &&
-          (event.majors.length === 0 || event.majors.includes(user.major)) &&
-          (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
-          
+        const isUserEligible = event.preloadedData
+          ? event.preloadedData.some((u) => u.schoolID === label) // Check against preloaded data
+          : (event.organizations.length === 0 ||
+              event.organizations.includes(user.organization)) &&
+            (event.courses.length === 0 ||
+              event.courses.includes(user.course)) &&
+            (event.majors.length === 0 || event.majors.includes(user.major)) &&
+            (event.yearLevels.length === 0 ||
+              event.yearLevels.includes(user.yearLevel));
 
         if (!isUserEligible) {
           const message = `${user.fname} ${user.lname} is not eligible to join the event.`;
           setToastMessage(message);
-          setShowToast(true); 
+          setShowToast(true);
           addAttendanceMessage(message);
           tempAttendance.current.delete(label);
           return;
         }
 
-        const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
-        const attendanceQuery = query(attendanceRef, where('schoolID', '==', label));
+        const attendanceRef = collection(
+          FIRESTORE_DB,
+          "events",
+          selectedEvent,
+          "attendance"
+        );
+        const attendanceQuery = query(
+          attendanceRef,
+          where("schoolID", "==", label)
+        );
         const querySnapshot = await getDocs(attendanceQuery);
 
         if (!querySnapshot.empty) {
@@ -275,7 +387,7 @@ function Home_main() {
             const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
             alert(message);
             addAttendanceMessage(message);
-            setAttendingUser(user);  // Update the attending user
+            setAttendingUser(user); // Update the attending user
             return;
           }
 
@@ -285,7 +397,7 @@ function Home_main() {
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
           alert(message);
           addAttendanceMessage(message);
-          setAttendingUser(user);  // Update the attending user
+          setAttendingUser(user); // Update the attending user
         } else {
           const now = new Date();
           await addDoc(attendanceRef, {
@@ -306,10 +418,10 @@ function Home_main() {
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
           alert(message);
           addAttendanceMessage(message);
-          setAttendingUser(user);  // Update the attending user
+          setAttendingUser(user); // Update the attending user
         }
       } catch (error) {
-        console.error('Error updating attendance record:', error);
+        console.error("Error updating attendance record:", error);
       }
     }
   };
@@ -317,34 +429,44 @@ function Home_main() {
   // Manual attendance function
   const handleManualAttendance = async () => {
     if (manualSchoolID.trim()) {
-      const event = events.find(e => e.id === selectedEvent);
+      const event = events.find((e) => e.id === selectedEvent);
 
       if (!event) {
-        alert('Event not found or not selected.');
+        alert("Event not found or not selected.");
         return;
       }
 
       try {
         const user = await fetchUserBySchoolID(manualSchoolID.trim());
-        const attendanceRef = collection(FIRESTORE_DB, 'events', selectedEvent, 'attendance');
-        const attendanceQuery = query(attendanceRef, where('schoolID', '==', manualSchoolID.trim()));
+        const attendanceRef = collection(
+          FIRESTORE_DB,
+          "events",
+          selectedEvent,
+          "attendance"
+        );
+        const attendanceQuery = query(
+          attendanceRef,
+          where("schoolID", "==", manualSchoolID.trim())
+        );
         const querySnapshot = await getDocs(attendanceQuery);
 
         if (!user) {
-          alert('User not found.');
+          alert("User not found.");
           return;
         }
 
         const isUserEligible =
-        (event.organizations.length === 0 || event.organizations.includes(user.organization)) &&
+          (event.organizations.length === 0 ||
+            event.organizations.includes(user.organization)) &&
           (event.courses.length === 0 || event.courses.includes(user.course)) &&
           (event.majors.length === 0 || event.majors.includes(user.major)) &&
-          (event.yearLevels.length === 0 || event.yearLevels.includes(user.yearLevel));
+          (event.yearLevels.length === 0 ||
+            event.yearLevels.includes(user.yearLevel));
 
         if (!isUserEligible) {
           const message = `User ${user.fname} ${user.lname} is not eligible to join the event.`;
           setToastMessage(message);
-      setShowToast(true); // Show the toast
+          setShowToast(true); // Show the toast
           addAttendanceMessage(message);
           return;
         }
@@ -357,7 +479,7 @@ function Home_main() {
             const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
             alert(message);
             addAttendanceMessage(message);
-            setAttendingUser(user);  // Update the attending user
+            setAttendingUser(user); // Update the attending user
             return;
           }
 
@@ -367,7 +489,7 @@ function Home_main() {
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
           alert(message);
           addAttendanceMessage(message);
-          setAttendingUser(user);  // Update the attending user
+          setAttendingUser(user); // Update the attending user
         } else {
           const now = new Date();
           await addDoc(attendanceRef, {
@@ -388,29 +510,30 @@ function Home_main() {
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
           alert(message);
           addAttendanceMessage(message);
-          setAttendingUser(user);  // Update the attending user
+          setAttendingUser(user); // Update the attending user
         }
 
-        setManualSchoolID('');
-
+        setManualSchoolID("");
       } catch (error) {
-        console.error('Error updating attendance record:', error);
-        alert('An error occurred while updating attendance.');
+        console.error("Error updating attendance record:", error);
+        alert("An error occurred while updating attendance.");
       }
     } else {
-      alert('Please enter a valid school ID.');
+      alert("Please enter a valid school ID.");
     }
   };
-  
 
   // Fetch user by school ID
   const fetchUserBySchoolID = async (schoolID) => {
     try {
-      const usersCollection = collection(FIRESTORE_DB, 'users');
-      const q = query(usersCollection, where('schoolID', '==', schoolID));
+      const usersCollection = collection(FIRESTORE_DB, "users");
+      const q = query(usersCollection, where("schoolID", "==", schoolID));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+        return {
+          id: querySnapshot.docs[0].id,
+          ...querySnapshot.docs[0].data(),
+        };
       }
     } catch (error) {
       console.error(`Error fetching user by schoolID ${schoolID}:`, error);
@@ -428,64 +551,64 @@ function Home_main() {
     setEventConfirmed(true);
     setShowPopup(false);
   };
-  
-//enterbutton
+
+  //enterbutton
   const handleAttendanceSubmit = () => {
     if (manualSchoolID.trim()) {
-      const confirmed = window.confirm(`Are you sure you want to record attendance for School ID: ${manualSchoolID.trim()}?`);
+      const confirmed = window.confirm(
+        `Are you sure you want to record attendance for School ID: ${manualSchoolID.trim()}?`
+      );
       if (confirmed) {
         handleManualAttendance();
       }
     } else {
-      alert('Please enter a valid school ID.');
+      alert("Please enter a valid school ID.");
     }
   };
-  
-
-
 
   // Modal component with attendance records in a table format
-const AttendanceModal = ({ isOpen, onClose, records }) => {
-  if (!isOpen) return null; // Don't render the modal if it's not open
+  const AttendanceModal = ({ isOpen, onClose, records }) => {
+    if (!isOpen) return null; // Don't render the modal if it's not open
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h2>Attendance Records</h2>
+          <button className="close-button" onClick={onClose}>
+            Close
+          </button>
+
+          <table className="attendance-table">
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <th>Age</th>
+                <th>Course</th>
+                <th>Year Level</th>
+                <th>Time-In</th>
+                <th>Time-Out</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr key={record.id}>
+                  <td>{`${record.studentInfo.fname} ${record.studentInfo.mname} ${record.studentInfo.lname}`}</td>
+                  <td>{record.studentInfo.age}</td>
+                  <td>{record.studentInfo.course}</td>
+                  <td>{record.studentInfo.yearLevel}</td>
+                  <td>{record.timeIn}</td>
+                  <td>{record.timeOut}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>Attendance Records</h2>
-        <button className="close-button" onClick={onClose}>Close</button>
-
-        <table className="attendance-table">
-          <thead>
-            <tr>
-              <th>Full Name</th>
-              <th>Age</th>
-              <th>Course</th>
-              <th>Year Level</th>
-              <th>Time-In</th>
-              <th>Time-Out</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((record) => (
-              <tr key={record.id}>
-                <td>{`${record.studentInfo.fname} ${record.studentInfo.mname} ${record.studentInfo.lname}`}</td>
-                <td>{record.studentInfo.age}</td>
-                <td>{record.studentInfo.course}</td>
-                <td>{record.studentInfo.yearLevel}</td>
-                <td>{record.timeIn}</td>
-                <td>{record.timeOut}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-
-return (
-  <>
+    <>
       {showPopup && !eventConfirmed && (
         <div className="popup">
           <h2>Select Event</h2>
@@ -516,7 +639,7 @@ return (
           >
             Confirm
           </button>
-          <button onClick={() => navigate('/')} className="btn btn-secondary">
+          <button onClick={() => navigate("/")} className="btn btn-secondary">
             Close
           </button>
         </div>
@@ -525,26 +648,24 @@ return (
       {!showPopup && eventConfirmed && (
         <div className="main-container">
           <h1>
-            "{events.find(e => e.id === selectedEvent)?.name}"
-            <span style={{ fontSize: '0.6em', color: 'gray' }}>
+            "{events.find((e) => e.id === selectedEvent)?.name}"
+            <span style={{ fontSize: "0.6em", color: "gray" }}>
               - ({attendanceType})
             </span>
           </h1>
 
           <div className="attendance-actions">
             <div className="button-att">
-              <button onClick={handleViewAttendance}>
-                Attendance Records
-              </button>
+              <button onClick={handleViewAttendance}>Attendance Records</button>
             </div>
-  
+
             <div className="manual-input">
               <input
                 type="text"
                 value={manualSchoolID}
                 onChange={(e) => setManualSchoolID(e.target.value)}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleAttendanceSubmit();
                   }
                 }}
@@ -555,28 +676,46 @@ return (
               <select
                 value={attendanceType}
                 onChange={(e) => setAttendanceType(e.target.value)}
-                style={{ display: 'none' }} // This hides the dropdown
+                style={{ display: "none" }} // This hides the dropdown
               >
                 <option value="timeIn">Time In</option>
                 <option value="timeOut">Time Out</option>
               </select>
 
-              <button onClick={handleAttendanceSubmit}>
-                Submit
-              </button>
+              <button onClick={handleAttendanceSubmit}>Submit</button>
+
+              <select
+                value={attendanceType}
+                onChange={(e) => setAttendanceType(e.target.value)}
+                className="form-select mb-2"
+              >
+                <option value="timeIn">Time In</option>
+                <option value="timeOut">Time Out</option>
+              </select>
             </div>
           </div>
 
-          <h3 className='jj'>Student Information:</h3>
+          <h3 className="jj">Student Information:</h3>
           <div className="video-section">
             <div className="user-info">
               {attendingUser ? (
                 <div>
-                  <p><strong>Name:</strong> {attendingUser.fname} {attendingUser.lname}</p>
-                  <p><strong>ID:</strong> {attendingUser.schoolID}</p>
-                  <p><strong>Age:</strong> {attendingUser.age}</p>
-                  <p><strong>Year Level:</strong> {attendingUser.yearLevel}</p>
-                  <p><strong>Course:</strong> {attendingUser.course}</p>
+                  <p>
+                    <strong>Name:</strong> {attendingUser.fname}{" "}
+                    {attendingUser.lname}
+                  </p>
+                  <p>
+                    <strong>ID:</strong> {attendingUser.schoolID}
+                  </p>
+                  <p>
+                    <strong>Age:</strong> {attendingUser.age}
+                  </p>
+                  <p>
+                    <strong>Year Level:</strong> {attendingUser.yearLevel}
+                  </p>
+                  <p>
+                    <strong>Course:</strong> {attendingUser.course}
+                  </p>
                 </div>
               ) : (
                 <p>No user currently attending.</p>
@@ -590,12 +729,9 @@ return (
                 height={570}
                 autoPlay
                 muted
-                style={{ transform: 'scaleX(-1)' }}
+                style={{ transform: "scaleX(-1)" }}
               />
-              <canvas
-                ref={canvasRef}
-                className="video-canvas"
-              />
+              <canvas ref={canvasRef} className="video-canvas" />
             </div>
 
             <div className="attendance-messages">
@@ -607,13 +743,18 @@ return (
           </div>
 
           <ToastContainer position="top-end" className="p-3">
-        <Toast onClose={() => setShowToast(false)} show={showToast} delay={3000} autohide>
-          <Toast.Header>
-            <strong className="me-auto">Eligibility Check</strong>
-          </Toast.Header>
-          <Toast.Body>{toastMessage}</Toast.Body>
-        </Toast>
-      </ToastContainer>
+            <Toast
+              onClose={() => setShowToast(false)}
+              show={showToast}
+              delay={3000}
+              autohide
+            >
+              <Toast.Header>
+                <strong className="me-auto">Eligibility Check</strong>
+              </Toast.Header>
+              <Toast.Body>{toastMessage}</Toast.Body>
+            </Toast>
+          </ToastContainer>
 
           <AttendanceModal
             isOpen={isModalOpen}
@@ -622,10 +763,8 @@ return (
           />
         </div>
       )}
-  </>
-);
-
-
+    </>
+  );
 }
 
 export default Home_main;

@@ -5,6 +5,7 @@ import {
   addDoc,
   getDocs,
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import { getAuth, signOut } from 'firebase/auth';
 import { FIREBASE_APP  } from '../../firebaseutil/firebase_main';
 import { Timestamp  } from 'firebase/firestore';
@@ -38,6 +39,7 @@ const EventManagement = () => {
     '4th Year'
 ]);
   const [user, setUser] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState(students);
   const [loading, setLoading] = useState(false);
   
@@ -191,31 +193,7 @@ useEffect(() => {
       }
     });
   };
-  
-
-  const handleSelectAll = (type) => (e) => {
-    const { checked } = e.target;
-    if (type === 'organizations') {
-      if (checked) {
-        setSelectedOrganizations(organizations.map(org => org.id));
-      } else {
-        setSelectedOrganizations([]);
-      }
-    } else if (type === 'departments') {
-      if (checked) {
-        setSelectedDepartments(departments.map(dept => dept.id));
-      } else {
-        setSelectedDepartments([]);
-      }
-    }
-  };
-  
-  const handleYearLevelClick = (yearLevel) => {
-    setSelectedYearLevels(prev => 
-      prev.includes(yearLevel) ? prev.filter(level => level !== yearLevel) : [...prev, yearLevel]
-    );
-  };
-
+ 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -228,6 +206,10 @@ useEffect(() => {
       // Convert start and end dates to Firestore Timestamp
       const startDateTimestamp = Timestamp.fromDate(new Date(eventStartDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(eventEndDate));
+
+      // const preloadedData = generatePreloadedData();
+      // // Store the preloaded data in Firebase Storage
+      // const jsonFilePath = await storePreloadedData(preloadedData);
   
       // Fetch the adminID from the createdBy field
       const userSnapshot = await getDocs(collection(db, 'users'));
@@ -248,7 +230,7 @@ useEffect(() => {
   
       const selectedYearLevelNames = selectedYearLevels.map(yearId => yearId); // Assuming yearId is a valid name
   
-      const mappedUserIds = students?.map(student => student.id) || []; // Create an array of user IDs
+      const mappedUserIds = selectedUsers.length > 0 ? selectedUsers : []; // Use selectedUsers array
 
   
       // Constructing the event data, using null for undefined values
@@ -263,11 +245,13 @@ useEffect(() => {
         selectedDepartments: selectedDepartments.length > 0 ? selectedDepartments : null, // Check if departments are selected
         courses: selectedCourseNames.length > 0 ? selectedCourseNames : null,
         majors: selectedMajorNames.length > 0 ? selectedMajorNames : null,
-        userInCharge: mappedUserIds.length > 0 ? mappedUserIds : [], // Use an empty array if no users are selected        // Use null if no users are selected
+        userInCharge: mappedUserIds,
         moderators: [user.uid],
         adminID: adminID,
         status: 'pending',
         createdBy: user.uid,
+        // preloadDataPath: jsonFilePath,
+        
       };
   
       // Log the event data to check for undefined values
@@ -304,6 +288,45 @@ const currentUser = auth.currentUser;
 
 // Add this console log to see the current logged-in user
 console.log("Current logged-in user:", currentUser ? currentUser.uid : "No user logged in");
+
+// const generatePreloadedData = () => {
+//   return students.filter(student => {
+//     const departmentMatch = selectedDepartments.length === 0 || selectedDepartments.includes(student.department);
+//     const courseMatch = selectedCourses.length === 0 || selectedCourses.includes(student.course);
+//     const majorMatch = selectedMajors.length === 0 || selectedMajors.includes(student.major);
+//     const organizationMatch = selectedOrganizations.length === 0 || (student.organizations && Array.isArray(student.organizations) && student.organizations.some(org => selectedOrganizations.includes(org)));
+
+//     // Check if at least one condition matches
+//     const anyMatch = departmentMatch || courseMatch || majorMatch || organizationMatch;
+
+//     // Log the results to check which match is true
+//     console.log('Department Match:', departmentMatch);
+//     console.log('Course Match:', courseMatch);
+//     console.log('Major Match:', majorMatch);
+//     console.log('Organization Match:', organizationMatch);
+//     console.log('Any Match:', anyMatch);
+
+//     return anyMatch;  // Return student if any match is true
+//   });
+// };
+
+
+
+
+
+// const storePreloadedData = async (preloadedData) => {
+//   console.log("Preloaded Data to be stored:", preloadedData);  // Debugging log
+
+//   const storage = getStorage(FIREBASE_APP);
+//   const preloadedDataRef = ref(storage, `preloadedData/${new Date().getTime()}.json`);
+//   const jsonBlob = new Blob([JSON.stringify(preloadedData)], { type: 'application/json' });
+
+//   await uploadBytes(preloadedDataRef, jsonBlob);
+//   console.log('JSON file uploaded successfully:', jsonBlob.size > 0 ? 'Data present' : 'No data');
+  
+//   return preloadedDataRef.fullPath;
+// };
+
 
 // If you are using a state, you can also check the logged-in user like this:
 useEffect(() => {
@@ -490,25 +513,26 @@ return (
 
 
       {/* Users (Searchable) */}
-      <Form.Item label="Users" style={{  marginTop: '40px' }}>
-        {loading ? (
-          <Spin />
-        ) : (
-          <Select
-            mode="multiple"
-            placeholder="Search Users by Email"
-            onSearch={handleSearchUsers}
-            style={{ width: '100%' }}
-            showSearch
-          >
-            {students.map((student) => (
-              <Option key={student.id} value={student.id}>
-                {student.lname} {student.fname} ({student.email})
-              </Option>
-            ))}
-          </Select>
-        )}
-      </Form.Item>
+      <Form.Item label="Users" style={{ marginTop: '40px' }}>
+  {loading ? (
+    <Spin />
+  ) : (
+    <Select
+      mode="multiple"
+      placeholder="Search Users by Email"
+      onChange={(values) => setSelectedUsers(values)} // This updates the `selectedUsers` state
+      onSearch={handleSearchUsers}
+      style={{ width: '100%' }}
+      showSearch
+    >
+      {students.map((student) => (
+        <Option key={student.id} value={student.id}>
+          {student.lname} {student.fname} ({student.email})
+        </Option>
+      ))}
+    </Select>
+  )}
+</Form.Item>
 
       <div className="button-container">
         <Button type="primary" htmlType="submit" disabled={loading}>
