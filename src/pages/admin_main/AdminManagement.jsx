@@ -149,6 +149,7 @@ const AdminManagement = () => {
                                     value={adminData.SchoolID}
                                     onChange={handleChange}
                                     placeholder="School ID"
+                                    autoComplete="off"
                                     required
                                 />
                             </div>
@@ -203,6 +204,7 @@ const AdminManagement = () => {
                                     value={adminData.password}
                                     onChange={handleChange}
                                     placeholder="Password"
+                                    autoComplete="off"
                                     required
                                 />
                             </div>

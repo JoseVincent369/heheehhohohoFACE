@@ -70,7 +70,8 @@ const ModeratorDashboard = () => {
 
     const fetchEvents = query(
       collection(db, "events"),
-      where("createdBy", "==", user.uid) // Check if the event was created by the current user
+      where("moderators", "array-contains", user.uid)
+
       
     );
 

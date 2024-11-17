@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { getDoc, setDoc, getDocs, collection, doc } from 'firebase/firestore';
-import { Input, Checkbox, Button, Badge } from 'antd';
+import { Input, Select, Button, Badge } from 'antd';
 import './localstyles.css';
 
 const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModerators }) => {
@@ -160,35 +160,82 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
           <div className="modal-content">
             <h2>Create Moderator</h2>
             <form onSubmit={handleSubmit}>
-              <input type="text" name="firstName" placeholder="First Name" required value={moderatorData.firstName} onChange={handleChange} />
-              <input type="text" name="middleName" placeholder="Middle Name" value={moderatorData.middleName} onChange={handleChange} />
-              <input type="text" name="lastName" placeholder="Last Name" required value={moderatorData.lastName} onChange={handleChange} />
-              <input type="email" name="email" placeholder="Email" required value={moderatorData.email} onChange={handleChange} />
-              <input type="password" name="password" placeholder="Password" required value={moderatorData.password} onChange={handleChange} />
+  <input
+    type="text"
+    name="firstName"
+    placeholder="First Name"
+    required
+    value={moderatorData.firstName}
+    onChange={handleChange}
+    autoComplete="off"
+  />
+  <input
+    type="text"
+    name="middleName"
+    placeholder="Middle Name"
+    value={moderatorData.middleName}
+    onChange={handleChange}
+    autoComplete="off"
+  />
+  <input
+    type="text"
+    name="lastName"
+    placeholder="Last Name"
+    required
+    value={moderatorData.lastName}
+    onChange={handleChange}
+    autoComplete="off"
+  />
+  <input
+    type="email"
+    name="email"
+    placeholder="Email"
+    required
+    value={moderatorData.email}
+    onChange={handleChange}
+    autoComplete="off"
+  />
+  <input
+    type="password"
+    name="password"
+    placeholder="Password"
+    required
+    value={moderatorData.password}
+    onChange={handleChange}
+    autoComplete="off"
+  />
+<div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
+  {/* Organizations Multi-Select */}
+  <Select
+    mode="multiple"
+    placeholder="Select Organizations"
+    value={moderatorData.organization}
+    onChange={(value) => setModeratorData({ ...moderatorData, organization: value })}
+    style={{ width: '200px', marginRight: '10px' }}
+  >
+    {organizationsList.map((org, index) => (
+      <Select.Option key={index} value={org}>
+        {org}
+      </Select.Option>
+    ))}
+  </Select>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
-                {/* Organization Dropdown */}
-                <Badge count={moderatorData.organization.length}>
-                  <Button id="orgButton" onClick={toggleOrgDropdown}>Select Organizations</Button>
-                </Badge>
-                {dropdownStatus.orgOpen && (
-                  <div className={`dropdown-container ${dropdownStatus.orgDropUp ? 'drop-up' : ''}`}>
-                    <Search placeholder="Search Organizations" onChange={handleOrgChange} />
-                    <Checkbox.Group options={organizationsList} value={moderatorData.organization} onChange={handleOrgChange} />
-                  </div>
-                )}
+  {/* Departments Multi-Select */}
+  <Select
+    mode="multiple"
+    placeholder="Select Departments"
+    value={moderatorData.department}
+    onChange={(value) => setModeratorData({ ...moderatorData, department: value })}
+    style={{ width: '200px' }}
+  >
+    {departmentsList.map((dep, index) => (
+      <Select.Option key={index} value={dep}>
+        {dep}
+      </Select.Option>
+    ))}
+  </Select>
+</div>
 
-                {/* Department Dropdown */}
-                <Badge count={moderatorData.department.length}>
-                  <Button id="deptButton" onClick={toggleDeptDropdown}>Select Departments</Button>
-                </Badge>
-                {dropdownStatus.deptOpen && (
-                  <div className={`dropdown-container ${dropdownStatus.deptDropUp ? 'drop-up' : ''}`}>
-                    <Search placeholder="Search Departments" onChange={handleDeptChange} />
-                    <Checkbox.Group options={departmentsList} value={moderatorData.department} onChange={handleDeptChange} />
-                  </div>
-                )}
-              </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
                 <Button type="primary" htmlType="submit">Create Moderator</Button>

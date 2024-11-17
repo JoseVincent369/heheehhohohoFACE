@@ -100,7 +100,7 @@ const LocalAdminDashboard = () => {
         setEventsLoading(false);
       } catch (error) {
         console.error('Error fetching events:', error);
-        setError('Failed to fetch events.');
+        
       }
     };
   
