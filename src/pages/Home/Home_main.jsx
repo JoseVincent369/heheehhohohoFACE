@@ -9,11 +9,11 @@ import {
   addDoc,
   updateDoc,
 } from "firebase/firestore";
-import { onAuthStateChanged  } from 'firebase/auth';
 import { useNavigate } from "react-router-dom";
 import { FIRESTORE_DB, FIREBASE_AUTH } from "../../firebaseutil/firebase_main"; // Ensure Firebase Storage is imported
 import { Toast, ToastContainer } from "react-bootstrap";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import { onAuthStateChanged } from "firebase/auth";
 import "./homestyles.css";
 
 function Home_main() {
@@ -30,6 +30,8 @@ function Home_main() {
   const [attendanceType, setAttendanceType] = useState("timeIn");
   const [attendingUser, setAttendingUser] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
   const [toastMessage, setToastMessage] = useState("");
   const tempAttendance = useRef(new Set());
   const faceapi = window.faceapi;
@@ -38,9 +40,13 @@ function Home_main() {
 
   // Load events and check for preloaded data
   useEffect(() => {
+    // Listen for authentication state changes
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (user) => {
       if (user) {
-        // User is logged in
+        setCurrentUser(user); // Set the current user
+        console.log("User logged in:", user.uid);
+
+        // Load events for the logged-in user
         const eventsCollection = collection(FIRESTORE_DB, "events");
         const eventsQuery = query(
           eventsCollection,
@@ -48,49 +54,26 @@ function Home_main() {
           where("status", "==", "accepted")
         );
 
-        const eventsSnapshot = await getDocs(eventsQuery);
-        const eventsList = eventsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        // Optionally handle preloading data if needed
-        // const eventsWithPreloadedData = await Promise.all(
-        //   eventsList.map(async (event) => {
-        //     if (event.preloadDataPath) {
-        //       const preloadedData = await loadPreloadedData(event.preloadDataPath);
-        //       return { ...event, preloadedData };
-        //     }
-        //     return event;
-        //   })
-        // );
-
-        setEvents(eventsList);
+        try {
+          const eventsSnapshot = await getDocs(eventsQuery);
+          const eventsList = eventsSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setEvents(eventsList);
+        } catch (error) {
+          console.error("Error loading events:", error);
+        }
       } else {
-        // No user is logged in
         console.log("No user is logged in.");
-        setEvents([]); // Clear events if no user is logged in
+        setCurrentUser(null); // Clear the user state
+        setEvents([]); // Clear events when the user logs out
       }
     });
 
-    // Cleanup the listener when the component unmounts
+    // Cleanup the listener on component unmount
     return () => unsubscribe();
   }, []);
-
-  // // Function to load preloaded data from Firebase Storage
-  // const loadPreloadedData = async (preloadDataPath) => {
-  //   try {
-  //     const storage = getStorage();
-  //     const dataRef = ref(storage, preloadDataPath); // Reference to the preloaded data path
-  //     const url = await getDownloadURL(dataRef); // Get the URL for the data
-  //     const response = await fetch(url);
-  //     const data = await response.json(); // Assuming the preloaded data is a JSON file
-  //     return data;
-  //   } catch (error) {
-  //     console.error("Error loading preloaded data:", error);
-  //     return null; // Return null if there's an error
-  //   }
-  // };
 
   const fetchAttendanceRecords = async () => {
     try {
@@ -172,48 +155,49 @@ function Home_main() {
         };
         faceapi.matchDimensions(canvas, displaySize);
 
-        const detectFaces = async () => {
-          const detections = await faceapi
-            .detectAllFaces(
-              videoRef.current,
-              new faceapi.TinyFaceDetectorOptions()
-            )
-            .withFaceLandmarks()
-            .withFaceDescriptors();
-          const resizedDetections = faceapi.resizeResults(
-            detections,
-            displaySize
-          );
 
-          const context = canvas.getContext("2d");
-          context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
-          //console.log('Detected Descriptors:', resizedDetections.map(d => d.descriptor));
+const detectFaces = async () => {
+  const detections = await faceapi
+    .detectAllFaces(
+      videoRef.current,
+      new faceapi.TinyFaceDetectorOptions()
+    )
+    .withFaceLandmarks()
+    .withFaceDescriptors();
+  const resizedDetections = faceapi.resizeResults(
+    detections,
+    displaySize
+  );
 
-          const results = resizedDetections.map((d) =>
-            faceMatcher.findBestMatch(d.descriptor)
-          );
+  const context = canvas.getContext("2d");
+  context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
 
-          results.forEach((result, i) => {
-            if (result._label !== "unknown") {
-              attendance(result._label);
-            }
+  const results = resizedDetections.map((d) =>
+    faceMatcher.findBestMatch(d.descriptor)
+  );
 
-            const box = resizedDetections[i].detection.box;
+  results.forEach((result, i) => {
+    if (result._label !== "unknown") {
+      // Here we call attendance to store the attendance
+      attendance(result._label);
+    }
 
-            // Flip the box horizontally
-            const invertedBox = {
-              x: canvas.width - (box.x + box.width), // Invert the x-coordinate
-              y: box.y,
-              width: box.width,
-              height: box.height,
-            };
+    const box = resizedDetections[i].detection.box;
+    // Flip the box horizontally
+    const invertedBox = {
+      x: canvas.width - (box.x + box.width), // Invert the x-coordinate
+      y: box.y,
+      width: box.width,
+      height: box.height,
+    };
 
-            const drawBox = new faceapi.draw.DrawBox(invertedBox, {
-              label: result.toString(),
-            });
-            drawBox.draw(canvas);
-          });
-        };
+    const drawBox = new faceapi.draw.DrawBox(invertedBox, {
+      label: result.toString(),
+    });
+    drawBox.draw(canvas);
+  });
+};
+
 
         const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
 
@@ -343,30 +327,26 @@ function Home_main() {
   const attendance = async (label) => {
     if (label !== "unknown" && !tempAttendance.current.has(label)) {
       tempAttendance.current.add(label);
-
+  
       try {
-        const user = await fetchUserBySchoolID(label);
+        const user = await fetchUserBySchoolID(label); // Fetch user info based on label (e.g., schoolID)
         const event = events.find((e) => e.id === selectedEvent);
-
-        const isUserEligible = event.preloadedData
-          ? event.preloadedData.some((u) => u.schoolID === label) // Check against preloaded data
-          : (event.organizations.length === 0 ||
-              event.organizations.includes(user.organization)) &&
-            (event.courses.length === 0 ||
-              event.courses.includes(user.course)) &&
-            (event.majors.length === 0 || event.majors.includes(user.major)) &&
-            (event.yearLevels.length === 0 ||
-              event.yearLevels.includes(user.yearLevel));
-
+  
+        // Check eligibility based on event registration and pre-trained data
+        const isUserEligible =
+          (event.organizations && event.organizations.includes(user.organization)) ||
+          (event.courses && event.courses.includes(user.course)) ||
+          (event.majors && event.majors.includes(user.major)) ||
+          (event.yearLevels && event.yearLevels.includes(user.yearLevel));
+  
+        // If the user is recognized but not in pre-trained data, show a message
         if (!isUserEligible) {
-          const message = `${user.fname} ${user.lname} is not eligible to join the event.`;
-          setToastMessage(message);
-          setShowToast(true);
-          addAttendanceMessage(message);
+          const message = `${user.fname} ${user.lname} is not eligible to join the event (not pre-trained data).`;
+          addAttendanceMessage(message); // Store the message
           tempAttendance.current.delete(label);
           return;
         }
-
+  
         const attendanceRef = collection(
           FIRESTORE_DB,
           "events",
@@ -378,25 +358,23 @@ function Home_main() {
           where("schoolID", "==", label)
         );
         const querySnapshot = await getDocs(attendanceQuery);
-
+  
         if (!querySnapshot.empty) {
           const attendanceDoc = querySnapshot.docs[0];
           const attendanceData = attendanceDoc.data();
-
+  
           if (attendanceData[attendanceType]) {
             const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
-            alert(message);
-            addAttendanceMessage(message);
+            addAttendanceMessage(message); // Store the message
             setAttendingUser(user); // Update the attending user
             return;
           }
-
+  
           await updateDoc(attendanceDoc.ref, {
             [attendanceUpdatesMap[attendanceType]]: new Date().toLocaleString(),
           });
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
-          alert(message);
-          addAttendanceMessage(message);
+          addAttendanceMessage(message); // Store the message
           setAttendingUser(user); // Update the attending user
         } else {
           const now = new Date();
@@ -416,8 +394,7 @@ function Home_main() {
             },
           });
           const message = `${user.fname} ${user.lname} has been marked as ${attendanceType}.`;
-          alert(message);
-          addAttendanceMessage(message);
+          addAttendanceMessage(message); // Store the message
           setAttendingUser(user); // Update the attending user
         }
       } catch (error) {
@@ -425,7 +402,9 @@ function Home_main() {
       }
     }
   };
-
+  
+  
+  
   // Manual attendance function
   const handleManualAttendance = async () => {
     if (manualSchoolID.trim()) {

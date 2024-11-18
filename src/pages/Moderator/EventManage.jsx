@@ -21,7 +21,6 @@ const EventManagement = () => {
   const [eventStartDate, setEventStartDate] = useState('');
   const [eventEndDate, setEventEndDate] = useState('');
   const [venue, setVenue] = useState('');
-  const [selectedOrgs, setSelectedOrgs] = useState([]);
   const [selectedYearLevels, setSelectedYearLevels] = useState([]);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
@@ -217,7 +216,8 @@ useEffect(() => {
       const adminID = currentUser?.data()?.createdBy || null; // Get the admin ID from the 'createdBy' field or use null if undefined
   
       // Map selected values to their names
-      const selectedOrgNames = selectedOrgs.map(orgId => organizations.find(org => org.id === orgId)?.name).filter(Boolean); // Remove undefined names
+      const selectedOrgNames = selectedOrganizations.map(orgId => organizations.find(org => org.id === orgId)?.name).filter(Boolean); // Use selectedOrganizations
+      
       const selectedCourseNames = selectedCourses.map(courseId => {
         const deptCourses = Object.values(courses).flat();
         return deptCourses.find(course => course.id === courseId)?.name;

@@ -14,7 +14,7 @@ const AdminMod = ({ user }) => {
 
   const handleLogoClick = (e) => {
     e.preventDefault(); // Prevent logout from triggering when clicking on the logo
-    navigate('/superadmin'); // Navigate to the home page when clicking on the logo
+    navigate('/moderator'); // Navigate to the home page when clicking on the logo
   };
 
   return (

@@ -71,7 +71,6 @@ const ModeratorDashboard = () => {
     const fetchEvents = query(
       collection(db, "events"),
       where("moderators", "array-contains", user.uid)
-
       
     );
 
@@ -97,7 +96,6 @@ const ModeratorDashboard = () => {
       },
       (error) => {
         console.error("Error fetching events:", error);
-        setError("Error fetching events.");
         setEventsLoading(false);
       }
     );
@@ -249,11 +247,7 @@ const ModeratorDashboard = () => {
         q = query(
           usersCollection,
           where("course", "in", selectedEvent.courses),
-          where(
-            "organizations",
-            "array-contains-any",
-            selectedEvent.organizations
-          )
+          where("organizations", "array_contains_any", selectedEvent.organizations )
         );
       } else {
         q = query(
@@ -585,24 +579,7 @@ const ModeratorDashboard = () => {
                   <span className="mx-2">Training Image</span>
                 </div>
               ) : null}
-
-                    {/* Display assigned users */}
-      <h5>Assigned Users in Charge</h5>
-      {selectedEvent.userInCharge && selectedEvent.userInCharge.length > 0 ? (
-        <ul className="list-group">
-          {selectedEvent.userInCharge.map((userId) => {
-            const user = usersInCharge.find((user) => user.value === userId);
-            return (
-              <li key={userId} className="list-group-item">
-                {user ? user.label : "Unknown User"}
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p>No users assigned yet.</p>
-      )}
-              <h5 className="mb-2 p-0  ">STEP 2: Assign Officer In Charge</h5>
+              <h5 className="mb-2 p-0  ">STEP 2: Assign Users In Charge</h5>
               <Select
                 style={{ width: "100%" }}
                 mode="multiple"
