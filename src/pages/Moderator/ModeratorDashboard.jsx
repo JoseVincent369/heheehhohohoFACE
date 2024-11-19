@@ -14,7 +14,8 @@ import {
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP, FIRESTORE_DB } from "../../firebaseutil/firebase_main";
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import { Tabs, Tab, Table, Modal, Button, Spinner } from "react-bootstrap";
+import { Tabs, Tab, Modal, Button, Spinner } from "react-bootstrap";
+import { Table, Spin, Pagination } from "antd";
 import "./moderatorStyles.css";
 
 import { Select } from "antd";
@@ -38,6 +39,8 @@ const ModeratorDashboard = () => {
   const [selectedUserInChargeId, setSelectedUserInChargeId] = useState("");
   const [selectedUsersInCharge, setSelectedUsersInCharge] = useState([]);
   const [userInCharge, setUserInCharge] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1); // Current page
+  const [pageSize, setPageSize] = useState(5); // Items per page
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -242,28 +245,56 @@ const ModeratorDashboard = () => {
   const fetchUsersWithRole = async (selectedEvent) => {
     try {
       const usersCollection = collection(FIRESTORE_DB, "users");
-      let q = null;
-      if (selectedEvent.organizations.length > 0) {
-        q = query(
+  
+      // Safely handle null values
+      const eventCourses = Array.isArray(selectedEvent.courses) ? selectedEvent.courses : [];
+      const eventOrganizations = Array.isArray(selectedEvent.organizations) ? selectedEvent.organizations : [];
+  
+      const queries = [];
+  
+      // Add query for courses if they exist
+      if (eventCourses.length > 0) {
+        const coursesQuery = query(
           usersCollection,
-          where("course", "in", selectedEvent.courses),
-          where("organizations", "array_contains_any", selectedEvent.organizations )
+          where("course", "in", eventCourses.map(course => course.trim()))
         );
-      } else {
-        q = query(
-          usersCollection,
-          where("course", "in", selectedEvent.courses)
-        );
+        queries.push(getDocs(coursesQuery));
       }
-
-      const querySnapshot = await getDocs(q);
-
-      return querySnapshot.docs.map((item) => item.data());
+  
+      // Add query for organizations if they exist
+      if (eventOrganizations.length > 0) {
+        const organizationsQuery = query(
+          usersCollection,
+          where("organization", "array-contains-any", eventOrganizations.map(org => org.trim()))
+        );
+        queries.push(getDocs(organizationsQuery));
+      }
+  
+      // Return if no valid queries exist
+      if (queries.length === 0) {
+        console.warn("No valid filters provided for courses or organizations.");
+        return [];
+      }
+  
+      // Execute all queries
+      const querySnapshots = await Promise.all(queries);
+  
+      // Merge results and avoid duplicates
+      const uniqueUsers = new Map(); // Map to avoid duplicate users by ID
+      querySnapshots.forEach((snapshot) => {
+        snapshot.docs.forEach((doc) => {
+          uniqueUsers.set(doc.id, { id: doc.id, ...doc.data() });
+        });
+      });
+  
+      return Array.from(uniqueUsers.values()); // Return unique users as an array
     } catch (error) {
       console.error("Error fetching users:", error);
       return [];
     }
   };
+  
+  
 
   useEffect(() => {
     const loadModelsAndStartVideo = async () => {
@@ -338,6 +369,32 @@ const ModeratorDashboard = () => {
         })
       : null;
   };
+
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const paginateData = (data) => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return data.slice(startIndex, endIndex);
+  };
+    // Fetch approved, rejected, and pending events logic goes here
+    useEffect(() => {
+      // Assuming you have the logic to fetch the events, for example:
+      setApprovedEvents([
+        /* Array of approved events */
+      ]);
+      setRejectedEvents([
+        /* Array of rejected events */
+      ]);
+      setPendingEvents([
+        /* Array of pending events */
+      ]);
+    }, []);
+
+    
   return (
     <div className="container">
       <div
@@ -345,10 +402,12 @@ const ModeratorDashboard = () => {
         style={{ maxHeight: "190vh", overflowY: "auto" }}
       >
         {error && <p className="error-message">{error}</p>}
-
+        {loading && <Spin spinning={true} />}
         <Tabs defaultActiveKey="approved" id="event-tabs" className="mb-3">
+          
           {/* Approved Events Tab */}
           <Tab eventKey="approved" title="Approved Events">
+          <Spin spinning={eventsLoading}>
             {approvedEvents.length === 0 ? (
               <p>No approved events at the moment.</p>
             ) : (
@@ -392,12 +451,23 @@ const ModeratorDashboard = () => {
                     </tr>
                   ))}
                 </tbody>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={approvedEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
               </table>
             )}
+            </Spin>
           </Tab>
 
           {/* Rejected Events Tab */}
           <Tab eventKey="rejected" title="Rejected Events">
+          <Spin spinning={eventsLoading}>
             {rejectedEvents.length === 0 ? (
               <p>No rejected events at the moment.</p>
             ) : (
@@ -441,12 +511,23 @@ const ModeratorDashboard = () => {
                     </tr>
                   ))}
                 </tbody>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={rejectedEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
               </table>
             )}
+            </Spin>
           </Tab>
 
           {/* Pending Events Tab */}
           <Tab eventKey="pending" title="Pending Events">
+            <Spin spinning={eventsLoading}>
             {pendingEvents.length === 0 ? (
               <p>No pending events at the moment.</p>
             ) : (
@@ -490,8 +571,18 @@ const ModeratorDashboard = () => {
                     </tr>
                   ))}
                 </tbody>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={pendingEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
               </table>
             )}
+            </Spin>
           </Tab>
         </Tabs>
 
@@ -501,9 +592,9 @@ const ModeratorDashboard = () => {
             <div className="modal-content">
               <h3>{selectedEvent.name}</h3>
               <strong>Description:</strong>{" "}
-              <textarea disabled className="form-control">
+              <p disabled className="form-control">
                 {selectedEvent.description || "N/A"}
-              </textarea>
+              </p>
               <div className="row">
                 <div className="col-sm-12 col-md-6 col-lg-6">
                   {" "}
@@ -579,6 +670,22 @@ const ModeratorDashboard = () => {
                   <span className="mx-2">Training Image</span>
                 </div>
               ) : null}
+
+                    <h5 className="mt-4">Users In Charge</h5>
+      {selectedEvent.userInCharge && selectedEvent.userInCharge.length > 0 ? (
+        <ul className="list-group">
+          {selectedEvent.userInCharge.map((userId) => {
+            const user = usersInCharge.find((u) => u.value === userId);
+            return (
+              <li key={userId} className="list-group-item">
+                {user ? user.label : userId} {/* Display user name if available */}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-muted">No users assigned yet.</p>
+      )}
               <h5 className="mb-2 p-0  ">STEP 2: Assign Users In Charge</h5>
               <Select
                 style={{ width: "100%" }}

@@ -454,6 +454,7 @@ const SignUp = () => {
           value={formData.schoolID}
           onChange={handleChange}
           required
+          autoComplete="off"
         />
       </Form.Group>
       </Col>
@@ -502,6 +503,7 @@ const SignUp = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   style={{ paddingRight: '40px' }} // add space for icon
                 />
                 <FontAwesomeIcon

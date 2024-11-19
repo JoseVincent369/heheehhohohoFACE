@@ -405,16 +405,15 @@ const detectFaces = async () => {
   
   
   
-  // Manual attendance function
   const handleManualAttendance = async () => {
     if (manualSchoolID.trim()) {
       const event = events.find((e) => e.id === selectedEvent);
-
+  
       if (!event) {
         alert("Event not found or not selected.");
         return;
       }
-
+  
       try {
         const user = await fetchUserBySchoolID(manualSchoolID.trim());
         const attendanceRef = collection(
@@ -428,32 +427,30 @@ const detectFaces = async () => {
           where("schoolID", "==", manualSchoolID.trim())
         );
         const querySnapshot = await getDocs(attendanceQuery);
-
+  
         if (!user) {
           alert("User not found.");
           return;
         }
-
+  
+        // Check if the user's organization and courses match the event's criteria
         const isUserEligible =
           (event.organizations.length === 0 ||
             event.organizations.includes(user.organization)) &&
-          (event.courses.length === 0 || event.courses.includes(user.course)) &&
-          (event.majors.length === 0 || event.majors.includes(user.major)) &&
-          (event.yearLevels.length === 0 ||
-            event.yearLevels.includes(user.yearLevel));
-
+          (event.courses.length === 0 || event.courses.includes(user.course));
+  
         if (!isUserEligible) {
-          const message = `User ${user.fname} ${user.lname} is not eligible to join the event.`;
+          const message = `User ${user.fname} ${user.lname} is not eligible to join the event (organization or course mismatch).`;
           setToastMessage(message);
           setShowToast(true); // Show the toast
           addAttendanceMessage(message);
           return;
         }
-
+  
         if (!querySnapshot.empty) {
           const attendanceDoc = querySnapshot.docs[0];
           const attendanceData = attendanceDoc.data();
-
+  
           if (attendanceData[attendanceType]) {
             const message = `Attendance for ${attendanceType} already recorded for ${user.fname} ${user.lname}.`;
             alert(message);
@@ -461,7 +458,7 @@ const detectFaces = async () => {
             setAttendingUser(user); // Update the attending user
             return;
           }
-
+  
           await updateDoc(attendanceDoc.ref, {
             [attendanceUpdatesMap[attendanceType]]: new Date().toLocaleString(),
           });
@@ -491,7 +488,7 @@ const detectFaces = async () => {
           addAttendanceMessage(message);
           setAttendingUser(user); // Update the attending user
         }
-
+  
         setManualSchoolID("");
       } catch (error) {
         console.error("Error updating attendance record:", error);
@@ -501,6 +498,8 @@ const detectFaces = async () => {
       alert("Please enter a valid school ID.");
     }
   };
+  
+  
 
   // Fetch user by school ID
   const fetchUserBySchoolID = async (schoolID) => {
@@ -662,15 +661,7 @@ const detectFaces = async () => {
               </select>
 
               <button onClick={handleAttendanceSubmit}>Submit</button>
-
-              <select
-                value={attendanceType}
-                onChange={(e) => setAttendanceType(e.target.value)}
-                className="form-select mb-2"
-              >
-                <option value="timeIn">Time In</option>
-                <option value="timeOut">Time Out</option>
-              </select>
+              <button onClick={() => navigate(0)}>BACK</button>
             </div>
           </div>
 

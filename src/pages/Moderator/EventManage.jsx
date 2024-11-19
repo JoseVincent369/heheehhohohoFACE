@@ -268,7 +268,7 @@ useEffect(() => {
       setEventStartDate('');
       setEventEndDate('');
       setVenue('');
-      setSelectedOrgs([]);
+      setSelectedOrganizations([]);
       setSelectedYearLevels([]);
       setSelectedDepartments([]);
       setSelectedCourses([]);

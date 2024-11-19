@@ -198,3 +198,22 @@ ul {
     margin: 0 auto;
   }
 }
+
+.accept-button {
+  background-color: green;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin-right: 10px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.reject-button {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}

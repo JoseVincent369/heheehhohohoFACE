@@ -3,6 +3,7 @@ import { getFirestore, collection, query, onSnapshot, where, doc, getDocs, updat
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../firebaseutil/firebase_main';
 import { Tabs, Tab } from 'react-bootstrap';
+import { Pagination } from "antd";
 import Modal from '../components/Modal';
 import './localstyles.css';
 
@@ -19,7 +20,8 @@ const LocalAdminDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [rejectedEvents, setRejectedEvents] = useState([]);
   const [moderators, setModerators] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1); // Current page
+  const [pageSize, setPageSize] = useState(5); // Items per page
 
   const auth = getAuth(FIREBASE_APP);
   const db = getFirestore(FIREBASE_APP);
@@ -215,6 +217,33 @@ const LocalAdminDashboard = () => {
     }
   };  
 
+
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const paginateData = (data) => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return data.slice(startIndex, endIndex);
+  };
+    // Fetch approved, rejected, and pending events logic goes here
+    useEffect(() => {
+      // Assuming you have the logic to fetch the events, for example:
+      setApprovedEvents([
+        /* Array of approved events */
+      ]);
+      setRejectedEvents([
+        /* Array of rejected events */
+      ]);
+      setPendingEvents([
+        /* Array of pending events */
+      ]);
+    }, []);
+
+    
+
   return (
     <div className="container">
       {error && <p className="error-message">{error}</p>}
@@ -250,6 +279,16 @@ const LocalAdminDashboard = () => {
                   </tr>
                 ))}
               </tbody>
+              <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={pendingEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
+
             </table>
           )}
         </Tab>
@@ -284,6 +323,15 @@ const LocalAdminDashboard = () => {
                   </tr>
                 ))}
               </tbody>
+              <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={approvedEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
             </table>
           )}
         </Tab>
@@ -318,6 +366,15 @@ const LocalAdminDashboard = () => {
                   </tr>
                 ))}
               </tbody>
+              <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={rejectedEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
             </table>
           )}
         </Tab>
@@ -352,6 +409,15 @@ const LocalAdminDashboard = () => {
                   </tr>
                 ))}
               </tbody>
+              <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={moderatorEvents.length}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePageChange}
+                  pageSizeOptions={["5", "10", "20"]}
+                />
             </table>
           )}
         </Tab>

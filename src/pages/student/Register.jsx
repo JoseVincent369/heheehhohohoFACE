@@ -32,7 +32,6 @@ const SignUp = () => {
     department: "", 
     isIP: false,
     gender: "" ,
-    preferredTitle: "Mr.",
   });
 
   const [photos, setPhotos] = useState({
@@ -439,6 +438,7 @@ const SignUp = () => {
           value={formData.schoolID}
           onChange={handleChange}
           required
+          autoComplete="off"
         />
       </Form.Group>
       </Col>
@@ -487,6 +487,7 @@ const SignUp = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   style={{ paddingRight: '40px' }} // add space for icon
                 />
                 <FontAwesomeIcon
@@ -503,19 +504,6 @@ const SignUp = () => {
               </div>
             </Form.Group>
     
-            <Form.Group controlId="formPreferredTitle" style={{ marginTop: '30px' }}>
-              <Form.Label>Preferred Title</Form.Label>
-              <Select
-                defaultValue="Mr." // Default title
-                value={formData.preferredTitle}
-                onChange={handleTitleChange}
-                style={{ width: '100%' }}
-              >
-                <Select.Option value="Mr.">Mr.</Select.Option>
-                <Select.Option value="Ms.">Ms.</Select.Option>
-                <Select.Option value="Mrs.">Mrs.</Select.Option>
-              </Select>
-            </Form.Group>
       
       <Form.Group controlId="formOrganization" className="mb-3" style={{ marginTop: '30px' }}>
             <Form.Label>Organization</Form.Label>
