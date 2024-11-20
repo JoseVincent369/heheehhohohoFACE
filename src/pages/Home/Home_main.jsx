@@ -226,42 +226,42 @@ const detectFaces = async () => {
     }
   }, [selectedEvent,eventConfirmed]);
 
-  // Load labeled images for face recognition
-  const loadLabeledImages = async () => {
-    try {
-      const users = await fetchUsersWithRole("user");
-      const labeledFaceDescriptors = [];
+  // // Load labeled images for face recognition
+  // const loadLabeledImages = async () => {
+  //   try {
+  //     const users = await fetchUsersWithRole("user");
+  //     const labeledFaceDescriptors = [];
 
-      for (const user of users) {
-        const descriptors = [];
-        for (const imageType of ["front", "left", "right"]) {
-          const imageUrl = await fetchImageUrl(user.id, imageType);
-          if (imageUrl) {
-            const img = await faceapi.fetchImage(imageUrl);
-            const detections = await faceapi
-              .detectSingleFace(img)
-              .withFaceLandmarks()
-              .withFaceDescriptor();
-            if (detections) {
-              descriptors.push(detections.descriptor);
-            }
-          }
-        }
-        if (descriptors.length > 0) {
-          const faceDescriptor = new faceapi.LabeledFaceDescriptors(
-            user.schoolID,
-            descriptors
-          );
-          labeledFaceDescriptors.push(faceDescriptor);
-        }
-      }
+  //     for (const user of users) {
+  //       const descriptors = [];
+  //       for (const imageType of ["front", "left", "right"]) {
+  //         const imageUrl = await fetchImageUrl(user.id, imageType);
+  //         if (imageUrl) {
+  //           const img = await faceapi.fetchImage(imageUrl);
+  //           const detections = await faceapi
+  //             .detectSingleFace(img)
+  //             .withFaceLandmarks()
+  //             .withFaceDescriptor();
+  //           if (detections) {
+  //             descriptors.push(detections.descriptor);
+  //           }
+  //         }
+  //       }
+  //       if (descriptors.length > 0) {
+  //         const faceDescriptor = new faceapi.LabeledFaceDescriptors(
+  //           user.schoolID,
+  //           descriptors
+  //         );
+  //         labeledFaceDescriptors.push(faceDescriptor);
+  //       }
+  //     }
 
-      return labeledFaceDescriptors;
-    } catch (error) {
-      console.error("Error loading labeled images:", error);
-      return [];
-    }
-  };
+  //     return labeledFaceDescriptors;
+  //   } catch (error) {
+  //     console.error("Error loading labeled images:", error);
+  //     return [];
+  //   }
+  // };
 
   // Fetch users with specific role and filters from Firestore
   const fetchUsersWithRole = async (
@@ -332,14 +332,36 @@ const detectFaces = async () => {
         const user = await fetchUserBySchoolID(label); // Fetch user info based on label (e.g., schoolID)
         const event = events.find((e) => e.id === selectedEvent);
   
-        // Check eligibility based on event registration and pre-trained data
-        const isUserEligible =
-          (event.organizations && event.organizations.includes(user.organization)) ||
-          (event.courses && event.courses.includes(user.course)) ||
-          (event.majors && event.majors.includes(user.major)) ||
-          (event.yearLevels && event.yearLevels.includes(user.yearLevel));
+        // Log fetched data
+        console.log("Scanned User:", user);
+        console.log("Selected Event:", event);
   
-        // If the user is recognized but not in pre-trained data, show a message
+        // Check eligibility based on any one matching criteria
+        const matchesOrganization =
+        event.organizations &&
+        Array.isArray(user.organization)
+          ? user.organization.some((org) => event.organizations.includes(org))
+          : event.organizations.includes(user.organization);      
+        const matchesCourse =
+          event.courses && event.courses.includes(user.course);
+        const matchesMajor =
+          event.majors && event.majors.includes(user.major);
+        const matchesYearLevel =
+          event.yearLevels && event.yearLevels.includes(user.yearLevel);
+  
+        // User is eligible if at least one condition matches
+        const isUserEligible =
+          matchesOrganization || matchesCourse || matchesMajor || matchesYearLevel;
+  
+        // Log the matching details for debugging
+        console.log("Eligibility Check:", {
+          matchesOrganization,
+          matchesCourse,
+          matchesMajor,
+          matchesYearLevel,
+          isUserEligible,
+        });
+  
         if (!isUserEligible) {
           const message = `${user.fname} ${user.lname} is not eligible to join the event (not pre-trained data).`;
           addAttendanceMessage(message); // Store the message
@@ -347,16 +369,9 @@ const detectFaces = async () => {
           return;
         }
   
-        const attendanceRef = collection(
-          FIRESTORE_DB,
-          "events",
-          selectedEvent,
-          "attendance"
-        );
-        const attendanceQuery = query(
-          attendanceRef,
-          where("schoolID", "==", label)
-        );
+        // Handle attendance update (attendance record creation)
+        const attendanceRef = collection(FIRESTORE_DB, "events", selectedEvent, "attendance");
+        const attendanceQuery = query(attendanceRef, where("schoolID", "==", label));
         const querySnapshot = await getDocs(attendanceQuery);
   
         if (!querySnapshot.empty) {
@@ -403,7 +418,7 @@ const detectFaces = async () => {
     }
   };
   
-  
+
   
   const handleManualAttendance = async () => {
     if (manualSchoolID.trim()) {
@@ -544,6 +559,32 @@ const detectFaces = async () => {
     }
   };
 
+  const handleDoneButtonClick = async () => {
+    if (selectedEvent) {
+      const confirmed = window.confirm("Are you sure you want to mark the event as done?");
+      
+      if (confirmed) {
+        try {
+          const eventRef = doc(FIRESTORE_DB, "events", selectedEvent);
+          await updateDoc(eventRef, {
+            status: "done", // Update event status to 'done'
+          });
+          alert("Event marked as done!");
+          navigate(0);
+        } catch (error) {
+          console.error("Error updating event status:", error);
+          alert("Error updating event status.");
+        }
+      } else {
+        // If "No" is clicked, do nothing and exit
+        console.log("Event status update cancelled.");
+      }
+    } else {
+      alert("Please select an event first.");
+    }
+  };
+  
+
   // Modal component with attendance records in a table format
   const AttendanceModal = ({ isOpen, onClose, records }) => {
     if (!isOpen) return null; // Don't render the modal if it's not open
@@ -662,6 +703,10 @@ const detectFaces = async () => {
 
               <button onClick={handleAttendanceSubmit}>Submit</button>
               <button onClick={() => navigate(0)}>BACK</button>
+              <button className="btn btn-success" onClick={handleDoneButtonClick}>
+                Mark Event as Done
+              </button>
+
             </div>
           </div>
 
@@ -676,9 +721,6 @@ const detectFaces = async () => {
                   </p>
                   <p>
                     <strong>ID:</strong> {attendingUser.schoolID}
-                  </p>
-                  <p>
-                    <strong>Age:</strong> {attendingUser.age}
                   </p>
                   <p>
                     <strong>Year Level:</strong> {attendingUser.yearLevel}

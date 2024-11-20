@@ -202,7 +202,7 @@ const CreateModeratorModal = ({ showModal, handleClose, currentAdmin, fetchModer
     required
     value={moderatorData.password}
     onChange={handleChange}
-    autoComplete="off"
+    autoComplete="new-password"
   />
 <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
   {/* Organizations Multi-Select */}

@@ -632,7 +632,7 @@ const SignUp = () => {
             screenshotFormat="image/jpeg"
             style={{
               width: "100%",
-              maxWidth: "700px", // Adjust max width as needed
+              maxWidth: "500px", // Adjust max width as needed
               aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
               transform: "scaleX(-1)"
             }}
@@ -677,7 +677,7 @@ const SignUp = () => {
             screenshotFormat="image/jpeg"
             style={{
               width: "100%",
-              maxWidth: "700px", // Adjust max width as needed
+              maxWidth: "500px", // Adjust max width as needed
               aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
               transform: "scaleX(-1)"
             }}
@@ -722,7 +722,7 @@ const SignUp = () => {
             screenshotFormat="image/jpeg"
             style={{
               width: "100%",
-              maxWidth: "700px", // Adjust max width as needed
+              maxWidth: "500px", // Adjust max width as needed
               aspectRatio: "4 / 3", // Keeps a 4:3 aspect ratio
               transform: "scaleX(-1)"
             }}

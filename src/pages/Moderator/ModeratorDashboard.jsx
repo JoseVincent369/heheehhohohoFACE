@@ -246,13 +246,13 @@ const ModeratorDashboard = () => {
     try {
       const usersCollection = collection(FIRESTORE_DB, "users");
   
-      // Safely handle null values
+      // Safely handle null values and ensure arrays are correctly processed
       const eventCourses = Array.isArray(selectedEvent.courses) ? selectedEvent.courses : [];
       const eventOrganizations = Array.isArray(selectedEvent.organizations) ? selectedEvent.organizations : [];
   
       const queries = [];
   
-      // Add query for courses if they exist
+      // Scenario 1: If both courses and organizations are specified
       if (eventCourses.length > 0) {
         const coursesQuery = query(
           usersCollection,
@@ -260,20 +260,32 @@ const ModeratorDashboard = () => {
         );
         queries.push(getDocs(coursesQuery));
       }
-  
-      // Add query for organizations if they exist
+      
       if (eventOrganizations.length > 0) {
         const organizationsQuery = query(
           usersCollection,
           where("organization", "array-contains-any", eventOrganizations.map(org => org.trim()))
         );
         queries.push(getDocs(organizationsQuery));
+      }      
+      // Scenario 2: If only courses are specified
+      else if (eventCourses.length > 0) {
+        const coursesQuery = query(
+          usersCollection,
+          where("course", "in", eventCourses.map(course => course.trim()))
+        );
+        queries.push(getDocs(coursesQuery));
       }
-  
-      // Return if no valid queries exist
-      if (queries.length === 0) {
+      // Scenario 3: If only organizations are specified
+      else if (eventOrganizations.length > 0) {
+        const organizationsQuery = query(
+          usersCollection,
+          where("organization", "array-contains-any", eventOrganizations.map(org => org.trim()))
+        );
+        queries.push(getDocs(organizationsQuery));
+      } else {
         console.warn("No valid filters provided for courses or organizations.");
-        return [];
+        return []; // If no filters exist, return empty
       }
   
       // Execute all queries
@@ -287,7 +299,8 @@ const ModeratorDashboard = () => {
         });
       });
   
-      return Array.from(uniqueUsers.values()); // Return unique users as an array
+      // Return unique users as an array
+      return Array.from(uniqueUsers.values());
     } catch (error) {
       console.error("Error fetching users:", error);
       return [];

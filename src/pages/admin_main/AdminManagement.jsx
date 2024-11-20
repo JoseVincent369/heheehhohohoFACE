@@ -8,7 +8,7 @@ import './generalstyles.css';
 
 const AdminManagement = () => {
     const [adminData, setAdminData] = useState({
-        SchoolID: "",
+        AdminSchollID: "",
         email: "",
         password: "",
         fname: "",
@@ -70,7 +70,7 @@ const AdminManagement = () => {
             const userId = userCredential.user.uid;
 
             const adminDoc = {
-                SchoolID: adminData.SchoolID,
+                AdminSchollID: adminData.AdminSchollID,
                 fname: adminData.fname,
                 mname: adminData.mname,
                 lname: adminData.lname,
@@ -124,7 +124,7 @@ const AdminManagement = () => {
     };
 
     const columns = [
-        { title: 'School ID', dataIndex: 'SchoolID', key: 'SchoolID' },
+        { title: 'School ID', dataIndex: 'AdminSchollID', key: 'AdminSchollID' },
         { title: 'First Name', dataIndex: 'fname', key: 'fname' },
         { title: 'Middle Name', dataIndex: 'mname', key: 'mname', render: mname => mname || 'N/A' },
         { title: 'Last Name', dataIndex: 'lname', key: 'lname' },
@@ -145,10 +145,10 @@ const AdminManagement = () => {
                                 <input
                                     type="text"
                                     className="form-control"
-                                    name="SchoolID"
-                                    value={adminData.SchoolID}
+                                    name="AdminSchollID"
+                                    value={adminData.AdminSchollID}
                                     onChange={handleChange}
-                                    placeholder="School ID"
+                                    placeholder=" Admin ID"
                                     autoComplete="off"
                                     required
                                 />
@@ -162,6 +162,8 @@ const AdminManagement = () => {
                                     onChange={handleChange}
                                     placeholder="First Name"
                                     required
+                                    autoComplete="off"
+
                                 />
                             </div>
                             <div className="col-12 col-md-6">
@@ -172,6 +174,8 @@ const AdminManagement = () => {
                                     value={adminData.mname}
                                     onChange={handleChange}
                                     placeholder="Middle Name"
+                                    autoComplete="off"
+
                                 />
                             </div>
                             <div className="col-12 col-md-6">
@@ -183,6 +187,8 @@ const AdminManagement = () => {
                                     onChange={handleChange}
                                     placeholder="Last Name"
                                     required
+                                    autoComplete="off"
+
                                 />
                             </div>
                             <div className="col-12">
@@ -194,6 +200,8 @@ const AdminManagement = () => {
                                     onChange={handleChange}
                                     placeholder="Email"
                                     required
+                                    autoComplete="off"
+
                                 />
                             </div>
                             <div className="col-12">
@@ -204,7 +212,7 @@ const AdminManagement = () => {
                                     value={adminData.password}
                                     onChange={handleChange}
                                     placeholder="Password"
-                                    autoComplete="off"
+                                    autoComplete="new-password"
                                     required
                                 />
                             </div>
