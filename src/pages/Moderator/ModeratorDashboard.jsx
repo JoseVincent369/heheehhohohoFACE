@@ -26,6 +26,7 @@ const ModeratorDashboard = () => {
   const [approvedEvents, setApprovedEvents] = useState([]);
   const [rejectedEvents, setRejectedEvents] = useState([]);
   const [pendingEvents, setPendingEvents] = useState([]);
+  const [doneEvents, setDoneEvents] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(true);
@@ -95,6 +96,8 @@ const ModeratorDashboard = () => {
         setPendingEvents(
           eventsData.filter((event) => event.status === "pending")
         );
+        setDoneEvents(eventsData.filter((event) => event.status === "done")
+        );  
         setEventsLoading(false);
       },
       (error) => {
@@ -597,6 +600,64 @@ const ModeratorDashboard = () => {
             )}
             </Spin>
           </Tab>
+
+            {/* Done Events Tab */}
+  <Tab eventKey="done" title="Done Events">
+    <Spin spinning={eventsLoading}>
+      {doneEvents.length === 0 ? (
+        <p>No done events at the moment.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Event Name</th>
+              <th>Description</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Venue</th>
+              <th>Status</th>
+              <th>View Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {doneEvents.map((event, index) => (
+              <tr
+                key={event.id || index}
+                onClick={() => handleEventClick(event)}
+              >
+                <td>{event.name}</td>
+                <td>{event.description || "N/A"}</td>
+                <td>
+                  {new Date(event.startDate?.seconds * 1000).toLocaleString() ||
+                    "N/A"}
+                </td>
+                <td>
+                  {new Date(event.endDate?.seconds * 1000).toLocaleString() ||
+                    "N/A"}
+                </td>
+                <td>{event.venue || "N/A"}</td>
+                <td>{event.status || "N/A"}</td>
+                <td>
+                  <button onClick={() => handleEventClick(event)}>
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={doneEvents.length}
+            onChange={handlePageChange}
+            showSizeChanger
+            onShowSizeChange={handlePageChange}
+            pageSizeOptions={["5", "10", "20"]}
+          />
+        </table>
+      )}
+    </Spin>
+  </Tab>
         </Tabs>
 
         {/* Modal for Event Details */}

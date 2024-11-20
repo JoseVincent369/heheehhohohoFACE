@@ -183,7 +183,7 @@ const Modal = ({ isOpen, onClose, event, onChangeStatus, isLoading }) => {
                     />
 
                     {/* Conditional rendering of Accept and Reject buttons */}
-                    {event.status !== 'accepted' && event.status !== 'rejected' && (
+                    {event.status !== 'done' && event.status !== 'accepted' && event.status !== 'rejected' && (
                         <>
                             <button className='accept-button' onClick={() => onChangeStatus('accepted')}>Accept</button>
                             <button className='reject-button' onClick={() => onChangeStatus('rejected')}>Reject</button>

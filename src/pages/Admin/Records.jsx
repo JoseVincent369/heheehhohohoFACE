@@ -31,7 +31,7 @@ const AttendanceRecord = () => {
         const eventsQuery = query(
           collection(FIRESTORE_DB, 'events'),
           where('adminID', '==', adminID),
-          where('status', '==', 'accepted')
+          where('status', '==', 'done')
         );
 
         const eventsCollection = await getDocs(eventsQuery);

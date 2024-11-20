@@ -19,6 +19,7 @@ const LocalAdminDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [rejectedEvents, setRejectedEvents] = useState([]);
+  const [doneEvents, setDoneEvents] = useState([]);
   const [moderators, setModerators] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Current page
   const [pageSize, setPageSize] = useState(5); // Items per page
@@ -37,6 +38,7 @@ const LocalAdminDashboard = () => {
         setPendingEvents([]);
         setApprovedEvents([]);
         setRejectedEvents([]);
+        setDoneEvents([]); 
         setModeratorEvents([]);
       }
       setLoading(false);
@@ -99,6 +101,7 @@ const LocalAdminDashboard = () => {
         setPendingEvents(uniqueEvents.filter((event) => event.status === 'pending'));
         setApprovedEvents(uniqueEvents.filter((event) => event.status === 'accepted'));
         setRejectedEvents(uniqueEvents.filter((event) => event.status === 'rejected'));
+        setDoneEvents(uniqueEvents.filter((event) => event.status === 'done'));
         setEventsLoading(false);
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -418,6 +421,39 @@ const LocalAdminDashboard = () => {
                   onShowSizeChange={handlePageChange}
                   pageSizeOptions={["5", "10", "20"]}
                 />
+            </table>
+          )}
+        </Tab>
+
+        <Tab eventKey="done" title="Done Events">
+          {doneEvents.length === 0 ? (
+            <p>No done events at the moment.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Description</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th>View Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {doneEvents.map((event, index) => (
+                  <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <td>{event.name}</td>
+                    <td>{event.description || "N/A"}</td>
+                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{event.venue || "N/A"}</td>
+                    <td>{event.status || "N/A"}</td>
+                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           )}
         </Tab>

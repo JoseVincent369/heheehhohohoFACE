@@ -51,7 +51,8 @@ function Home_main() {
         const eventsQuery = query(
           eventsCollection,
           where("userInCharge", "array-contains", user.uid),
-          where("status", "==", "accepted")
+          where("status", "==", "accepted"),
+          
         );
 
         try {
@@ -156,48 +157,48 @@ function Home_main() {
         faceapi.matchDimensions(canvas, displaySize);
 
 
-const detectFaces = async () => {
-  const detections = await faceapi
-    .detectAllFaces(
-      videoRef.current,
-      new faceapi.TinyFaceDetectorOptions()
-    )
-    .withFaceLandmarks()
-    .withFaceDescriptors();
-  const resizedDetections = faceapi.resizeResults(
-    detections,
-    displaySize
-  );
-
-  const context = canvas.getContext("2d");
-  context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
-
-  const results = resizedDetections.map((d) =>
-    faceMatcher.findBestMatch(d.descriptor)
-  );
-
-  results.forEach((result, i) => {
-    if (result._label !== "unknown") {
-      // Here we call attendance to store the attendance
-      attendance(result._label);
-    }
-
-    const box = resizedDetections[i].detection.box;
-    // Flip the box horizontally
-    const invertedBox = {
-      x: canvas.width - (box.x + box.width), // Invert the x-coordinate
-      y: box.y,
-      width: box.width,
-      height: box.height,
-    };
-
-    const drawBox = new faceapi.draw.DrawBox(invertedBox, {
-      label: result.toString(),
-    });
-    drawBox.draw(canvas);
-  });
-};
-
+        const detectFaces = async () => {
+          const detections = await faceapi
+            .detectAllFaces(
+              videoRef.current,
+              new faceapi.TinyFaceDetectorOptions()
+            )
+            .withFaceLandmarks()
+            .withFaceDescriptors();
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        
+          const context = canvas.getContext("2d");
+          context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas for new detections
+        
+          const results = resizedDetections.map((d) =>
+            faceMatcher.findBestMatch(d.descriptor)
+          );
+        
+          // Confidence threshold
+          const confidenceThreshold = 0.6; // Set your threshold here (e.g., 0.6)
+        
+          results.forEach((result, i) => {
+            if (result._label !== "unknown" && result._distance <= confidenceThreshold) {
+              // Only mark attendance if the confidence is above the threshold
+              attendance(result._label);
+            }
+        
+            const box = resizedDetections[i].detection.box;
+            // Flip the box horizontally
+            const invertedBox = {
+              x: canvas.width - (box.x + box.width), // Invert the x-coordinate
+              y: box.y,
+              width: box.width,
+              height: box.height,
+            };
+        
+            const drawBox = new faceapi.draw.DrawBox(invertedBox, {
+              label: result.toString(),
+            });
+            drawBox.draw(canvas);
+          });
+        };
+        
 
         const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
 
@@ -351,7 +352,7 @@ const detectFaces = async () => {
   
         // User is eligible if at least one condition matches
         const isUserEligible =
-          matchesOrganization || matchesCourse || matchesMajor || matchesYearLevel;
+          (matchesOrganization && matchesYearLevel) || (matchesCourse && matchesYearLevel) || matchesMajor || matchesYearLevel;
   
         // Log the matching details for debugging
         console.log("Eligibility Check:", {
@@ -363,7 +364,7 @@ const detectFaces = async () => {
         });
   
         if (!isUserEligible) {
-          const message = `${user.fname} ${user.lname} is not eligible to join the event (not pre-trained data).`;
+          const message = `${user.fname} ${user.lname} is not eligible to join the event (some data did not match).`;
           addAttendanceMessage(message); // Store the message
           tempAttendance.current.delete(label);
           return;

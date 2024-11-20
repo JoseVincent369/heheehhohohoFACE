@@ -47,7 +47,7 @@ const ModeratorsRecord = () => {
           const eventsQuery = query(
             collection(FIRESTORE_DB, 'events'),
             where('createdBy', '==', moderatorId),
-            where('status', '==', 'accepted')
+            where('status', '==', 'done')
           );
       
           const eventsCollection = await getDocs(eventsQuery);
