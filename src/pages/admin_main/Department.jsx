@@ -165,23 +165,43 @@ const DepartmentCourseMajorManager = () => {
 
   const deleteCourse = async (courseId) => {
     try {
-      const courseRef = doc(FIRESTORE_DB, "courses", courseId); // Adjust the path if necessary
-      await deleteDoc(courseRef);
-      setCourses(courses.filter(course => course.id !== courseId)); // Update state to remove the deleted course
+      setLoading(true);
+      await deleteDoc(doc(FIRESTORE_DB, `departments/${selectedDepartment.id}/courses/${courseId}`));
+      setCourses(courses.filter((course) => course.id !== courseId));
+      notification.success({
+        message: 'Success',
+        description: 'Course deleted successfully!',
+      });
     } catch (error) {
-      console.error("Error deleting course: ", error);
+      notification.error({
+        message: 'Error',
+        description: 'Failed to delete course.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
+  
 
   const deleteMajor = async (majorId) => {
     try {
-      const majorRef = doc(FIRESTORE_DB, "majors", majorId); // Adjust the path if necessary
-      await deleteDoc(majorRef);
-      setMajors(majors.filter(major => major.id !== majorId)); // Update state to remove the deleted major
+      setLoading(true);
+      await deleteDoc(doc(FIRESTORE_DB, `departments/${selectedDepartment.id}/courses/${selectedCourse.id}/majors/${majorId}`));
+      setMajors(majors.filter((major) => major.id !== majorId));
+      notification.success({
+        message: 'Success',
+        description: 'Major deleted successfully!',
+      });
     } catch (error) {
-      console.error("Error deleting major: ", error);
+      notification.error({
+        message: 'Error',
+        description: 'Failed to delete major.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
+  
 
 
 
@@ -196,6 +216,34 @@ const DepartmentCourseMajorManager = () => {
     }));
     setCourses(courseList);
   };
+  
+
+  const handleCourseSelect = async (course) => {
+    setSelectedCourse(course);
+  
+    try {
+      setLoading(true);
+      const majorsSnapshot = await getDocs(
+        collection(
+          FIRESTORE_DB,
+          `departments/${selectedDepartment.id}/courses/${course.id}/majors`
+        )
+      );
+      const majorList = majorsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMajors(majorList);
+    } catch (error) {
+      notification.error({
+        message: 'Error',
+        description: 'Failed to fetch majors.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   const goToNextStep = () => {
     if (activeStep < steps.length - 1) {
@@ -234,6 +282,60 @@ const DepartmentCourseMajorManager = () => {
     setLoading(false);
   };
 
+  const editCourse = async (id, newName) => {
+    if (!newName.trim()) {
+      notification.warning({
+        message: 'Warning',
+        description: 'Course name cannot be empty.',
+      });
+      return;
+    }
+    try {
+      setLoading(true);
+      const courseRef = doc(FIRESTORE_DB, `departments/${selectedDepartment.id}/courses/${id}`);
+      await updateDoc(courseRef, { name: newName });
+      setCourses(courses.map((course) => (course.id === id ? { ...course, name: newName } : course)));
+      notification.success({
+        message: 'Success',
+        description: 'Course updated successfully!',
+      });
+    } catch (error) {
+      notification.error({
+        message: 'Error',
+        description: 'Failed to update course.',
+      });
+    }
+    setLoading(false);
+  };
+
+  
+  const editMajor = async (id, newName) => {
+    if (!newName.trim()) {
+      notification.warning({
+        message: 'Warning',
+        description: 'Major name cannot be empty.',
+      });
+      return;
+    }
+    try {
+      setLoading(true);
+      const majorRef = doc(FIRESTORE_DB, `departments/${selectedDepartment.id}/courses/${selectedCourse.id}/majors/${id}`);
+      await updateDoc(majorRef, { name: newName });
+      setMajors(majors.map((major) => (major.id === id ? { ...major, name: newName } : major)));
+      notification.success({
+        message: 'Success',
+        description: 'Major updated successfully!',
+      });
+    } catch (error) {
+      notification.error({
+        message: 'Error',
+        description: 'Failed to update major.',
+      });
+    }
+    setLoading(false);
+  };
+  
+
   // Table columns for departments
   const departmentColumns = [
     {
@@ -250,8 +352,10 @@ const DepartmentCourseMajorManager = () => {
       title: 'Actions',
       render: (_, record) => (
         <Popconfirm
-          title="Are you sure to delete this department?"
+          title="Are you sure you want to delete this department?"
           onConfirm={() => deleteDepartment(record.id)}
+          okText="Yes"
+          cancelText="No"
         >
           <Button type="link" danger>
             Delete
@@ -260,6 +364,63 @@ const DepartmentCourseMajorManager = () => {
       ),
     },
   ];
+  
+  const courseColumns = [
+    {
+      title: 'Course Name',
+      dataIndex: 'name',
+      render: (text, record) => (
+        <Input
+          defaultValue={text}
+          onBlur={(e) => editCourse(record.id, e.target.value)}
+        />
+      ),
+    },
+    {
+      title: 'Actions',
+      render: (_, record) => (
+        <Popconfirm
+          title="Are you sure you want to delete this course?"
+          onConfirm={() => deleteCourse(record.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="link" danger>
+            Delete
+          </Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+  
+  const majorColumns = [
+    {
+      title: 'Major Name',
+      dataIndex: 'name',
+      render: (text, record) => (
+        <Input
+          defaultValue={text}
+          onBlur={(e) => editMajor(record.id, e.target.value)}
+        />
+      ),
+    },
+    {
+      title: 'Actions',
+      render: (_, record) => (
+        <Popconfirm
+          title="Are you sure you want to delete this major?"
+          onConfirm={() => deleteMajor(record.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="link" danger>
+            Delete
+          </Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+  
 
   return (
     <div className="container" style={{ marginTop: '40px' }}>
@@ -372,12 +533,13 @@ const DepartmentCourseMajorManager = () => {
           <div>
             <h3>Add Major to Course</h3>
             <Select
-              placeholder="Select Course First"
-              value={selectedCourse?.id}
-              onChange={(value) => setSelectedCourse(courses.find((course) => course.id === value))}
-              style={{ width: '400px', marginBottom: '10px' }}
-              className="select-department"
-            >
+  placeholder="Select Course First"
+  value={selectedCourse?.id}
+  onChange={(value) => handleCourseSelect(courses.find((course) => course.id === value))}
+  style={{ width: '400px', marginBottom: '10px' }}
+  className="select-department"
+>
+
               {courses.map((course) => (
                 <Option key={course.id} value={course.id}>
                   {course.name}

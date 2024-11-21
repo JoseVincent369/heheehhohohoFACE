@@ -54,15 +54,16 @@ const SignUp = () => {
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState([]);
+  const [filteredOrganizations, setFilteredOrganizations] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [majors, setMajors] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const yearLevels = [
-    { id: "1st", name: "1st Year" },
-    { id: "2nd", name: "2nd Year" },
-    { id: "3rd", name: "3rd Year" },
-    { id: "4th", name: "4th Year" }
+    { id: "1st Year", name: "1st Year" },
+    { id: "2nd Year", name: "2nd Year" },
+    { id: "3rd Year", name: "3rd Year" },
+    { id: "4th Year", name: "4th Year" }
   ];
 
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ const SignUp = () => {
     const orgSnapshot = await getDocs(collection(FIRESTORE_DB, 'organizations'));
     const orgs = orgSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setOrganizations(orgs.sort((a, b) => a.name.localeCompare(b.name))); // Sort by name
+    setFilteredOrganizations(orgs);
   };
 
   const fetchDepartments = async () => {
@@ -96,6 +98,17 @@ const SignUp = () => {
     fetchOrganizations();
     fetchDepartments();
   }, []);
+
+
+  const handleSearch = (value) => {
+    const query = value.toLowerCase(); // Ensure search is case-insensitive
+  
+    const filtered = organizations
+      .filter((org) => org.name.toLowerCase().includes(query)) // Filter organizations based on the search query
+      .sort((a, b) => a.name.localeCompare(b.name)); // Sort results alphabetically
+  
+    setFilteredOrganizations(filtered); // Update filteredOrganizations state
+  };
 
 
   const handlePasswordToggle = () => {
@@ -343,6 +356,7 @@ const SignUp = () => {
   ) : (
     <Form onSubmit={handleSubmit}>
       <Row>
+      <hr /> 
         <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formFname">
             <Form.Label>First Name</Form.Label>
@@ -378,6 +392,7 @@ const SignUp = () => {
             />
           </Form.Group>
         </Col>
+        <hr /> 
         <Col md={6} lg={4} className="mb-3">
           <Form.Group controlId="formNameExtension">
             <Form.Label>Name Extension (e.g., Jr., Sr.)</Form.Label>
@@ -429,6 +444,7 @@ const SignUp = () => {
             </Form.Control>
           </Form.Group>
         </Col>
+        <hr /> 
         <Col md={6} lg={4} className="mb-3">
       <Form.Group controlId="formSchoolID" className="mb-3">
         <Form.Label>School ID</Form.Label>
@@ -479,7 +495,7 @@ const SignUp = () => {
 
 
             <Form.Group controlId="formPassword">
-              <Form.Label>Password</Form.Label>
+              <Form.Label>Input your own Password</Form.Label>
               <div className="password-input-container" style={{ position: 'relative' }}>
                 <Form.Control
                   type={showPassword ? "text" : "password"}
@@ -508,20 +524,22 @@ const SignUp = () => {
       <Form.Group controlId="formOrganization" className="mb-3" style={{ marginTop: '30px' }}>
             <Form.Label>Organization</Form.Label>
             <Select
-              mode="multiple" // Enables multi-select
-              placeholder="Select organization(s)"
-              value={formData.organization}
-              onChange={handleOrganizationChange}
-              style={{ width: '100%' }}
-            >
-              {organizations.map((org) => (
+    mode="multiple"
+    placeholder="Search and select organization(s)"
+    style={{ width: '100%' }}
+    showSearch
+    onSearch={handleSearch} // Use the updated search function
+    onChange={handleOrganizationChange} // Update selected organizations in the form data
+    filterOption={false} // Disable default filtering (handled by handleSearch)
+  >
+              {filteredOrganizations.map((org) => (
                 <Option key={org.id} value={org.id}>
                   {org.name}
                 </Option>
               ))}
             </Select>
           </Form.Group>
-      
+          <hr /> 
       <Row>
         <Col md={6} lg={4} className="mb-3" style={{ marginTop: '30px' }}>
           <Form.Group controlId="formDepartment">
@@ -586,7 +604,7 @@ const SignUp = () => {
         </Form.Group>
         </Col>
       </Row>
-
+      <hr /> 
 
 
 

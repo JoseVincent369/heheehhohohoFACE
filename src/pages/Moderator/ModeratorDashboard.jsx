@@ -760,7 +760,7 @@ const ModeratorDashboard = () => {
       ) : (
         <p className="text-muted">No users assigned yet.</p>
       )}
-              <h5 className="mb-2 p-0  ">STEP 2: Assign Users In Charge</h5>
+              <h5 className="mb-2 p-0  ">STEP 2: Assign Officer In Charge</h5>
               <Select
                 style={{ width: "100%" }}
                 mode="multiple"
