@@ -47,7 +47,7 @@ const AttendanceRecord = () => {
 
           // Fetch the moderator's name, or default to 'Created by Me' if event created by admin
           const moderatorName = eventData.createdBy === adminID
-            ? 'Created by Me'
+            ? 'Admin'
             : await fetchModeratorName(eventData.createdBy);
 
           eventsData.push({
@@ -115,164 +115,151 @@ const AttendanceRecord = () => {
     setSelectedParticipants([]); // Clear participants when modal closes
   };
 
-  // Print the details of an event
-  // Print the details of an event
-  const handlePrint = (event) => {
-    const startDate = new Date(event.startDate.seconds * 1000).toLocaleString();
-    const endDate = event.endDate ? new Date(event.endDate.seconds * 1000).toLocaleString() : 'N/A';
-    const currentDate = new Date().toLocaleDateString('en-GB', {
-      weekday: 'long', // Day of the week
-      year: 'numeric', // Full year
-      month: 'long', // Full month name
-      day: 'numeric', // Day of the month
-    });
-    
-    const printContent = `
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
-        }
-        .header {
-          text-align: center;
-          font-weight: bold;
-          font-size: 12px;
-          line-height: 0.5;
-          margin-bottom: 10px;
-  }
-          . footer{
-          text-align: left;
-          font-size: 6px;
-          }
 
-        .header-line {
-          border-top: 2px solid black;
-          margin: 10px 0;
-          margin-bottom: 10px;
-        }
-        h2 {
-          font-size: 20px;
-          text-align: center;
-          color: #4169e1;
-          margin: 20px 0;
-          font-weight: bold;
-        }
-        .info-table, .attendance-sheet {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .info-table th, .info-table td {
-          padding: 8px;
-          font-size: 14px;
-        }
-        .info-table th {
-          text-align: left;
-          border: 1px solid black;
-          font-weight: bold;
-          width: 21%;
-        }
-        .info-table td {
-          border: 1px solid black;
-          padding: 8px;
-          text-align: left;
-        }
-        .attendance-sheet th, .attendance-sheet td {
-          border: 1px solid black;
-          padding: 8px;
-          text-align: center;
-          font-size: 12px;
-        }
-        .attendance-sheet th {
-          background-color: #f0f0f0;
-          font-weight: bold;
-        }
-        .attendance-sheet td {
-          height: 30px;
-        }
-           .header img {
-        width: 20px; /* Adjust size as needed */
-        height: auto;
-        display: block;
-        margin: 0 auto 10px;
-      }
-      </style>
-      
-      <div class="header">
-          <img src={logo} alt="NBSC Logo" style={{ width: '50px', height: 'auto' }} />
-      <img src="nbsc_logo.png" alt="NBSC Logo">
-        <p>Republic of the Philippines</p>
-        <p><strong>NORTHERN BUKIDNON STATE COLLEGE</strong></p>
-        <p>(Formerly Northern Bukidnon Community College) RA11284</p>
-        <p>Manolo Fortich, 8703 Bukidnon * 535-3873 * nbscadmin@nbsc.edu.ph</p>
-        <p>Creando futura . Transformationis vitae . Ductae a Deo</p>
-      </div>
-      <div class="header-line"></div>
-  
-      <h2>ATTENDANCE SHEET</h2>
-  
-      <!-- Information Table for Name of Activity, Date and Time, Venue -->
-      <table class="info-table">
-        <tr>
-          <th>Name of Activity:</th>
-          <td>${event.name || ''}</td>
-        </tr>
-        <tr>
-          <th>Date and Time:</th>
-        <td>${startDate} to ${endDate}</td>
-        </tr>
-        <tr>
-          <th>Venue:</th>
-          <td>${event.venue || ''}</td>
-        </tr>
-      </table>
-  
-      <!-- Attendance Table -->
-<table class="attendance-sheet">
-      <thead>
-        <tr>
-          <th>NO.</th>
-          <th>NAME (Last, First, MI)</th>
-          <th>IN</th>
-          <th>OUT</th>
-          <th>Picture and Video taking Consent</th>
-          <th>Sex (M/F)</th>
-          <th>Preferred Title (Mr., Ms., etc.)</th>
-          <th>IP (Tribe)</th>
-          <th>SIGNATURE</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${event.attendance.map((attendee, index) => `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${attendee.studentInfo.lname}, ${attendee.studentInfo.fname}</td>
-            <td>${startDate}</td>
-            <td>${endDate}</td>
-            <td>${attendee.pictureConsent ? 'Yes' : 'No'}</td>
-            <td>${attendee.studentInfo.gender}</td>
-            <td>${attendee.studentInfo.title}</td>
-            <td>${attendee.studentInfo.IP || 'N/A'}</td>
-            <td></td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
+const handlePrint = (event) => {
+  const startDate = new Date(event.startDate.seconds * 1000).toLocaleString();
+  const endDate = event.endDate ? new Date(event.endDate.seconds * 1000).toLocaleString() : 'N/A';
+  const currentDate = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', 
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-  
-      <div class="footer">
-        <p>Date Revised: ${currentDate}</p>
-      </div>
-    `;
-  
-    const newWindow = window.open('', '', 'width=800,height=600');
-    newWindow.document.write(printContent);
-    newWindow.document.close();
-    newWindow.focus();
-    newWindow.print();
-    newWindow.close();
-  };
+  const printContent = `
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .header {
+      text-align: center;
+      font-weight: bold;
+      font-size: 12px;
+      line-height: 0.5;
+      margin-bottom: 10px;
+    }
+    .footer {
+      text-align: left;
+      font-size: 6px;
+    }
+    .header-line {
+      border-top: 2px solid black;
+      margin: 10px 0;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: 20px;
+      text-align: center;
+      color: #4169e1;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .info-table, .attendance-sheet {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .info-table th, .info-table td {
+      padding: 8px;
+      font-size: 14px;
+    }
+    .info-table th {
+      text-align: left;
+      border: 1px solid black;
+      font-weight: bold;
+      width: 21%;
+    }
+    .info-table td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+    }
+    .attendance-sheet th, .attendance-sheet td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .attendance-sheet th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+    .attendance-sheet td {
+      height: 30px;
+    }
+  </style>
 
-  
+  <div class="header">
+    <img src="${logo}" alt="NBSC Logo" style="width: 50px; height: auto; display: inline-block; margin-right: 10px;" />
+    <p>Republic of the Philippines</p>
+    <p><strong>NORTHERN BUKIDNON STATE COLLEGE</strong></p>
+    <p>(Formerly Northern Bukidnon Community College) RA11284</p>
+    <p>Manolo Fortich, 8703 Bukidnon * 535-3873 * nbscadmin@nbsc.edu.ph</p>
+    <p>Creando futura . Transformationis vitae . Ductae a Deo</p>
+  </div>
+  <div class="header-line"></div>
+
+  <h2>ATTENDANCE SHEET</h2>
+
+  <!-- Information Table for Name of Activity, Date and Time, Venue -->
+  <table class="info-table">
+    <tr>
+      <th>Name of Activity:</th>
+      <td>${event.name || ''}</td>
+    </tr>
+    <tr>
+      <th>Date and Time:</th>
+      <td>${startDate} to ${endDate}</td>
+    </tr>
+    <tr>
+      <th>Venue:</th>
+      <td>${event.venue || ''}</td>
+    </tr>
+    ${event.moderatorName ? `<tr>
+      <th>Moderator:</th>
+      <td>${event.moderatorName}</td>
+    </tr>` : ''}
+  </table>
+
+  <!-- Attendance Table -->
+  <table class="attendance-sheet">
+    <thead>
+      <tr>
+        <th>NO.</th>
+        <th>NAME (Last, First, MI)</th>
+        <th>IN</th>
+        <th>OUT</th>
+        <th>Sex (M/F)</th>
+        <th>IP (Tribe)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${event.attendance.map((attendee, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${attendee.studentInfo.lname}, ${attendee.studentInfo.fname}</td>
+          <td>${attendee.timeIn || 'Time in not recorded'}</td>
+          <td>${attendee.timeOut || 'Time out not recorded'}</td>
+          <td>${attendee.studentInfo.gender || 'N/A'}</td>
+          <td>${attendee.studentInfo.isIP ? 'Yes' : 'No'}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>Date Revised: ${currentDate}</p>
+  </div>
+  `;
+
+  const newWindow = window.open('', '', 'width=800,height=600');
+  newWindow.document.write(printContent);
+  newWindow.document.close();
+  newWindow.focus();
+  newWindow.print();
+  newWindow.close();
+};
+
 
   const columns = [
     {
