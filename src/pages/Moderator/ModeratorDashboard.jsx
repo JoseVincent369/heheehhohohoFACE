@@ -391,24 +391,11 @@ const ModeratorDashboard = () => {
     setPageSize(pageSize);
   };
 
-  const paginateData = (data) => {
+  const getPaginatedEvents = (events) => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return data.slice(startIndex, endIndex);
+    return events.slice(startIndex, endIndex);
   };
-    // Fetch approved, rejected, and pending events logic goes here
-    useEffect(() => {
-      // Assuming you have the logic to fetch the events, for example:
-      setApprovedEvents([
-        /* Array of approved events */
-      ]);
-      setRejectedEvents([
-        /* Array of rejected events */
-      ]);
-      setPendingEvents([
-        /* Array of pending events */
-      ]);
-    }, []);
 
     
   return (
@@ -420,245 +407,195 @@ const ModeratorDashboard = () => {
         {error && <p className="error-message">{error}</p>}
         {loading && <Spin spinning={true} />}
         <Tabs defaultActiveKey="approved" id="event-tabs" className="mb-3">
-          
-          {/* Approved Events Tab */}
-          <Tab eventKey="approved" title="Approved Events">
-          <Spin spinning={eventsLoading}>
-            {approvedEvents.length === 0 ? (
-              <p>No approved events at the moment.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Event Name</th>
-                    <th>Description</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Venue</th>
-                    <th>Status</th>
-                    <th>View Details</th>
+    
+    {/* Approved Events Tab */}
+    <Tab eventKey="approved" title="Approved Events">
+      <Spin spinning={eventsLoading}>
+        {approvedEvents.length === 0 ? (
+          <p>No approved events at the moment.</p>
+        ) : (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Description</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th>View Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getPaginatedEvents(approvedEvents).map((event, index) => (
+                  <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <td>{event.name}</td>
+                    <td>{event.description || "N/A"}</td>
+                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{event.venue || "N/A"}</td>
+                    <td>{event.status || "N/A"}</td>
+                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {approvedEvents.map((event, index) => (
-                    <tr
-                      key={event.id || index}
-                      onClick={() => handleEventClick(event)}
-                    >
-                      <td>{event.name}</td>
-                      <td>{event.description || "N/A"}</td>
-                      <td>
-                        {new Date(
-                          event.startDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>
-                        {new Date(
-                          event.endDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>{event.venue || "N/A"}</td>
-                      <td>{event.status || "N/A"}</td>
-                      <td>
-                        <button onClick={() => handleEventClick(event)}>
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={approvedEvents.length}
-                  onChange={handlePageChange}
-                  showSizeChanger
-                  onShowSizeChange={handlePageChange}
-                  pageSizeOptions={["5", "10", "20"]}
-                />
-              </table>
-            )}
-            </Spin>
-          </Tab>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={approvedEvents.length}
+              onChange={handlePageChange}
+              showSizeChanger
+              onShowSizeChange={handlePageChange}
+              pageSizeOptions={["5", "10", "20"]}
+            />
+          </>
+        )}
+      </Spin>
+    </Tab>
 
-          {/* Rejected Events Tab */}
-          <Tab eventKey="rejected" title="Rejected Events">
-          <Spin spinning={eventsLoading}>
-            {rejectedEvents.length === 0 ? (
-              <p>No rejected events at the moment.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Event Name</th>
-                    <th>Description</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Venue</th>
-                    <th>Status</th>
-                    <th>View Details</th>
+    {/* Rejected Events Tab */}
+    <Tab eventKey="rejected" title="Rejected Events">
+      <Spin spinning={eventsLoading}>
+        {rejectedEvents.length === 0 ? (
+          <p>No rejected events at the moment.</p>
+        ) : (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Description</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th>View Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getPaginatedEvents(rejectedEvents).map((event, index) => (
+                  <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <td>{event.name}</td>
+                    <td>{event.description || "N/A"}</td>
+                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{event.venue || "N/A"}</td>
+                    <td>{event.status || "N/A"}</td>
+                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {rejectedEvents.map((event, index) => (
-                    <tr
-                      key={event.id || index}
-                      onClick={() => handleEventClick(event)}
-                    >
-                      <td>{event.name}</td>
-                      <td>{event.description || "N/A"}</td>
-                      <td>
-                        {new Date(
-                          event.startDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>
-                        {new Date(
-                          event.endDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>{event.venue || "N/A"}</td>
-                      <td>{event.status || "N/A"}</td>
-                      <td>
-                        <button onClick={() => handleEventClick(event)}>
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={rejectedEvents.length}
-                  onChange={handlePageChange}
-                  showSizeChanger
-                  onShowSizeChange={handlePageChange}
-                  pageSizeOptions={["5", "10", "20"]}
-                />
-              </table>
-            )}
-            </Spin>
-          </Tab>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={rejectedEvents.length}
+              onChange={handlePageChange}
+              showSizeChanger
+              onShowSizeChange={handlePageChange}
+              pageSizeOptions={["5", "10", "20"]}
+            />
+          </>
+        )}
+      </Spin>
+    </Tab>
 
-          {/* Pending Events Tab */}
-          <Tab eventKey="pending" title="Pending Events">
-            <Spin spinning={eventsLoading}>
-            {pendingEvents.length === 0 ? (
-              <p>No pending events at the moment.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Event Name</th>
-                    <th>Description</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Venue</th>
-                    <th>Status</th>
-                    <th>View Details</th>
+    {/* Pending Events Tab */}
+    <Tab eventKey="pending" title="Pending Events">
+      <Spin spinning={eventsLoading}>
+        {pendingEvents.length === 0 ? (
+          <p>No pending events at the moment.</p>
+        ) : (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Description</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th>View Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getPaginatedEvents(pendingEvents).map((event, index) => (
+                  <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <td>{event.name}</td>
+                    <td>{event.description || "N/A"}</td>
+                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{event.venue || "N/A"}</td>
+                    <td>{event.status || "N/A"}</td>
+                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {pendingEvents.map((event, index) => (
-                    <tr
-                      key={event.id || index}
-                      onClick={() => handleEventClick(event)}
-                    >
-                      <td>{event.name}</td>
-                      <td>{event.description || "N/A"}</td>
-                      <td>
-                        {new Date(
-                          event.startDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>
-                        {new Date(
-                          event.endDate?.seconds * 1000
-                        ).toLocaleString() || "N/A"}
-                      </td>
-                      <td>{event.venue || "N/A"}</td>
-                      <td>{event.status || "N/A"}</td>
-                      <td>
-                        <button onClick={() => handleEventClick(event)}>
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={pendingEvents.length}
-                  onChange={handlePageChange}
-                  showSizeChanger
-                  onShowSizeChange={handlePageChange}
-                  pageSizeOptions={["5", "10", "20"]}
-                />
-              </table>
-            )}
-            </Spin>
-          </Tab>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={pendingEvents.length}
+              onChange={handlePageChange}
+              showSizeChanger
+              onShowSizeChange={handlePageChange}
+              pageSizeOptions={["5", "10", "20"]}
+            />
+          </>
+        )}
+      </Spin>
+    </Tab>
 
-            {/* Done Events Tab */}
-  <Tab eventKey="done" title="Done Events">
-    <Spin spinning={eventsLoading}>
-      {doneEvents.length === 0 ? (
-        <p>No done events at the moment.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Event Name</th>
-              <th>Description</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Venue</th>
-              <th>Status</th>
-              <th>View Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {doneEvents.map((event, index) => (
-              <tr
-                key={event.id || index}
-                onClick={() => handleEventClick(event)}
-              >
-                <td>{event.name}</td>
-                <td>{event.description || "N/A"}</td>
-                <td>
-                  {new Date(event.startDate?.seconds * 1000).toLocaleString() ||
-                    "N/A"}
-                </td>
-                <td>
-                  {new Date(event.endDate?.seconds * 1000).toLocaleString() ||
-                    "N/A"}
-                </td>
-                <td>{event.venue || "N/A"}</td>
-                <td>{event.status || "N/A"}</td>
-                <td>
-                  <button onClick={() => handleEventClick(event)}>
-                    View Details
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={doneEvents.length}
-            onChange={handlePageChange}
-            showSizeChanger
-            onShowSizeChange={handlePageChange}
-            pageSizeOptions={["5", "10", "20"]}
-          />
-        </table>
-      )}
-    </Spin>
-  </Tab>
-        </Tabs>
+    {/* Done Events Tab */}
+    <Tab eventKey="done" title="Done Events">
+      <Spin spinning={eventsLoading}>
+        {doneEvents.length === 0 ? (
+          <p>No done events at the moment.</p>
+        ) : (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Description</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th>View Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getPaginatedEvents(doneEvents).map((event, index) => (
+                  <tr key={event.id || index} onClick={() => handleEventClick(event)}>
+                    <td>{event.name}</td>
+                    <td>{event.description || "N/A"}</td>
+                    <td>{new Date(event.startDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{new Date(event.endDate?.seconds * 1000).toLocaleString() || "N/A"}</td>
+                    <td>{event.venue || "N/A"}</td>
+                    <td>{event.status || "N/A"}</td>
+                    <td><button onClick={() => handleEventClick(event)}>View Details</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={doneEvents.length}
+              onChange={handlePageChange}
+              showSizeChanger
+              onShowSizeChange={handlePageChange}
+              pageSizeOptions={["5", "10", "20"]}
+            />
+          </>
+        )}
+      </Spin>
+    </Tab>
+  </Tabs>
 
         {/* Modal for Event Details */}
         {isModalOpen && selectedEvent && (
