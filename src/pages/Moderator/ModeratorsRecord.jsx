@@ -3,7 +3,7 @@ import { collection, getDocs, where, query, doc, getDoc } from 'firebase/firesto
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { FIRESTORE_DB } from '../../firebaseutil/firebase_main';
 import { Table, Button, Modal  } from 'antd';
-import logo from '../../assets/images/nbsc logo.png';
+import logo from '../../assets/images/nbsc_logo.png';
 
 const ModeratorsRecord = () => {
   const [events, setEvents] = useState([]);
