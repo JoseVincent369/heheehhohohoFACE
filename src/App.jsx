@@ -32,8 +32,9 @@ import Records from './pages/Admin/Records';
 import CreateModerator from './pages/Admin/CreateModerator';
 import StudentAttendanceSearch from './pages/Admin/StudentAttendanceSearch';
 import ModeratorManage from './pages/admin_main/ModeratorManage';
+import TrainAndStoreData from './pages/admin_main/TrainAndStoreData';
 
-// Moderator Pages
+// Moderator Pages 
 import ModeratorDashboard from './pages/Moderator/ModeratorDashboard';
 import CreateOfficer from './pages/Moderator/CreateOfficer';
 import EventManage from './pages/Moderator/EventManage';
@@ -78,6 +79,7 @@ function MainApp() {
             <Route path="/admin/ModeratorManage" element={<ModeratorManage />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/Register" element={<Register />} />
+            <Route path="/admin/TrainAndStoreData" element={<TrainAndStoreData />} />
           </Route>
           
            {/* Super Admin Change */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faClipboard, faUserPlus, faUser, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faTachometerAlt, faClipboardList, faUsers, faBuilding, faClipboard, faUserPlus, faUser, faStar, faRocket } from '@fortawesome/free-solid-svg-icons';
 import './component.css';
 
 const Sidebar = () => {
@@ -63,6 +63,12 @@ const Sidebar = () => {
         <li>
           <Link to="/admin/SuperAdminAttendanceSearch">
             <FontAwesomeIcon icon={faStar} className="sidebar-icon" />
+            <span className={isOpen ? '' : 'd-none'}> Attendance Search</span>
+          </Link>
+        </li>
+        <li>
+          <Link to="/admin/TrainAndStoreData">
+            <FontAwesomeIcon icon={faRocket} className="sidebar-icon" />
             <span className={isOpen ? '' : 'd-none'}> Attendance Search</span>
           </Link>
         </li>

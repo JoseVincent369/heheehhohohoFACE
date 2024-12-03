@@ -367,6 +367,77 @@ const ModeratorDashboard = () => {
       return [];
     }
   };
+
+  const fetchTrainedData = async (selectedEvent) => {
+    try {
+      // Reference to the document 'training' within the collection 'trainedDescriptors'
+      const trainedDataRef = doc(db, "trainedDescriptors", "training"); 
+  
+      const trainedDataSnapshot = await getDoc(trainedDataRef);
+  
+      if (trainedDataSnapshot.exists()) {
+        let trainedDescriptors = trainedDataSnapshot.data().trainedDescriptors;
+  
+        // If the data contains escaped characters, parse it
+        if (typeof trainedDescriptors === "string") {
+          trainedDescriptors = JSON.parse(trainedDescriptors.replace(/\\/g, ""));
+        }
+  
+        console.log("Trained Data Retrieved:", trainedDescriptors);
+  
+        // Ensure the data is an array
+        if (!Array.isArray(trainedDescriptors)) {
+          throw new Error("Trained data is not in the expected array format.");
+        }
+  
+        return trainedDescriptors; // Return the trained data from Firestore
+      } else {
+        console.log("No trained data found.");
+        return null; // Return null if no trained data is found
+      }
+    } catch (error) {
+      console.error("Error fetching trained data:", error);
+      return null;
+    }
+  };
+  
+  
+  
+// Handle button click for training or using saved trained data
+const handleTrainOrUseData = async () => {
+  if (selectedEvent.courses.length >= 6) {
+    try {
+      setIsLoadTrained(true); // Indicate training/loading is in progress
+
+      // Fetch trained data from Firestore (if it exists)
+      const savedTrainedData = await fetchTrainedData(selectedEvent);
+
+      if (savedTrainedData) {
+        console.log("Using saved trained data...");
+        await handleTrainedData(savedTrainedData);
+      } else {
+        console.log("No saved data found. Training new data...");
+        await loadLabeledImages();
+      }
+
+      // Mark the event as trained
+      setSelectedEvent((prevEvent) => ({
+        ...prevEvent,
+        isTrained: true,
+      }));
+      setIsListTrained(true); // Update UI state
+    } catch (error) {
+      console.error("Error handling training or loading data:", error);
+    } finally {
+      setIsLoadTrained(false); // Hide spinner/loading state
+    }
+  } else {
+    alert("At least 6 courses are required to load and train the images.");
+  }
+};
+
+
+  
   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
@@ -653,34 +724,76 @@ const ModeratorDashboard = () => {
                   {itemList(selectedEvent.organizations)}
                 </div>
               </div>
-              <h5 className="mb-2 p-0  ">
-                STEP 1: Load and Train Student Images
-              </h5>
-              {selectedEvent.isTrained ? (
-                <p className="alert alert-success">Images already trained.</p>
-              ) : (
-                <button
-                  disabled={isListTrained}
-                  onClick={() => {
-                    loadLabeledImages();
-                    setIsLoadTrained(!isLoadTrained);
-                  }}
-                  className="btn "
-                >
-                  Load Student Images
-                </button>
-              )}
-              {isListTrained && !selectedEvent.isTrained  ? (
-                <p className="alert alert-success text-center">
-                  Images trained and saved successfully!
-                </p>
-              ) : null}
-              {isLoadTrained ? (
-                <div className="d-flex justify-content-center">
-                  <Spinner></Spinner>{" "}
-                  <span className="mx-2">Training Image</span>
-                </div>
-              ) : null}
+              <h5 className="mb-2 p-0">
+  STEP 1: Load and Train Student Images
+</h5>
+
+{/* Button1: Load the saved data or train new data */}
+{selectedEvent.courses && selectedEvent.courses.length >= 6 ? (
+  <div>
+    <p className="mb-2">Button to train images using the saved training data</p>
+    {selectedEvent.isTrained ? (
+      <p className="alert alert-success text-center">Images already trained.</p>
+    ) : (
+      <button
+        disabled={isListTrained || isLoadTrained}
+        onClick={async () => {
+          setIsLoadTrained(true); // Show spinner while training
+          await handleTrainOrUseData(); // Train or load data
+          setIsLoadTrained(false); // Hide spinner after training is complete
+          setIsListTrained(true); // Indicate training is complete
+          setSelectedEvent((prevEvent) => ({
+            ...prevEvent,
+            isTrained: true, // Mark as trained in the event
+          }));
+        }}
+        className="btn btn-primary"
+      >
+        Load and Train Student Images (or use saved data)
+      </button>
+    )}
+  </div>
+) : (
+  <p className="alert alert-warning">Insufficient courses. Minimum 6 courses required to load and train images.</p>
+)}
+
+{/* Button2: Load eligible student images */}
+<div>
+  <p className="mb-2">Button to load eligible student images</p>
+  {selectedEvent.isTrained ? (
+    <p className="alert alert-success">Images already trained.</p>
+  ) : (
+    <button
+      disabled={isListTrained || isLoadTrained}
+      onClick={async () => {
+        setIsLoadTrained(true); // Show spinner while loading
+        await loadLabeledImages(); // Load labeled images
+        setIsLoadTrained(false); // Hide spinner after loading is complete
+        setIsListTrained(true); // Indicate images are loaded
+        setSelectedEvent((prevEvent) => ({
+          ...prevEvent,
+          isTrained: true, // Mark as trained in the event
+        }));
+      }}
+      className="btn btn-secondary"
+    >
+      Load Student Images
+    </button>
+  )}
+</div>
+
+
+
+{/* Spinner for loading or training */}
+{isLoadTrained ? (
+  <div className="d-flex justify-content-center">
+    <Spinner />
+    <span className="mx-2">Processing Images...</span>
+  </div>
+) : null}
+
+
+
 
                     <h5 className="mt-4">Users In Charge</h5>
       {selectedEvent.userInCharge && selectedEvent.userInCharge.length > 0 ? (
