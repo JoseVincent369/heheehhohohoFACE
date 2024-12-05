@@ -751,12 +751,26 @@ function Home_main() {
               <canvas ref={canvasRef} className="video-canvas" />
             </div>
 
-            <div className="attendance-messages">
-              <h3>Attendance Notifications: </h3>
-              {attendanceMessages.slice(-7).map((message, index) => (
-                <p key={index}>{message}</p>
-              ))}
-            </div>
+            <div className="attendance-notifications">
+  <h3>Attendance Notifications:</h3>
+  {attendanceMessages.slice(-7).map((message, index) => {
+    let style = { color: "black" }; // Default for repeated messages
+
+    if (message.includes("marked as timeIn")) {
+      style.color = "green"; // Green for successful time-in
+    } else if (message.includes("marked as timeOut")) {
+      style.color = "green"; // Green for successful time-in
+    } else if (message.includes("not eligible")) {
+      style.color = "red"; // Red for not eligible
+    }
+
+    return (
+      <p key={index} style={style}>
+        {message}
+      </p>
+    );
+  })}
+</div>
           </div>
 
           <ToastContainer position="top-end" className="p-3">

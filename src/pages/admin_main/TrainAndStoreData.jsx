@@ -126,7 +126,7 @@ const TrainAndStoreData = () => {
         {loading ? <Spinner size="sm" animation="border" /> : "Train Courses Data"}
       </Button>
       <Button onClick={handleEventForEveryone} disabled={loading}>
-        Use Trained Courses for Event
+        Check the distriptor in the console log
       </Button>
 
       <Modal show={isModalOpen} onHide={handleModalClose}>

@@ -725,7 +725,7 @@ const handleTrainOrUseData = async () => {
                 </div>
               </div>
               <h5 className="mb-2 p-0">
-  STEP 1: Load and Train Student Images
+  STEP 1: Load and Train Student Images Select one if available
 </h5>
 
 {/* Button1: Load the saved data or train new data */}
@@ -754,7 +754,7 @@ const handleTrainOrUseData = async () => {
     )}
   </div>
 ) : (
-  <p className="alert alert-warning">Insufficient courses. Minimum 6 courses required to load and train images.</p>
+  <p className="alert alert-warning">Only Available When The Event is Open for all Courses . Minimum 6 courses required to load and train images.</p>
 )}
 
 {/* Button2: Load eligible student images */}
