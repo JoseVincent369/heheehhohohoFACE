@@ -69,7 +69,7 @@ const Sidebar = () => {
         <li>
           <Link to="/admin/TrainAndStoreData">
             <FontAwesomeIcon icon={faRocket} className="sidebar-icon" />
-            <span className={isOpen ? '' : 'd-none'}> Attendance Search</span>
+            <span className={isOpen ? '' : 'd-none'}> Train all Student</span>
           </Link>
         </li>
       </ul>

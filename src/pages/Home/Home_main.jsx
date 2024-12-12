@@ -175,7 +175,7 @@ function Home_main() {
           );
         
           // Confidence threshold
-          const confidenceThreshold = 0.6; // Set your threshold here (e.g., 0.6)
+          const confidenceThreshold = 0.5; // Set your threshold here (e.g., 0.6)
         
           results.forEach((result, i) => {
             if (result._label !== "unknown" && result._distance <= confidenceThreshold) {
@@ -200,7 +200,7 @@ function Home_main() {
         };
         
 
-        const interval = setInterval(detectFaces, 500); // Adjust the interval as needed
+        const interval = setInterval(detectFaces, 1000); // Adjust the interval as needed
 
         return () => {
           clearInterval(interval);
@@ -752,14 +752,19 @@ function Home_main() {
             </div>
 
             <div className="attendance-notifications">
-  <h3>Attendance Notifications:</h3>
+  <h3>Attendance Logs:</h3>
   {attendanceMessages.slice(-7).map((message, index) => {
     let style = { color: "black" }; // Default for repeated messages
 
+    // Audio instance
+    const audio = new Audio("src/assets/audio/beep-08b.mp3");
+
     if (message.includes("marked as timeIn")) {
       style.color = "green"; // Green for successful time-in
+      audio.play(); // Play sound for time-in
     } else if (message.includes("marked as timeOut")) {
-      style.color = "green"; // Green for successful time-in
+      style.color = "green"; // Green for successful time-out
+      audio.play(); // Play sound for time-out
     } else if (message.includes("not eligible")) {
       style.color = "red"; // Red for not eligible
     }
@@ -771,6 +776,7 @@ function Home_main() {
     );
   })}
 </div>
+
           </div>
 
           <ToastContainer position="top-end" className="p-3">

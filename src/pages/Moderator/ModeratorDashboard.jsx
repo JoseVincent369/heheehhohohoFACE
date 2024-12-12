@@ -725,13 +725,13 @@ const handleTrainOrUseData = async () => {
                 </div>
               </div>
               <h5 className="mb-2 p-0">
-  STEP 1: Load and Train Student Images Select one if available
+  STEP 1: Load and Train Student Images Select one if available:
 </h5>
 
 {/* Button1: Load the saved data or train new data */}
 {selectedEvent.courses && selectedEvent.courses.length >= 6 ? (
   <div>
-    <p className="mb-2">Button to train images using the saved training data</p>
+    <p className="mb-2"> Existing trained images of students</p>
     {selectedEvent.isTrained ? (
       <p className="alert alert-success text-center">Images already trained.</p>
     ) : (
@@ -749,17 +749,17 @@ const handleTrainOrUseData = async () => {
         }}
         className="btn btn-primary"
       >
-        Load and Train Student Images (or use saved data)
+        Load existing trained images (use saved data)
       </button>
     )}
   </div>
 ) : (
-  <p className="alert alert-warning">Only Available When The Event is Open for all Courses . Minimum 6 courses required to load and train images.</p>
+  <p className="alert alert-warning">Trained data not available. Please use other method. </p>
 )}
 
 {/* Button2: Load eligible student images */}
 <div>
-  <p className="mb-2">Button to load eligible student images</p>
+  <p className="mb-2">Load eligible students</p>
   {selectedEvent.isTrained ? (
     <p className="alert alert-success">Images already trained.</p>
   ) : (
